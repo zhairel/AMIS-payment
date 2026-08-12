@@ -9,7 +9,7 @@
         </div>
     </x-slot>
 
-    <div class="py-6" x-data="receiptTestLab()">
+    <div class="py-6" x-data="receiptTestLab()" x-init="fetchEnvDiagnostics()">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {{-- Toolbar & Upload Section --}}
             <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
@@ -127,6 +127,9 @@
                                         <button type="button" @click="runSingleTest(index)" :disabled="item.isProcessing" class="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition">
                                             <span x-text="item.isProcessing ? 'Processing...' : 'Run Test'"></span>
                                         </button>
+                                        <button type="button" @click="openCompareModal(item)" :disabled="item.isComparing" class="px-3 py-1.5 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg border border-sky-200 transition">
+                                            <span x-text="item.isComparing ? 'Comparing...' : 'Compare OCR'"></span>
+                                        </button>
                                         <button type="button" @click="openScannerModal(item)" :disabled="!item.result" class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition disabled:opacity-40">
                                             View Scanner
                                         </button>
@@ -208,6 +211,157 @@
                 </div>
             </div>
         </div>
+
+        {{-- Independent 4-Engine Compare OCR Modal --}}
+        <div x-show="activeCompareModal" x-cloak class="payment-receipt-modal" @click.self="activeCompareModal = false" role="dialog" aria-modal="true">
+            <div class="bg-white rounded-2xl max-w-6xl w-full p-6 shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col my-auto mx-4">
+                {{-- Header --}}
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                    <div>
+                        <span class="text-[10px] font-bold text-sky-600 uppercase tracking-wider block">Independent 4-Engine OCR Benchmark</span>
+                        <h2 class="text-lg font-black text-slate-900">Compare OCR Engines (No Fallback Chain)</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Sends receipt directly to EasyOCR, PaddleOCR PP-OCRv6, docTR, and Tesseract independently.</p>
+                    </div>
+                    <button type="button" @click="activeCompareModal = false" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="overflow-y-auto space-y-5 pr-1">
+                    {{-- Laravel Python Environment & Engine Diagnostic Panel --}}
+                    <div class="bg-slate-900 text-slate-100 rounded-xl p-4 text-xs font-mono border border-slate-800 space-y-2">
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                            <div>
+                                <strong class="text-sky-400">Laravel Python Executable:</strong>
+                                <span class="text-amber-300 ml-1" x-text="envDiagnostics?.python_executable || '/usr/bin/python3'"></span>
+                            </div>
+                            <div>
+                                <strong class="text-slate-400">Environment Version:</strong>
+                                <span class="text-slate-200 ml-1" x-text="envDiagnostics?.python_version || 'Python 3'"></span>
+                            </div>
+                        </div>
+
+                        {{-- Engine Availability Badges --}}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                            <template x-for="(status, name) in (envDiagnostics?.engines || {})" :key="name">
+                                <div class="p-2.5 rounded-lg border text-[11px]" :class="status.available ? 'bg-emerald-950/60 border-emerald-800/80 text-emerald-200' : 'bg-rose-950/40 border-rose-900/60 text-rose-300'">
+                                    <div class="flex items-center justify-between font-bold mb-1">
+                                        <span x-text="engineDisplayName(name)"></span>
+                                        <span class="px-1.5 py-0.5 text-[9px] rounded font-extrabold uppercase" :class="status.available ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'" x-text="status.available ? 'AVAILABLE' : 'NOT AVAILABLE'"></span>
+                                    </div>
+                                    <small class="block text-[10px] text-slate-400 font-sans leading-tight truncate" x-text="status.available ? `Version: ${status.version || 'installed'}` : (status.reason || 'Not installed')"></small>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Ground Truth / Set Expected Values --}}
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Set Expected Values (Ground Truth Evaluation)</h4>
+                            <button type="button" @click="runEngineComparison(compareItem)" class="text-xs font-semibold text-sky-700 bg-sky-100 hover:bg-sky-200 px-3 py-1 rounded-lg border border-sky-200 transition">
+                                Re-evaluate Ground Truth
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 mb-1">Expected Provider</label>
+                                <input type="text" x-model="groundTruthInput.provider" placeholder="e.g. Enjaz / Bank Albilad" class="w-full text-xs rounded-lg border-slate-200 p-2">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 mb-1">Expected Reference</label>
+                                <input type="text" x-model="groundTruthInput.reference" placeholder="e.g. FT26222662202746" class="w-full text-xs rounded-lg border-slate-200 p-2">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 mb-1">Expected Date</label>
+                                <input type="text" x-model="groundTruthInput.date" placeholder="e.g. 2026-08-10" class="w-full text-xs rounded-lg border-slate-200 p-2">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 mb-1">Expected Amount</label>
+                                <input type="text" x-model="groundTruthInput.amount" placeholder="e.g. PHP 8200.00" class="w-full text-xs rounded-lg border-slate-200 p-2">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Loading Indicator --}}
+                    <div x-show="isComparingEngines" class="p-8 text-center bg-slate-50 rounded-xl border border-slate-200">
+                        <div class="inline-block animate-spin w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full mb-3"></div>
+                        <h4 class="text-slate-800 font-bold text-sm">Running 4 Independent OCR Engines...</h4>
+                        <p class="text-slate-500 text-xs mt-1">Executing EasyOCR, PaddleOCR PP-OCRv6, docTR, and Tesseract directly on the receipt image.</p>
+                    </div>
+
+                    {{-- 4 Engine Comparison Side-by-Side Grid --}}
+                    <div x-show="!isComparingEngines && compareResult" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <template x-for="engineKey in ['easyocr', 'paddleocr', 'doctr', 'tesseract']" :key="engineKey">
+                            <div class="bg-white rounded-xl border p-4 shadow-sm flex flex-col justify-between" :class="compareResult?.engines?.[engineKey]?.status === 'SUCCESS' ? 'border-emerald-300 ring-1 ring-emerald-100' : 'border-slate-200'">
+                                <div>
+                                    {{-- Engine Header --}}
+                                    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
+                                        <div>
+                                            <h3 class="font-extrabold text-sm text-slate-900" x-text="compareResult?.engines?.[engineKey]?.engine"></h3>
+                                            <span class="text-[10px] text-slate-400 block" x-text="compareResult?.engines?.[engineKey]?.attempted ? `Duration: ${compareResult?.engines?.[engineKey]?.duration_ms} ms` : 'Attempted: NO'"></span>
+                                        </div>
+                                        <div>
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase" :class="badgeClassForStatus(compareResult?.engines?.[engineKey]?.status)" x-text="compareResult?.engines?.[engineKey]?.status || 'NOT AVAILABLE'"></span>
+                                        </div>
+                                    </div>
+
+                                    {{-- Ground Truth Score --}}
+                                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100 mb-3 flex items-center justify-between">
+                                        <small class="text-[10px] font-semibold text-slate-500 uppercase">Field Accuracy</small>
+                                        <strong class="text-xs font-black" :class="compareResult?.engines?.[engineKey]?.ground_truth?.has_expected ? (compareResult?.engines?.[engineKey]?.ground_truth?.correct_count === compareResult?.engines?.[engineKey]?.ground_truth?.total_evaluated ? 'text-emerald-600' : 'text-amber-600') : 'text-slate-400'" x-text="compareResult?.engines?.[engineKey]?.ground_truth?.score_label || 'No Expected Set'"></strong>
+                                    </div>
+
+                                    {{-- Engine Metrics --}}
+                                    <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-50/60 p-2 rounded-lg border border-slate-100 mb-3">
+                                        <div>
+                                            <span class="text-slate-400 block text-[9px] uppercase font-bold">Regions</span>
+                                            <strong class="text-slate-800 font-bold" x-text="compareResult?.engines?.[engineKey]?.regions ?? '0'"></strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-slate-400 block text-[9px] uppercase font-bold">Confidence</span>
+                                            <strong class="text-slate-800 font-bold" x-text="compareResult?.engines?.[engineKey]?.confidence !== null ? `${Math.round(compareResult?.engines?.[engineKey]?.confidence * (compareResult?.engines?.[engineKey]?.confidence <= 1 ? 100 : 1))}%` : 'N/A'"></strong>
+                                        </div>
+                                    </div>
+
+                                    {{-- Error / Not Available Reason --}}
+                                    <div x-show="compareResult?.engines?.[engineKey]?.error" class="bg-rose-50 border border-rose-200 text-rose-800 p-2.5 rounded-lg text-[10px] font-mono mb-3 whitespace-pre-wrap leading-tight" x-text="compareResult?.engines?.[engineKey]?.error"></div>
+
+                                    {{-- 4 Standardized AMIS Fields --}}
+                                    <div class="space-y-2 bg-slate-50/80 p-3 rounded-lg border border-slate-100">
+                                        <div>
+                                            <small class="text-[9px] font-bold text-slate-400 uppercase block">Provider / Mode</small>
+                                            <strong class="text-xs font-bold text-slate-800 block truncate" x-text="compareResult?.engines?.[engineKey]?.parsed?.provider || 'Other / Unknown'"></strong>
+                                        </div>
+                                        <div>
+                                            <small class="text-[9px] font-bold text-slate-400 uppercase block">Reference No.</small>
+                                            <strong class="text-xs font-bold text-slate-800 block truncate" x-text="compareResult?.engines?.[engineKey]?.parsed?.reference_number || 'Not detected'"></strong>
+                                        </div>
+                                        <div>
+                                            <small class="text-[9px] font-bold text-slate-400 uppercase block">Date & Time</small>
+                                            <strong class="text-xs font-bold text-slate-800 block truncate" x-text="compareResult?.engines?.[engineKey]?.parsed?.transaction_date ? `${compareResult?.engines?.[engineKey]?.parsed?.transaction_date} ${compareResult?.engines?.[engineKey]?.parsed?.transaction_time || ''}` : 'Not detected'"></strong>
+                                        </div>
+                                        <div>
+                                            <small class="text-[9px] font-bold text-slate-400 uppercase block">Amount</small>
+                                            <strong class="text-xs font-bold text-slate-800 block truncate" x-text="compareResult?.engines?.[engineKey]?.parsed?.amount !== null ? `${compareResult?.engines?.[engineKey]?.parsed?.currency || 'PHP'} ${numberFormat(compareResult?.engines?.[engineKey]?.parsed?.amount)}` : 'Not detected'"></strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Toggle Raw Text --}}
+                                <div class="mt-3 pt-3 border-t border-slate-100">
+                                    <button type="button" @click="compareResult.engines[engineKey].showRaw = !compareResult.engines[engineKey].showRaw" class="text-[11px] font-semibold text-slate-600 hover:text-slate-900 flex items-center justify-between w-full">
+                                        <span>Raw OCR Text</span>
+                                        <span x-text="compareResult?.engines?.[engineKey]?.showRaw ? 'Hide' : 'View'"></span>
+                                    </button>
+                                    <div x-show="compareResult?.engines?.[engineKey]?.showRaw" class="mt-2 bg-slate-950 text-emerald-400 p-2.5 rounded text-[10px] font-mono whitespace-pre-wrap max-h-48 overflow-y-auto" x-text="compareResult?.engines?.[engineKey]?.raw_text || 'No raw text'"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -216,7 +370,29 @@
                 testItems: [],
                 isProcessingAll: false,
                 activeScannerModal: false,
+                activeCompareModal: false,
                 modalItem: null,
+                compareItem: null,
+                compareResult: null,
+                isComparingEngines: false,
+                envDiagnostics: null,
+                groundTruthInput: {
+                    provider: '',
+                    reference: '',
+                    date: '',
+                    amount: ''
+                },
+
+                async fetchEnvDiagnostics() {
+                    try {
+                        const response = await fetch("{{ route('admin.receipt_test.env') }}");
+                        if (response.ok) {
+                            this.envDiagnostics = await response.json();
+                        }
+                    } catch (e) {
+                        console.error('Error fetching environment diagnostics:', e);
+                    }
+                },
 
                 handleFileUpload(event) {
                     const files = Array.from(event.target.files);
@@ -237,6 +413,7 @@
                             amount: null,
                             currency: 'PHP',
                             isProcessing: false,
+                            isComparing: false,
                             result: null,
                             showTech: false,
                         });
@@ -284,6 +461,56 @@
                     }
                 },
 
+                async openCompareModal(item) {
+                    this.compareItem = item;
+                    this.activeCompareModal = true;
+                    await this.runEngineComparison(item);
+                },
+
+                async runEngineComparison(item) {
+                    if (!item) return;
+
+                    this.isComparingEngines = true;
+                    item.isComparing = true;
+
+                    const formData = new FormData();
+                    if (item.result?.test_id) {
+                        formData.append('test_id', item.result.test_id);
+                    }
+                    if (item.file) {
+                        formData.append('image', item.file);
+                    }
+                    formData.append('expected_provider', this.groundTruthInput.provider || '');
+                    formData.append('expected_reference', this.groundTruthInput.reference || '');
+                    formData.append('expected_date', this.groundTruthInput.date || '');
+                    formData.append('expected_amount', this.groundTruthInput.amount || '');
+
+                    try {
+                        const response = await fetch("{{ route('admin.receipt_test.compare') }}", {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: formData
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.compareResult = data.comparison;
+                            if (data.comparison?.environment) {
+                                this.envDiagnostics = data.comparison.environment;
+                            }
+                        } else {
+                            console.error('Compare request failed');
+                        }
+                    } catch (e) {
+                        console.error('Error running OCR comparison:', e);
+                    } finally {
+                        this.isComparingEngines = false;
+                        item.isComparing = false;
+                    }
+                },
+
                 async runAllTests() {
                     this.isProcessingAll = true;
                     for (let i = 0; i < this.testItems.length; i++) {
@@ -304,6 +531,25 @@
                         case 'duplicate': return 'bg-purple-100 text-purple-800 border border-purple-200';
                         case 'failed': return 'bg-slate-200 text-slate-800 border border-slate-300';
                         default: return 'bg-slate-100 text-slate-600 border border-slate-200';
+                    }
+                },
+
+                badgeClassForStatus(status) {
+                    switch (status) {
+                        case 'SUCCESS': return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                        case 'FAILED': return 'bg-rose-100 text-rose-800 border border-rose-200';
+                        case 'NOT_AVAILABLE': return 'bg-amber-100 text-amber-800 border border-amber-200';
+                        default: return 'bg-slate-100 text-slate-600 border border-slate-200';
+                    }
+                },
+
+                engineDisplayName(name) {
+                    switch (name) {
+                        case 'easyocr': return 'EasyOCR';
+                        case 'paddleocr': return 'PaddleOCR PP-OCRv6';
+                        case 'doctr': return 'docTR';
+                        case 'tesseract': return 'Tesseract';
+                        default: return name;
                     }
                 },
 

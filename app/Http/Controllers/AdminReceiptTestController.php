@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Receipts\ReceiptOcrComparatorService;
 use App\Services\Receipts\ReceiptOcrPipeline;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,61 @@ class AdminReceiptTestController extends Controller
     public function index()
     {
         return view('admin.receipt_test_lab');
+    }
+
+    public function checkEnv(ReceiptOcrComparatorService $comparator): JsonResponse
+    {
+        return response()->json($comparator->checkEnvironmentDiagnostics());
+    }
+
+    public function compare(
+        Request $request,
+        ReceiptOcrComparatorService $comparator
+    ): JsonResponse {
+        $request->validate([
+            'image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png', 'max:10240'],
+            'test_id' => ['nullable', 'string'],
+            'expected_provider' => ['nullable', 'string'],
+            'expected_reference' => ['nullable', 'string'],
+            'expected_date' => ['nullable', 'string'],
+            'expected_amount' => ['nullable', 'string'],
+        ]);
+
+        $fullPath = null;
+
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $testId = (string) Str::uuid();
+            $extension = strtolower($file->guessExtension() ?: $file->getClientOriginalExtension() ?: 'png');
+            $testPath = $file->storeAs("private/receipt-tests/{$testId}", "test.{$extension}", 'local');
+            $fullPath = Storage::disk('local')->path($testPath);
+        } elseif ($request->filled('test_id')) {
+            $files = Storage::disk('local')->files("private/receipt-tests/" . $request->input('test_id'));
+            if (!empty($files)) {
+                $fullPath = Storage::disk('local')->path($files[0]);
+            }
+        }
+
+        if (empty($fullPath) || !file_exists($fullPath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No valid test receipt image provided for comparison.',
+            ], 400);
+        }
+
+        $expectedValues = [
+            'provider' => $request->input('expected_provider'),
+            'reference' => $request->input('expected_reference'),
+            'date' => $request->input('expected_date'),
+            'amount' => $request->input('expected_amount'),
+        ];
+
+        $comparison = $comparator->compareAllEngines($fullPath, $expectedValues);
+
+        return response()->json([
+            'success' => true,
+            'comparison' => $comparison,
+        ]);
     }
 
     public function process(
