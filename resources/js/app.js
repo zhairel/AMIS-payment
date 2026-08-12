@@ -1,4 +1,5 @@
 import './bootstrap';
+import './receipt-ocr';
 
 import Alpine from 'alpinejs';
 

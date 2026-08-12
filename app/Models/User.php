@@ -3,14 +3,15 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use App\Notifications\AmisVerifyEmail;
+use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -68,7 +69,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(EnrollmentApplicant::class);
     }
 
-    public function students(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    public function students(): HasManyThrough
     {
         return $this->hasManyThrough(
             Student::class,
@@ -78,6 +79,26 @@ class User extends Authenticatable implements MustVerifyEmail
             'id', // Local key on parent User table
             'id' // Local key on EnrollmentApplicant table
         );
+    }
+
+    public function paymentSubmissions(): HasMany
+    {
+        return $this->hasMany(PaymentSubmission::class);
+    }
+
+    public function receiptScanLogs(): HasMany
+    {
+        return $this->hasMany(ReceiptScanLog::class);
+    }
+
+    public function receiptSubmissions(): HasMany
+    {
+        return $this->hasMany(ReceiptSubmission::class);
+    }
+
+    public function familyAdvanceCredits(): HasMany
+    {
+        return $this->hasMany(FamilyAdvanceCredit::class);
     }
 
     public function isVerified(): bool
@@ -110,7 +131,7 @@ class User extends Authenticatable implements MustVerifyEmail
         $suffix = 2;
 
         while (self::where('username', $username)->exists()) {
-            $username = Str::limit($base, 35, '') . '-' . $suffix;
+            $username = Str::limit($base, 35, '').'-'.$suffix;
             $suffix++;
         }
 

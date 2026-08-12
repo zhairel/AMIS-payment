@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class DiscountSetting extends Model
 {
     protected $fillable = [
+        'per_child_percentage',
+        'first_child_percentage',
         'second_child_percentage',
         'third_child_percentage',
         'fourth_child_percentage',
@@ -14,6 +16,8 @@ class DiscountSetting extends Model
     ];
 
     protected $casts = [
+        'per_child_percentage' => 'integer',
+        'first_child_percentage' => 'integer',
         'second_child_percentage' => 'integer',
         'third_child_percentage' => 'integer',
         'fourth_child_percentage' => 'integer',
@@ -28,14 +32,15 @@ class DiscountSetting extends Model
 
     public function siblingPercentageForOrder(int $siblingOrder): float
     {
-        if (!$this->is_active || $siblingOrder <= 1) {
+        return $this->siblingPercentageForFamilySize($siblingOrder);
+    }
+
+    public function siblingPercentageForFamilySize(int $childCount): float
+    {
+        if (!$this->is_active || $childCount < 1) {
             return 0.0;
         }
 
-        return match ($siblingOrder) {
-            2 => (float) $this->second_child_percentage,
-            3 => (float) $this->third_child_percentage,
-            default => (float) $this->fourth_child_percentage,
-        };
+        return min(100.0, $childCount * (float) $this->per_child_percentage);
     }
 }

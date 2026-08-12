@@ -6,6 +6,8 @@ use App\Http\Controllers\GoogleAuthController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ReceiptSubmissionController;
+use App\Http\Controllers\FinanceReceiptController;
 
 // Root route
 Route::get('/', function () {
@@ -78,10 +80,40 @@ Route::post('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
 // Dashboard — accessible to all authenticated and verified users
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/payment/dashboard', [PaymentController::class, 'showDashboard'])->name('payment.dashboard');
+    Route::get('/payment/checkout', [PaymentController::class, 'showCheckout'])->name('payment.checkout');
     Route::post('/payment/link-student', [PaymentController::class, 'linkStudent'])->name('payment.link-student');
     Route::post('/payment/submit', [PaymentController::class, 'submitPayment'])->name('payment.submit');
     Route::post('/payment/ocr-scan', [PaymentController::class, 'ocrScan'])->name('payment.ocr-scan');
+    Route::post('/payment/ocr-scan-log', [PaymentController::class, 'recordReceiptScan'])->name('payment.ocr-scan-log');
+    Route::post('/payment/check-duplicate', [PaymentController::class, 'checkDuplicate'])->name('payment.check-duplicate');
+    Route::post('/payment/receipts', [ReceiptSubmissionController::class, 'store'])
+        ->middleware('throttle:20,1')->name('payment.receipts.store');
+    Route::get('/payment/receipts/{receipt}', [ReceiptSubmissionController::class, 'show'])
+        ->name('payment.receipts.show');
+    Route::post('/payment/receipts/{receipt}/client-fallback', [ReceiptSubmissionController::class, 'storeClientFallback'])
+        ->middleware('throttle:10,1')->name('payment.receipts.client-fallback');
+    Route::get('/payment/receipts/{receipt}/original', [ReceiptSubmissionController::class, 'original'])
+        ->name('payment.receipts.original');
+    Route::get('/payment/receipts/{receipt}/download-jpg', [ReceiptSubmissionController::class, 'downloadJpg'])
+        ->name('payment.receipts.download-jpg');
+    Route::get('/payment/receipts/{receipt}/download-pdf', [ReceiptSubmissionController::class, 'downloadPdf'])
+        ->name('payment.receipts.download-pdf');
+    Route::get('/students/{student}', [\App\Http\Controllers\StudentController::class, 'show'])
+        ->name('students.show');
     Route::post('/activity/offline', [AuthController::class, 'setOffline'])->name('activity.offline');
+});
+
+Route::middleware(['auth', 'verified', 'finance'])->prefix('finance')->name('finance.')->group(function () {
+    Route::get('/receipts', [FinanceReceiptController::class, 'index'])->name('receipts.index');
+    Route::get('/receipts/{receipt}', [FinanceReceiptController::class, 'show'])->name('receipts.show');
+    Route::patch('/receipts/{receipt}', [FinanceReceiptController::class, 'update'])->name('receipts.update');
+    Route::post('/receipts/{receipt}/action', [FinanceReceiptController::class, 'action'])->name('receipts.action');
+});
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/admin/ai-receipt-test', [\App\Http\Controllers\AdminReceiptTestController::class, 'index'])->name('admin.receipt_test');
+    Route::post('/admin/ai-receipt-test/process', [\App\Http\Controllers\AdminReceiptTestController::class, 'process'])->name('admin.receipt_test.process');
+    Route::get('/admin/ai-receipt-test/preview/{testId}', [\App\Http\Controllers\AdminReceiptTestController::class, 'preview'])->name('admin.receipt_test.preview');
 });
 
 if (app()->environment('local')) {
@@ -89,6 +121,4 @@ if (app()->environment('local')) {
         abort((int) $code);
     });
 }
-
-
 

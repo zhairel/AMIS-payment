@@ -1,417 +1,667 @@
 <x-app-layout>
-    <x-slot name="title">Payment Dashboard</x-slot>
+    <x-slot name="title">Family Payments</x-slot>
 
-    <style>
-        .modal-body-container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-            flex-direction: row;
-        }
-        .modal-col-1 {
-            flex: 1.2;
-            overflow-y: auto;
-            padding: 28px 28px 24px;
-            border-right: 1px solid #f1f5f9;
-            display: flex;
-            flex-direction: column;
-            box-sizing: border-box;
-        }
-        .modal-col-2 {
-            width: 380px;
-            flex-shrink: 0;
-            border-right: 1px solid #f1f5f9;
-            overflow-y: auto;
-            padding: 28px 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            box-sizing: border-box;
-        }
-        .modal-col-3 {
-            width: 320px;
-            flex-shrink: 0;
-            background: #f8fafc;
-            overflow-y: auto;
-            padding: 28px 22px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            box-sizing: border-box;
-        }
-
-        @media (max-width: 1023px) {
-            .modal-body-container {
-                flex-direction: column !important;
-                overflow-y: auto !important;
-            }
-            .modal-col-1, .modal-col-2, .modal-col-3 {
-                width: 100% !important;
-                flex: none !important;
-                flex-shrink: 1 !important;
-                overflow-y: visible !important;
-                border-right: none !important;
-                border-bottom: 1px solid #e2e8f0;
-                padding: 22px 20px !important;
-            }
-            .modal-col-3 {
-                border-bottom: none;
-            }
-        }
-    </style>
-
-    <div class="py-12" x-data="{
-        showAddChildModal: false,
-        studentNumber: '',
-        dob: '',
-        loading: false,
-        errorMsg: '',
-        successMsg: '',
-        submitLinkChild() {
-            this.loading = true;
-            this.errorMsg = '';
-            this.successMsg = '';
-            fetch('{{ route('payment.link-student') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').content
-                },
-                body: JSON.stringify({
-                    student_number: this.studentNumber,
-                    date_of_birth: this.dob
-                })
-            })
-            .then(async response => {
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message || 'Failed to link child.');
-                return data;
-            })
-            .then(data => {
-                this.successMsg = data.message || 'Child linked successfully!';
-                setTimeout(() => { window.location.reload(); }, 1500);
-            })
-            .catch(error => {
-                this.errorMsg = error.message;
-                this.loading = false;
-            });
-        },
-        
-        // Settle Payment variables and actions
-        showSettlePaymentModal: false,
-        settleStudentId: null,
-        settleStudentName: '',
-        settleRemainingBalance: 0,
-        settleMethod: 'gcash',
-        settleAmount: 0,
-        settleReference: '',
-        settleReceiptFile: null,
-        settleReceiptPreview: null,
-        settleLoading: false,
-        settleErrorMsg: '',
-        settleSuccessMsg: '',
-        
-        handleSettleFileChange(event) {
-            const files = event.target.files;
-            if (files.length === 0) return;
-            const file = files[0];
-            
-            if (!file.type.startsWith('image/')) {
-                this.settleErrorMsg = 'Only image files (JPG, JPEG, PNG) are supported for proof of payment.';
-                return;
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                this.settleErrorMsg = 'Receipt image size must not exceed 5MB.';
-                return;
-            }
-            
-            this.settleReceiptFile = file;
-            this.settleErrorMsg = '';
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                this.settleReceiptPreview = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        },
-        
-        removeSettleFile() {
-            this.settleReceiptFile = null;
-            this.settleReceiptPreview = null;
-            if (this.$refs.settleFileInput) {
-                this.$refs.settleFileInput.value = '';
-            }
-        },
-        
-        submitSettlePayment() {
-            if (!this.settleReceiptFile) {
-                this.settleErrorMsg = 'Please upload a proof of payment receipt.';
-                return;
-            }
-            this.settleLoading = true;
-            this.settleErrorMsg = '';
-            this.settleSuccessMsg = '';
-            
-            const formData = new FormData();
-            formData.append('student_id', this.settleStudentId);
-            formData.append('method', this.settleMethod);
-            formData.append('reference_no', this.settleReference);
-            formData.append('amount', this.settleAmount);
-            formData.append('receipt', this.settleReceiptFile);
-            
-            fetch('{{ route('payment.submit') }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').content
-                },
-                body: formData
-            })
-            .then(async response => {
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message || 'Failed to submit payment.');
-                return data;
-            })
-            .then(data => {
-                this.settleSuccessMsg = data.message || 'Payment submitted successfully!';
-                setTimeout(() => { window.location.reload(); }, 2000);
-            })
-            .catch(error => {
-                this.settleErrorMsg = error.message;
-                this.settleLoading = false;
-            });
-        }
-    }">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Header Section -->
-            <div class="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+    <div
+        class="payment-dashboard-page"
+        x-data="paymentDashboard()"
+        @keydown.escape.window="closeTopModal()"
+    >
+        <div class="payment-shell">
+            <header class="payment-page-header">
                 <div>
-                    <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Payment Dashboard</h1>
-                    <p class="mt-2 text-sm text-slate-500">Review outstanding school fees, payments, and balances for your enrolled children.</p>
+                    <span class="payment-page-eyebrow">School Year {{ $students->first()?->account?->school_year ?? '2026–2027' }}</span>
+                    <h1 class="payment-page-title">Family Payments</h1>
+                    <p class="payment-page-subtitle">See your family balance, review each student's account, and submit payment receipts in one place.</p>
                 </div>
-                <div class="flex flex-wrap items-center gap-3 self-start">
-                    <button @click="showAddChildModal = true" 
-                            style="display: inline-flex; align-items: center; justify-content: center; padding: 8px 18px; background-color: #047857; color: #ffffff; border-radius: 16px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; white-space: nowrap; flex-shrink: 0; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: background-color 0.15s ease-in-out;"
-                            onmouseover="this.style.backgroundColor='#065f46'"
-                            onmouseout="this.style.backgroundColor='#047857'">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" style="width: 14px; height: 14px; margin-right: 6px; flex-shrink: 0;">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
-                        Add Children
-                    </button>
-                    <div class="inline-flex items-center gap-3 px-4 py-2 bg-emerald-50 text-emerald-800 rounded-2xl border border-emerald-100 text-xs font-semibold">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Parent Account Connected
-                    </div>
-                </div>
-            </div>
 
-            <!-- Children / Students Grid -->
+                <button type="button" class="payment-link-child" @click="showAddStudent = true">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/>
+                    </svg>
+                    Add or link a student
+                </button>
+            </header>
+
             @if($students->isEmpty())
-                <div class="rounded-3xl border border-slate-200 bg-white p-12 text-center shadow-xs">
-                    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 text-slate-400">
-                        <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                <section class="payment-empty-state" aria-labelledby="empty-students-title">
+                    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                        <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M18 18.72a9.1 9.1 0 003.74-.48 3 3 0 00-4.68-2.72m.94 3.2v-.01c0-1.09-.28-2.11-.77-3M18 18.72v.78c0 .41-.34.75-.75.75H6.75A.75.75 0 016 19.5v-.78m12 0a9.72 9.72 0 00-6-1.97 9.72 9.72 0 00-6 1.97m0 0a5.98 5.98 0 00-.77-3m0 0a3 3 0 00-4.68 2.72 9.1 9.1 0 003.74.48m.94-3a5.97 5.97 0 0113.54 0M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/>
                         </svg>
                     </div>
-                    <h3 class="mt-4 text-lg font-bold text-slate-800">No linked children found</h3>
-                    <p class="mt-2 text-sm text-slate-500 max-w-sm mx-auto mb-6">We couldn't find any enrolled students linked to your parent email address. You can link your children directly or coordinate with the admissions office.</p>
-                    <button @click="showAddChildModal = true" 
-                            style="display: inline-flex; align-items: center; justify-content: center; padding: 10px 24px; background-color: #047857; color: #ffffff; border-radius: 16px; font-size: 14px; font-weight: 700; border: none; cursor: pointer; white-space: nowrap; flex-shrink: 0; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: background-color 0.15s ease-in-out;"
-                            onmouseover="this.style.backgroundColor='#065f46'"
-                            onmouseout="this.style.backgroundColor='#047857'">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" style="width: 16px; height: 16px; margin-right: 8px; flex-shrink: 0;">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
-                        Link a Child Now
+                    <h2 id="empty-students-title" class="text-xl font-extrabold text-slate-900">No students linked yet</h2>
+                    <p class="mx-auto mb-5 mt-2 max-w-md text-sm leading-6 text-slate-600">Add a student using their school ID and date of birth. Their balance and monthly payment schedule will appear here.</p>
+                    <button type="button" class="inline-flex min-h-11 items-center rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-800" @click="showAddStudent = true">
+                        Add a student
                     </button>
-                </div>
+                </section>
             @else
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    @foreach($students as $student)
-                        @php
-                            $applicant = $student->applicant;
-                            $account = $student->account;
-                            
-                            $fullName = $applicant 
-                                ? strtoupper($applicant->first_name . ' ' . ($applicant->middle_name ? $applicant->middle_name . ' ' : '') . $applicant->last_name) 
-                                : strtoupper($student->user->name ?? 'Enrolled Student');
-                            
-                            $grade = $student->grade_level ?? 'Unassigned';
-                            $studentNumber = $student->student_number ?? 'AMIS-XXXX-XXXX';
-                            
-                            $remainingBalance = $account ? (float) $account->remaining_balance : 0.00;
-                            $totalBalance = $account ? (float) $account->total_balance : 0.00;
-                            $amountPaid = $account ? (float) $account->amount_paid : 0.00;
-                            $status = $account ? $account->status : 'unpaid';
-                            
-                            // Status Pill Badge configurations
-                            $statusClasses = [
-                                'paid' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
-                                'partial' => 'bg-amber-50 text-amber-800 border-amber-200',
-                                'unpaid' => 'bg-rose-50 text-rose-800 border-rose-200',
-                            ][$status] ?? 'bg-slate-50 text-slate-800 border-slate-200';
-                            
-                            $statusLabel = [
-                                'paid' => 'Fully Paid',
-                                'partial' => 'Partially Paid',
-                                'unpaid' => 'Unpaid',
-                            ][$status] ?? ucfirst($status);
-                        @endphp
-                        
-                        <!-- Student Payment Card -->
-                        <div class="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
-                            <!-- Visual Top Gradient Accent -->
-                            <div class="absolute left-0 top-0 h-1.5 w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600"></div>
+                @php
+                    $pastDueNow = (float) $currentPaymentSummary['previous_balance'];
+                    $currentMonthDueNow = max(0, round((float) $currentPaymentSummary['current_charges'] - (float) $currentPaymentSummary['verified_payments'], 2));
+                    $familyAmountDueNow = round($pastDueNow + $currentMonthDueNow, 2);
+                    $familyRemainingBalance = max(0, round((float) $familyTotalRemaining, 2));
+                    $futureScheduledBalance = max(0, round($familyRemainingBalance - $familyAmountDueNow, 2));
+                @endphp
+                <section class="payment-summary-card" aria-labelledby="family-balance-title">
+                    <div class="payment-summary-primary">
+                        <span class="payment-section-kicker">Family account overview</span>
+                        <span id="family-balance-title" class="payment-summary-label">Total Remaining Balance</span>
+                        <strong class="payment-summary-amount">₱{{ number_format($familyRemainingBalance, 2) }}</strong>
+                        <p class="payment-summary-help">Combined remaining school balance for all enrolled children and all unpaid monthly installments.</p>
+                        <p class="payment-summary-due-now"><span>Amount requiring payment now</span><strong>₱{{ number_format($familyAmountDueNow, 2) }}</strong></p>
+                        @if($familyAdvanceCredit > 0)
+                            <p class="payment-summary-help"><strong>Advance credit: ₱{{ number_format($familyAdvanceCredit, 2) }}</strong></p>
+                        @endif
+                    </div>
+                    <div class="payment-summary-stats">
+                        <div class="payment-summary-stat is-overdue">
+                            <span>Past due</span>
+                            <strong>₱{{ number_format($pastDueNow, 2) }}</strong>
+                        </div>
+                        <div class="payment-summary-stat is-current">
+                            <span>Current month</span>
+                            <strong>₱{{ number_format($currentMonthDueNow, 2) }}</strong>
+                        </div>
+                        <div class="payment-summary-stat is-future">
+                            <span>Future scheduled</span>
+                            <strong>₱{{ number_format($futureScheduledBalance, 2) }}</strong>
+                        </div>
+                        <div class="payment-summary-stat">
+                            <span>Students</span>
+                            <strong>{{ $students->count() }} enrolled</strong>
+                        </div>
+                    </div>
+                </section>
 
-                            <div>
-                                <!-- Card Header: Icon & Status -->
-                                <div class="flex items-center justify-between mb-5">
-                                    @if($applicant && $applicant->photo_2x2_url)
-                                        <div class="h-11 w-11 overflow-hidden rounded-2xl border border-slate-200 shadow-xs bg-slate-50 flex items-center justify-center">
-                                            <img src="{{ asset('storage/' . \App\Support\ImageHelper::thumb($applicant->photo_2x2_url, 'medium')) }}" 
-                                                 alt="{{ $fullName }}" 
-                                                 class="h-full w-full object-cover">
-                                        </div>
-                                    @else
-                                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50/80 text-emerald-700 border border-emerald-100/50">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                            </svg>
-                                        </div>
+                <section class="payment-section" aria-labelledby="students-heading">
+                    <div class="payment-section-heading">
+                        <div>
+                            <span class="payment-section-kicker">Student accounts</span>
+                            <h2 id="students-heading" class="payment-section-title">Your linked students</h2>
+                            <p class="payment-section-description">Open a student account to see its fee breakdown.</p>
+                        </div>
+                    </div>
+
+                    <div class="payment-student-grid">
+                        @foreach($students as $student)
+                            @php
+                                $account = $student->account;
+                                $applicant = $student->applicant;
+                                $studentName = mb_strtoupper($applicant?->full_name ?? '');
+                                $studentName = $studentName ?: 'STUDENT';
+                                $hasUploadedPhoto = filled($applicant?->photo_2x2_url);
+                                $avatarUrl = $hasUploadedPhoto
+                                    ? Storage::disk('public')->url($applicant->photo_2x2_url)
+                                    : asset(($applicant?->gender === 'Female')
+                                        ? 'images/avatars/student-female-avatar.png'
+                                        : 'images/avatars/student-male-avatar.png');
+                                $installmentBreakdown = $account?->monthlyBillings
+                                    ?->filter(fn ($billing) => (int) $billing->month_number > 0)
+                                    ->sortBy(fn ($billing) => $billing->due_date?->timestamp ?? $billing->month_number)
+                                    ->map(function ($billing) {
+                                        $originalAmount = (float) $billing->amount_due;
+                                        $verifiedPaid = $billing->status === 'paid'
+                                            ? $originalAmount
+                                            : min($originalAmount, (float) $billing->payments->where('status', 'verified')->sum('amount'));
+                                        $remainingAmount = max(0, round($originalAmount - $verifiedPaid, 2));
+                                        $dueDate = $billing->due_date;
+                                        $status = $remainingAmount <= 0.01
+                                            ? 'Paid'
+                                            : ($dueDate?->isPast()
+                                                ? 'Overdue'
+                                                : ($dueDate?->isCurrentMonth() ? 'Current' : 'Upcoming'));
+
+                                        return [
+                                            'month' => $dueDate?->format('F Y') ?? $billing->month_name,
+                                            'due_date' => $dueDate?->format('M d, Y'),
+                                            'original' => $originalAmount,
+                                            'verified' => $verifiedPaid,
+                                            'remaining' => $remainingAmount,
+                                            'status' => $status,
+                                        ];
+                                    })
+                                    ->values()
+                                    ->all() ?? [];
+                                $installmentSchedule = collect($installmentBreakdown);
+                                $installmentPlanTotal = round((float) $installmentSchedule->sum('original'), 2);
+                                $installmentVerified = round((float) $installmentSchedule->sum('verified'), 2);
+                                $installmentRemaining = round((float) $installmentSchedule->sum('remaining'), 2);
+                                $finalInstallment = (float) ($installmentSchedule->last()['original'] ?? ($account?->monthly_tuition ?? 0));
+                                $breakdown = [
+                                    'name' => $studentName,
+                                    'avatar' => $avatarUrl,
+                                    'avatar_is_fallback' => !$hasUploadedPhoto,
+                                    'tuition' => (float) ($account?->tuition_fee ?? 0),
+                                    'misc' => (float) ($account?->miscellaneous_fee ?? 0),
+                                    'books' => (float) ($account?->books_fee ?? 0),
+                                    'discount' => (float) ($account?->discount_amount ?? 0),
+                                    'discount_percentage' => (float) ($account?->discount_percentage ?? 0),
+                                    'sibling_order' => (int) ($account?->sibling_order ?? 0),
+                                    'total' => (float) ($account?->total_balance ?? 0),
+                                    'enrollment' => (float) ($account?->enrollment_fee_paid ?? 0),
+                                    'remaining' => (float) ($account?->remaining_balance ?? 0),
+                                    'installments' => (int) ($account?->installment_months ?? 9),
+                                    'monthly' => (float) ($account?->monthly_tuition ?? 0),
+                                    'final_installment' => $finalInstallment,
+                                    'installment_plan_total' => $installmentPlanTotal,
+                                    'installment_verified' => $installmentVerified,
+                                    'installment_remaining' => $installmentRemaining,
+                                    'installment_breakdown' => $installmentBreakdown,
+                                    'next_payment' => $nextPayableByStudent[$student->id] ?? null,
+                                ];
+                            @endphp
+
+                            <button
+                                type="button"
+                                class="payment-student-card"
+                                aria-label="View account details for {{ $studentName }}"
+                                @click="openBreakdown({{ Js::from($breakdown) }})"
+                            >
+                                <span class="payment-student-avatar">
+                                    <img
+                                        src="{{ $avatarUrl }}"
+                                        alt="Profile avatar of {{ $studentName }}"
+                                        class="{{ $hasUploadedPhoto ? '' : 'payment-student-avatar-placeholder' }}"
+                                    >
+                                </span>
+                                <span class="payment-student-info">
+                                    <span class="payment-student-name" title="{{ $studentName }}">{{ $studentName }}</span>
+                                    <span class="payment-student-meta">{{ $student->grade_level }} · ID {{ $student->student_number }}</span>
+                                    @if(($account?->discount_percentage ?? 0) > 0)
+                                        <span class="payment-student-discount">{{ number_format((float) $account->discount_percentage, 0) }}% sibling discount</span>
                                     @endif
-                                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold {{ $statusClasses }}">
-                                        {{ $statusLabel }}
+                                </span>
+                                <span class="payment-student-balance">
+                                    <span>Balance</span>
+                                    <strong>₱{{ number_format($account?->remaining_balance ?? 0, 2) }}</strong>
+                                </span>
+                            </button>
+                        @endforeach
+                    </div>
+                </section>
+
+                <nav class="payment-view-tabs" role="tablist" aria-label="Payment views">
+                    <button
+                        type="button"
+                        role="tab"
+                        class="payment-view-tab"
+                        :class="activeTab === 'notifications' ? 'is-active' : ''"
+                        :aria-selected="(activeTab === 'notifications').toString()"
+                        @click="activeTab = 'notifications'"
+                    >
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.85 23.85 0 005.454-1.31A8.97 8.97 0 0118 9.75V9A6 6 0 006 9v.75a8.97 8.97 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.26 24.26 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+                        </svg>
+                        <span><strong>Notifications</strong><small>{{ $paymentNotifications->count() }} important {{ Str::plural('update', $paymentNotifications->count()) }}</small></span>
+                    </button>
+                    <button
+                        type="button"
+                        role="tab"
+                        class="payment-view-tab"
+                        :class="activeTab === 'monthly' ? 'is-active' : ''"
+                        :aria-selected="(activeTab === 'monthly').toString()"
+                        @click="activeTab = 'monthly'"
+                    >
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6.75 3v2.25M17.25 3v2.25M3.75 9h16.5m-15 12h13.5a1.5 1.5 0 001.5-1.5V6.75a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5V19.5a1.5 1.5 0 001.5 1.5z"/>
+                        </svg>
+                        <span><strong>Monthly Payments</strong><small>Balances and payment schedule</small></span>
+                    </button>
+                    <button
+                        type="button"
+                        role="tab"
+                        class="payment-view-tab"
+                        :class="activeTab === 'transactions' ? 'is-active' : ''"
+                        :aria-selected="(activeTab === 'transactions').toString()"
+                        @click="activeTab = 'transactions'"
+                    >
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 14.25l2.25 2.25L15 12.75M6.75 3.75h10.5A2.25 2.25 0 0119.5 6v12A2.25 2.25 0 0117.25 20.25H6.75A2.25 2.25 0 014.5 18V6a2.25 2.25 0 012.25-2.25z"/>
+                        </svg>
+                        @php
+                            $familyTransactionCount = $familyFinanceTransactions->count() + $unpostedPaymentSubmissions->count();
+                        @endphp
+                        <span><strong>Transactions</strong><small>{{ $familyTransactionCount }} payment {{ Str::plural('record', $familyTransactionCount) }}</small></span>
+                    </button>
+                </nav>
+
+                <section x-show="activeTab === 'notifications'" x-cloak class="payment-tab-panel payment-section" role="tabpanel" aria-labelledby="notifications-heading">
+                    <div class="payment-section-heading">
+                        <div>
+                            <span class="payment-section-kicker">Account updates</span>
+                            <h2 id="notifications-heading" class="payment-section-title">Notifications</h2>
+                            <p class="payment-section-description">Important reminders about balances, due months, and receipt verification.</p>
+                        </div>
+                    </div>
+
+                    @if($paymentNotifications->isNotEmpty())
+                        <div class="payment-notification-list">
+                            @foreach($paymentNotifications as $notification)
+                                @php
+                                    $notificationLabel = match($notification['type']) {
+                                        'overdue', 'previous' => 'Action needed',
+                                        'pending' => 'Under review',
+                                        'success' => 'Payment update',
+                                        default => 'Upcoming',
+                                    };
+                                    $notificationAmountLabel = match($notification['type']) {
+                                        'overdue', 'previous' => 'Balance due',
+                                        'pending' => 'Submitted',
+                                        'success' => 'Verified amount',
+                                        default => 'Monthly charge',
+                                    };
+                                @endphp
+                                <article
+                                    class="payment-notification-card is-{{ $notification['type'] }} w-full text-left"
+                                >
+                                    <span class="payment-notification-icon" aria-hidden="true">
+                                        @if($notification['type'] === 'overdue' || $notification['type'] === 'previous')
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-1.5a9 9 0 11-18 0 9 9 0 0118 0zM12 15.75h.008v.008H12v-.008z"/></svg>
+                                        @elseif($notification['type'] === 'pending')
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        @elseif($notification['type'] === 'success')
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12.75l2.25 2.25L15 10.5m6 1.5a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        @else
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.75 3v2.25M17.25 3v2.25M3.75 9h16.5m-15 12h13.5a1.5 1.5 0 001.5-1.5V6.75a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5V19.5a1.5 1.5 0 001.5 1.5z"/></svg>
+                                        @endif
                                     </span>
-                                </div>
-
-                                <!-- Student Details -->
-                                <div class="space-y-1 mb-6">
-                                    <h3 class="text-lg font-black text-slate-800 leading-tight uppercase tracking-tight group-hover:text-emerald-800 transition-colors">
-                                        {{ $fullName }}
-                                    </h3>
-                                    <div class="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
-                                        <span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md">{{ $grade }}</span>
-                                        <span class="text-slate-300">•</span>
-                                        <span>ID: <strong class="text-slate-700 font-semibold">{{ $studentNumber }}</strong></span>
-                                    </div>
-                                </div>
-
-                                <!-- Outstanding Balance block -->
-                                <div class="rounded-2xl bg-slate-50 border border-slate-100 p-4 mb-6">
-                                    <span class="text-xxs font-bold text-slate-400 uppercase tracking-wider block">Remaining Balance</span>
-                                    <span class="text-2xl font-black text-slate-800 mt-1 block">
-                                        ₱{{ number_format($remainingBalance, 2) }}
+                                    <span class="payment-notification-copy">
+                                        <span class="payment-notification-meta"><em>{{ $notificationLabel }}</em><small>{{ $notification['date']?->format('M d, Y') }}</small></span>
+                                        <strong>{{ $notification['title'] }}</strong>
+                                        <span>{{ $notification['message'] }}</span>
                                     </span>
-                                </div>
-
-                                <!-- Financial breakdown -->
-                                <div class="space-y-2 text-xs font-medium text-slate-500 mb-6">
-                                    <div class="flex justify-between">
-                                        <span>Gross Total Fees</span>
-                                        <span class="text-slate-800 font-semibold">₱{{ number_format($totalBalance, 2) }}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span>Amount Settle Paid</span>
-                                        <span class="text-emerald-700 font-semibold">₱{{ number_format($amountPaid, 2) }}</span>
-                                    </div>
-                                </div>
+                                    <span class="payment-notification-amount"><small>{{ $notificationAmountLabel }}</small><strong>₱{{ number_format($notification['amount'], 2) }}</strong></span>
+                                </article>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="payment-empty-state">
+                            <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5"/></svg>
                             </div>
+                            <h3 class="text-base font-bold text-slate-800">You’re all caught up</h3>
+                            <p class="mt-2 text-sm text-slate-600">New payment reminders and receipt updates will appear here.</p>
+                        </div>
+                    @endif
+                </section>
 
-                            <!-- Action button -->
-                            <div class="pt-4 border-t border-slate-100">
-                                @if($applicant && $applicant->status !== 'approved')
-                                    <div class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-semibold cursor-not-allowed">
-                                        <svg class="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                        </svg>
-                                        Pending Approval
-                                    </div>
-                                @elseif($remainingBalance > 0)
-                                    <button @click="showSettlePaymentModal = true; settleStudentId = {{ $student->id }}; settleStudentName = '{{ addslashes($fullName) }}'; settleRemainingBalance = {{ $remainingBalance }}; settleAmount = {{ $remainingBalance }}; settleMethod = 'gcash'; settleReference = ''; settleReceiptFile = null; settleReceiptPreview = null; settleErrorMsg = ''; settleSuccessMsg = '';"
-                                            class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold shadow-xs hover:shadow transition">
-                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                        </svg>
-                                        Settle Payment
+                <section x-show="activeTab === 'monthly'" x-cloak class="payment-tab-panel payment-section" role="tabpanel" aria-labelledby="schedule-heading">
+                    <div class="payment-section-heading">
+                        <div class="payment-section-heading-with-icon">
+                            <span class="payment-section-kicker">Payment schedule</span>
+                            <h2 id="schedule-heading" class="payment-section-title"><span class="payment-section-heading-icon" aria-hidden="true">₱</span>Monthly payments</h2>
+                            <p class="payment-section-description">View the family schedule, then upload one receipt. AMIS allocates verified payments automatically.</p>
+                        </div>
+                        @if($consolidatedFinanceReceipt)
+                            <button type="button" class="payment-consolidated-receipt-button" @click="openTransaction({{ Js::from($consolidatedFinanceReceipt) }})">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.75 3.75h10.5A2.25 2.25 0 0119.5 6v14.25l-3-1.5-3 1.5-3-1.5-3 1.5V6a2.25 2.25 0 012.25-2.25zM9 8.25h6M9 12h6M9 15.75h3"/></svg>
+                                <span><strong>FULL RECEIPT</strong><small>{{ $consolidatedFinanceReceipt['period_label'] }}</small></span>
+                            </button>
+                        @endif
+                    </div>
+
+                    @if(empty($monthlyGroups))
+                        <div class="payment-empty-state">
+                            <h3 class="text-base font-bold text-slate-800">No payment schedule yet</h3>
+                            <p class="mt-2 text-sm text-slate-600">The Statement of Account may not have been generated. Please check again later or contact the Finance Office.</p>
+                        </div>
+                    @else
+                        @php
+                            $familyAwaitingVerification = $currentPaymentSummary['awaiting_verification'];
+                            $orderedMonthlyGroups = collect($monthlyGroups)->sortBy(function ($group) {
+                                if ($group['is_overdue'] && $group['unpaid_count'] > 0) return 0;
+                                if ($group['is_current']) return 1;
+                                if ($group['unpaid_count'] > 0) return 2;
+                                return 3;
+                            });
+                            $automaticAllocationMonths = collect($monthlyGroups)
+                                ->filter(fn ($group) => (float) $group['total_remaining'] > 0.01 && ($group['is_overdue'] || $group['is_current']))
+                                ->sortBy('due_date')
+                                ->map(fn ($group) => $group['month_number'] === 0
+                                    ? 'Enrollment / Initial Payment'
+                                    : $group['due_date']->format('F Y'))
+                                ->values();
+                        @endphp
+
+                        <div class="payment-month-list">
+                            @foreach($orderedMonthlyGroups as $monthKey => $group)
+                                @php
+                                    $isCurrent = $group['is_current'];
+                                    $allPaid = $group['unpaid_count'] === 0;
+                                    $isOverdue = !$isCurrent && $group['is_overdue'];
+                                    $mainAmountLabel = $allPaid
+                                        ? 'Paid in full'
+                                        : ($isOverdue ? 'Past due' : ($isCurrent ? 'Current balance' : 'Scheduled charges'));
+                                    $mainAmount = $allPaid
+                                        ? 0
+                                        : (($isOverdue || $isCurrent) ? $group['total_remaining'] : $group['total_due']);
+                                    $monthLabel = $group['month_number'] === 0 ? 'Enrollment / Initial Payment' : ucwords(mb_strtolower($group['month_label']));
+                                @endphp
+
+                                <article
+                                    class="payment-month-card {{ $allPaid ? 'is-paid' : ($isOverdue ? 'is-overdue' : ($isCurrent ? 'is-current' : 'is-upcoming')) }}"
+                                    :class="{ 'is-open': openMonth === {{ Js::from($monthKey) }} }"
+                                >
+                                    <button
+                                        type="button"
+                                        class="payment-month-toggle"
+                                        @click="openMonth = openMonth === {{ Js::from($monthKey) }} ? null : {{ Js::from($monthKey) }}"
+                                        :aria-expanded="(openMonth === {{ Js::from($monthKey) }}).toString()"
+                                        aria-controls="payment-month-panel-{{ $monthKey }}"
+                                    >
+                                        <span class="payment-month-copy">
+                                            <span class="payment-month-title-row">
+                                                <span class="payment-month-name">{{ $monthLabel }}</span>
+                                                @if($allPaid)
+                                                    <span class="payment-status payment-status-paid">Paid</span>
+                                                @elseif($isOverdue)
+                                                    <span class="payment-status payment-status-overdue">Overdue</span>
+                                                @elseif($isCurrent)
+                                                    <span class="payment-status payment-status-current">Current</span>
+                                                @else
+                                                    <span class="payment-status payment-status-upcoming">Upcoming</span>
+                                                @endif
+                                            </span>
+                                            <span class="payment-month-meta">Due {{ $group['due_date']->format('F Y') }}</span>
+                                        </span>
+
+                                        <span class="payment-month-balance">
+                                            <small>{{ $mainAmountLabel }}</small>
+                                            <strong>₱{{ number_format($mainAmount, 2) }}</strong>
+                                        </span>
+
+                                        @if($isOverdue || $isCurrent)
+                                            <span class="payment-month-quick-stats">
+                                                <span><small>{{ $isOverdue ? 'Original charges' : 'Monthly charges' }}</small><strong>₱{{ number_format($group['total_due'], 2) }}</strong></span>
+                                                <span class="is-paid"><small>Paid</small><strong>₱{{ number_format($group['total_paid'], 2) }}</strong></span>
+                                            </span>
+                                        @endif
+
+                                        <span class="payment-month-breakdown-prompt {{ ($isOverdue || $isCurrent) ? '' : 'is-compact' }}">
+                                            <strong>{{ count($group['children']) }} {{ Str::plural('Student', count($group['children'])) }}</strong>
+                                            <small x-text="openMonth === {{ Js::from($monthKey) }} ? 'Hide breakdown' : 'View breakdown'"></small>
+                                        </span>
+
+                                        <span class="payment-month-chevron" aria-hidden="true">
+                                            <svg :class="openMonth === {{ Js::from($monthKey) }} ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </span>
                                     </button>
-                                @else
-                                    <div class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 text-sm font-semibold cursor-not-allowed">
-                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Account Settled
+
+                                    <div
+                                        id="payment-month-panel-{{ $monthKey }}"
+                                        x-show="openMonth === {{ Js::from($monthKey) }}"
+                                        x-transition:enter="transition ease-out duration-200"
+                                        x-transition:enter-start="opacity-0 -translate-y-1"
+                                        x-transition:enter-end="opacity-100 translate-y-0"
+                                        x-transition:leave="transition ease-in duration-150"
+                                        x-transition:leave-start="opacity-100 translate-y-0"
+                                        x-transition:leave-end="opacity-0 -translate-y-1"
+                                        class="payment-month-body"
+                                    >
+                                        <div class="payment-month-student-list">
+                                            <div class="payment-billing-breakdown" aria-label="{{ $monthLabel }} student fee breakdown">
+                                                @foreach($group['children'] as $child)
+                                                    @php
+                                                        $childPaymentStatus = $child['is_paid']
+                                                            ? 'PAID'
+                                                            : ((float) $child['verified_paid'] > 0.01 ? 'PARTIAL' : 'UNPAID');
+                                                    @endphp
+                                                    <div class="payment-billing-row">
+                                                        <span>
+                                                            <strong>{{ mb_strtoupper($child['full_name']) }}</strong>
+                                                            <small>{{ $child['grade_level'] }} · ID {{ $child['student_number'] }}</small>
+                                                        </span>
+                                                        <span class="payment-billing-figures">
+                                                            <span class="payment-billing-amount">
+                                                                <small>Remaining Balance</small>
+                                                                <strong>₱{{ number_format($child['remaining_amount'], 2) }}</strong>
+                                                            </span>
+                                                            <span class="payment-billing-paid-column">
+                                                                <small>Total Payment</small>
+                                                                <strong>₱{{ number_format($child['verified_paid'], 2) }}</strong>
+                                                            </span>
+                                                            <span class="payment-billing-status-column">
+                                                                <small>Payment Status</small>
+                                                                <em class="payment-child-status is-{{ strtolower($childPaymentStatus) }}">{{ $childPaymentStatus }}</em>
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </article>
+
+                        @if($isCurrent && $allPaid)
+                            <section class="payment-full-paid-note" role="status" aria-label="{{ $monthLabel }} paid in full">
+                                <span class="payment-full-paid-icon" aria-hidden="true">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12.75l2.25 2.25L15 10.5m6 1.5a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                </span>
+                                <span class="payment-full-paid-copy">
+                                    <strong>Assalamu alaikum! Shukran for completing your {{ $monthLabel }} family payment.</strong>
+                                    <small>Finance has verified the full amount, and this month is now paid in full.</small>
+                                </span>
+                                <button type="button" @click="activeTab = 'transactions'; window.scrollTo({ top: 0, behavior: 'smooth' })">View transactions <span aria-hidden="true">→</span></button>
+                            </section>
+                        @endif
+
+                        @if($isCurrent && $currentPaymentSummary['month_key'] !== null)
+                            <section class="payment-proof-section is-family-payment" aria-label="Submit a family payment">
+                                @if($automaticAllocationMonths->isNotEmpty())
+                                    <div class="payment-upload-allocation-info" role="note">
+                                        <span class="payment-upload-allocation-copy">
+                                            <strong>Automatic payment allocation</strong>
+                                            <p>
+                                                After Finance approval, AMIS applies the payment to <b>{{ $automaticAllocationMonths->first() }}</b>
+                                                @if($automaticAllocationMonths->count() > 1)
+                                                    first, then to <b>{{ $automaticAllocationMonths->get(1) }}</b>
+                                                @endif.
+                                                No student or month selection is needed.
+                                            </p>
+                                        </span>
                                     </div>
                                 @endif
+
+                                @if($currentPaymentSummary['proofs']->isNotEmpty())
+                                    <div class="payment-pending-proof-list" aria-label="Payments awaiting Finance review">
+                                        @foreach($currentPaymentSummary['proofs'] as $proof)
+                                            <article class="payment-pending-proof-card">
+                                                <a href="{{ $proof['view_url'] }}" target="_blank" rel="noopener" class="payment-pending-proof-image" aria-label="Open uploaded payment proof">
+                                                    <img src="{{ $proof['view_url'] }}" alt="Uploaded payment proof {{ $proof['number'] }}">
+                                                </a>
+                                                <span class="payment-pending-proof-copy">
+                                                    <em>Pending Finance Review</em>
+                                                    <strong>{{ $proof['filename'] }}</strong>
+                                                    <small>{{ $proof['number'] }} · {{ $proof['method_label'] }}</small>
+                                                    <small>Your payment has not been deducted yet.</small>
+                                                </span>
+                                                <span class="payment-pending-proof-amount"><small>Submitted amount</small><strong>₱{{ number_format($proof['amount'], 2) }}</strong><a href="{{ $proof['view_url'] }}" target="_blank" rel="noopener">View uploaded proof</a></span>
+                                            </article>
+                                        @endforeach
+                                    </div>
+                                @elseif($currentPaymentSummary['rejected_proof'])
+                                    @php
+                                        $rejectedProof = $currentPaymentSummary['rejected_proof'];
+                                    @endphp
+                                    <article class="payment-rejected-proof-card" role="alert">
+                                        <a href="{{ $rejectedProof['view_url'] }}" target="_blank" rel="noopener" class="payment-pending-proof-image" aria-label="Open rejected payment proof">
+                                            <img src="{{ $rejectedProof['view_url'] }}" alt="Payment proof requiring attention">
+                                        </a>
+                                        <span class="payment-pending-proof-copy">
+                                            <em>{{ $rejectedProof['status'] }}</em>
+                                            <strong>{{ $rejectedProof['filename'] }}</strong>
+                                            <small>{{ $rejectedProof['reason'] }}</small>
+                                        </span>
+                                        <span class="payment-rejected-proof-actions">
+                                            <a href="{{ $rejectedProof['edit_url'] }}">Review details</a>
+                                            <a href="{{ $rejectedProof['reupload_url'] }}" class="is-primary">Re-upload receipt</a>
+                                        </span>
+                                    </article>
+                                @endif
+
+                                <div class="payment-proof-submit-block">
+                                    <div class="payment-proof-amount-left"><span>Total Amount Due</span><strong>₱{{ number_format($familyAmountDueNow, 2) }}</strong></div>
+
+                                    @if($currentPaymentSummary['active_pending_payments'] > 0.01)
+                                        <p class="payment-proof-upload-locked"><span><strong>Receipt awaiting Finance review</strong>Upload is unavailable while Finance reviews this receipt. It will return if the receipt is rejected.</span></p>
+                                    @elseif($currentPaymentSummary['rejected_proof'])
+                                        <p class="payment-proof-upload-locked is-rejected"><span><strong>Action needed</strong>Review the details or upload a replacement receipt to continue.</span></p>
+                                    @elseif($familyAwaitingVerification)
+                                        <p class="payment-proof-covered"><span aria-hidden="true">✓</span><span><strong>Awaiting verification</strong>Your submitted payments currently cover the amount due and are awaiting Finance verification.</span></p>
+                                    @elseif($currentPaymentSummary['remaining_to_submit'] > 0.01)
+                                        <div class="payment-proof-action">
+                                            <a href="{{ route('payment.checkout') }}"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16.5V4.5m0 0L7.5 9M12 4.5L16.5 9M4.5 15.75v2.625A1.125 1.125 0 005.625 19.5h12.75a1.125 1.125 0 001.125-1.125V15.75"/></svg>Upload Payment Proof</a>
+                                        </div>
+                                    @endif
+                                </div>
+                            </section>
+                        @endif
+                            @endforeach
+                        </div>
+                    @endif
+                </section>
+
+                <section x-show="activeTab === 'transactions'" x-cloak class="payment-tab-panel payment-section" role="tabpanel" aria-labelledby="history-heading">
+                        <div class="payment-section-heading">
+                            <div>
+                                <span class="payment-section-kicker">Payment history</span>
+                                <h2 id="history-heading" class="payment-section-title">Transactions</h2>
+                                <p class="payment-section-description">All approved online and onsite payments remain listed under their permanent OR numbers.</p>
                             </div>
                         </div>
-                    @endforeach
-                </div>
+                    @if($unpostedPaymentSubmissions->isNotEmpty() || $familyFinanceTransactions->isNotEmpty())
+                        <div class="mb-4 flex flex-wrap gap-2" aria-label="Filter transactions">
+                            @foreach(['all' => 'All', 'pending' => 'Pending', 'verified' => 'Verified', 'rejected' => 'Rejected'] as $filterValue => $filterLabel)
+                                <button type="button" class="rounded-full border px-4 py-2 text-sm font-bold" :class="transactionFilter === '{{ $filterValue }}' ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-slate-200 bg-white text-slate-600'" @click="transactionFilter = '{{ $filterValue }}'">{{ $filterLabel }}</button>
+                            @endforeach
+                        </div>
+                        <div class="space-y-3">
+                            @foreach($unpostedPaymentSubmissions as $submission)
+                                @php
+                                    $effectiveStatus = $submission->effective_status;
+                                    $displayPaymentNumber = $submission->submission_number;
+                                    $historyStatus = ucfirst(str_replace('_', ' ', $effectiveStatus));
+                                    $historyStatusClass = match($effectiveStatus) {
+                                        'rejected' => 'bg-rose-50 text-rose-700',
+                                        default => 'bg-amber-50 text-amber-700',
+                                    };
+                                    $pendingMethod = strtoupper(str_replace([' ', '-'], '_', (string) ($submission->payment_mode ?: $submission->method)));
+                                    $pendingMethodLabel = match(true) {
+                                        $pendingMethod === 'GCASH' => 'GCash',
+                                        $pendingMethod === 'MAYA' => 'Maya',
+                                        str_starts_with($pendingMethod, 'BDO') => 'BDO',
+                                        in_array($pendingMethod, ['BANK', 'BANK_TRANSFER', 'OTHER_BANK', 'INSTAPAY', 'PESONET'], true) => 'Bank Transfer',
+                                        $pendingMethod === 'REMITTANCE' => 'Remittance',
+                                        default => 'Other',
+                                    };
+                                    $transactionData = [
+                                        'is_consolidated' => false,
+                                        'number' => $displayPaymentNumber,
+                                        'official_receipt_number' => null,
+                                        'submission_number' => $submission->submission_number,
+                                        'date' => $submission->submitted_at?->format('F j, Y · h:i A'),
+                                        'receipt_date' => $submission->submitted_at?->format('F j, Y'),
+                                        'payer' => $user->name,
+                                        'source' => 'Online Payment',
+                                        'method' => $pendingMethodLabel,
+                                        'transaction_date' => $submission->transaction_date?->format('F j, Y'),
+                                        'account' => $submission->account_received,
+                                        'reference' => $submission->reference_no,
+                                        'total' => (float) $submission->total_amount,
+                                        'advance_credit' => (float) ($submission->advanceCredit?->remaining_amount ?? 0),
+                                        'status' => $effectiveStatus,
+                                        'remarks' => $submission->remarks,
+                                        'receipt' => Storage::disk('public')->url($submission->receipt_url),
+                                        'allocation_count' => 0,
+                                        'allocations' => [],
+                                        'covered_students' => [],
+                                        'covered_months' => [],
+                                        'balance_after' => null,
+                                        'itemized_charges_total' => 0,
+                                        'applied_total' => 0,
+                                        'itemized_remaining_total' => 0,
+                                        'payments' => [],
+                                    ];
+                                @endphp
+                                <button
+                                    type="button"
+                                    x-show="transactionFilter === 'all' || transactionFilter === '{{ $effectiveStatus }}'"
+                                    class="flex w-full flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md"
+                                    @click="openTransaction({{ Js::from($transactionData) }})"
+                                >
+                                    <span class="min-w-0">
+                                        <span class="block text-[11px] font-bold uppercase tracking-wide text-slate-500">Submission No.</span>
+                                        <strong class="mt-0.5 block text-sm text-slate-900">{{ $displayPaymentNumber }}</strong>
+                                        <span class="mt-1 flex flex-wrap gap-1.5"><span class="payment-source-badge is-online">Online Payment</span><span class="payment-method-badge">{{ $pendingMethodLabel }}</span></span>
+                                        <span class="mt-1 block text-xs text-slate-500">Submitted {{ $submission->submitted_at?->format('M d, Y') }} · Ref {{ $submission->reference_no ?: 'Not recorded' }}</span>
+                                    </span>
+                                    <span class="flex flex-shrink-0 items-center gap-4 text-right">
+                                        <span><strong class="block text-base text-slate-900">₱{{ number_format($submission->total_amount, 2) }}</strong><span class="mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-bold {{ $historyStatusClass }}">{{ $historyStatus }}</span></span>
+                                        <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                    </span>
+                                </button>
+                            @endforeach
+                            @foreach($familyFinanceTransactions as $record)
+                                <article x-show="transactionFilter === 'all' || transactionFilter === 'verified'" class="flex w-full flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm">
+                                    <span class="min-w-0">
+                                        <span class="block text-[11px] font-bold uppercase tracking-wide text-slate-500">Official Receipt No.</span>
+                                        <strong class="mt-0.5 block text-sm text-slate-900">{{ $record['official_receipt_number'] }}</strong>
+                                        <span class="mt-1 flex flex-wrap gap-1.5"><span class="payment-source-badge {{ $record['source'] === 'ONLINE' ? 'is-online' : 'is-onsite' }}">{{ $record['source_label'] }}</span><span class="payment-method-badge">{{ $record['method_label'] }}</span></span>
+                                        <span class="mt-1 block text-xs text-slate-500">{{ $record['source'] === 'ONLINE' ? 'Approved online receipt' : 'Recorded by AMIS Finance' }}{{ $record['transaction_at'] ? ' · '.$record['transaction_at']->format('M d, Y') : '' }}</span>
+                                    </span>
+                                    <span class="payment-history-actions flex flex-shrink-0 flex-wrap items-center justify-end gap-3 text-right">
+                                        <span><strong class="block text-base text-slate-900">₱{{ number_format($record['amount'], 2) }}</strong><span class="mt-1 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Verified</span></span>
+                                    </span>
+                                </article>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="payment-empty-state">
+                            <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 14.25l2.25 2.25L15 12.75M6.75 3.75h10.5A2.25 2.25 0 0119.5 6v12A2.25 2.25 0 0117.25 20.25H6.75A2.25 2.25 0 014.5 18V6a2.25 2.25 0 012.25-2.25z"/></svg>
+                            </div>
+                            <h3 class="text-base font-bold text-slate-800">No payment receipts yet</h3>
+                            <p class="mt-2 text-sm text-slate-600">Submitted receipts and their verification status will appear here.</p>
+                        </div>
+                    @endif
+                </section>
             @endif
         </div>
 
-        <!-- Add Child Modal -->
-        <div x-show="showAddChildModal" 
-             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" 
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             style="display: none;"
-             x-cloak>
-            <div class="relative w-full max-w-md overflow-hidden bg-white rounded-3xl border border-slate-200 shadow-xl"
-                 @click.away="if (!loading) showAddChildModal = false"
-                 x-transition:enter="transition ease-out duration-300 transform scale-95"
-                 x-transition:enter-start="opacity-0 scale-95"
-                 x-transition:enter-end="opacity-100 scale-100"
-                 x-transition:leave="transition ease-in duration-200 transform scale-100"
-                 x-transition:leave-start="opacity-100 scale-100"
-                 x-transition:leave-end="opacity-0 scale-95">
-                <!-- Modal Accent Top Line -->
-                <div class="h-1.5 w-full bg-gradient-to-r from-emerald-600 to-teal-600"></div>
-                
+        {{-- Add student modal --}}
+        <div x-show="showAddStudent" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4" @click.self="!linkLoading && (showAddStudent = false)">
+            <div class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="add-student-title">
+                <div class="h-1.5 bg-gradient-to-r from-emerald-700 to-teal-500"></div>
                 <div class="p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-xl font-bold text-slate-950">Add / Link Child</h3>
-                        <button @click="showAddChildModal = false" :disabled="loading" class="text-slate-400 hover:text-slate-600 transition">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
+                    <div class="mb-3 flex items-start justify-between gap-4">
+                        <div>
+                            <span class="payment-section-kicker">Student account</span>
+                            <h2 id="add-student-title" class="text-xl font-extrabold text-slate-900">Add a student</h2>
+                        </div>
+                        <button type="button" aria-label="Close" class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100" @click="showAddStudent = false" :disabled="linkLoading">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
-                    
-                    <p class="text-xs text-slate-500 mb-6">Enter your child's Student Number and Date of Birth to link them to your parent portal account.</p>
-                    
-                    <form @submit.prevent="submitLinkChild()" class="space-y-4">
+                    <p class="mb-5 text-sm leading-6 text-slate-600">Enter the student's school ID and date of birth. This securely connects their payment account to your portal.</p>
+                    <form class="space-y-4" @submit.prevent="linkStudent()">
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Student Number / ID</label>
-                            <input type="text" x-model="studentNumber" placeholder="e.g. 260001" 
-                                   class="w-full px-4 py-2.5 text-sm uppercase bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition"
-                                   :disabled="loading" required>
+                            <label for="student-number" class="mb-1.5 block text-sm font-bold text-slate-700">Student number / ID</label>
+                            <input id="student-number" type="text" x-model.trim="studentNumber" class="w-full rounded-xl border-slate-300 px-4 py-3 text-base focus:border-emerald-600 focus:ring-emerald-600" placeholder="Example: 260001" required :disabled="linkLoading">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Date of Birth</label>
-                            <input type="date" x-model="dob" 
-                                   class="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition"
-                                   :disabled="loading" required>
+                            <label for="student-dob" class="mb-1.5 block text-sm font-bold text-slate-700">Date of birth</label>
+                            <input id="student-dob" type="date" x-model="studentDob" class="w-full rounded-xl border-slate-300 px-4 py-3 text-base focus:border-emerald-600 focus:ring-emerald-600" required :disabled="linkLoading">
                         </div>
-                        
-                        <div x-show="errorMsg" x-text="errorMsg" class="p-3.5 text-xs font-semibold text-rose-800 bg-rose-50 border border-rose-100 rounded-xl" x-cloak></div>
-                        <div x-show="successMsg" x-text="successMsg" class="p-3.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-xl" x-cloak></div>
-                        
-                        <div class="flex gap-3 pt-4 border-t border-slate-100">
-                            <button type="button" @click="showAddChildModal = false" :disabled="loading" 
-                                    class="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition">
-                                Cancel
-                            </button>
-                            <button type="submit" :disabled="loading" 
-                                    class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-700/50 rounded-xl shadow-xs transition">
-                                <svg x-show="loading" class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                </svg>
-                                <span x-text="loading ? 'Linking...' : 'Link Student'"></span>
+                        <p x-show="linkError" x-text="linkError" class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800"></p>
+                        <p x-show="linkSuccess" x-text="linkSuccess" class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800"></p>
+                        <div class="flex gap-3 border-t border-slate-100 pt-4">
+                            <button type="button" class="min-h-11 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50" @click="showAddStudent = false" :disabled="linkLoading">Cancel</button>
+                            <button type="submit" class="min-h-11 flex-1 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-60" :disabled="linkLoading">
+                                <span x-text="linkLoading ? 'Adding…' : 'Add student'"></span>
                             </button>
                         </div>
                     </form>
@@ -419,442 +669,340 @@
             </div>
         </div>
 
-        <!-- Settle Tuition Payment Modal — wide three-column layout -->
-        <div x-show="showSettlePaymentModal"
-             class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             style="display: none;"
-             x-cloak>
-
-            <!-- NO @click.away — modal only closes via X button or Cancel -->
-            <div class="relative w-full bg-white rounded-3xl shadow-2xl overflow-hidden"
-                 style="max-width: 1180px; width: 96%; max-height: 94vh; display: flex; flex-direction: column;"
-                 x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="opacity-0 scale-95 translate-y-4"
-                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                 x-transition:leave="transition ease-in duration-200"
-                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                 x-transition:leave-end="opacity-0 scale-95 translate-y-4">
-
-                <!-- Top Gradient Bar -->
-                <div style="height: 4px; background: linear-gradient(90deg, #059669, #14b8a6, #0ea5e9); flex-shrink: 0;"></div>
-
-                <!-- Three-column body -->
-                <div class="modal-body-container">
-
-                    <!-- ═══ COLUMN 1: FORM ═══ -->
-                    <div class="modal-col-1">
-
-                        <!-- Header -->
-                        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px;">
-                            <div>
-                                <h3 style="font-size: 20px; font-weight: 900; color: #0f172a; margin: 0; line-height: 1.2;">Settle Tuition Payment</h3>
-                                <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 0;">Submit your proof of payment for verification.</p>
+        {{-- Student account breakdown modal --}}
+        <div x-show="showBreakdown" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4" @click.self="showBreakdown = false">
+            <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="breakdown-title">
+                <div class="mb-5 flex items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-emerald-100 bg-emerald-50">
+                            <img :src="breakdown?.avatar" :alt="'Profile avatar of ' + (breakdown?.name || 'student')" class="h-full w-full" :class="breakdown?.avatar_is_fallback ? 'object-contain' : 'object-cover'">
+                        </span>
+                        <div class="min-w-0">
+                            <span class="payment-section-kicker">Student account details</span>
+                            <h2 id="breakdown-title" class="truncate text-xl font-extrabold text-slate-900" x-text="breakdown?.name"></h2>
+                        </div>
+                    </div>
+                    <button type="button" aria-label="Close" class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100" @click="showBreakdown = false">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <template x-if="breakdown">
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between gap-4"><span class="text-slate-600">Tuition fee</span><strong x-text="money(breakdown.tuition)"></strong></div>
+                        <div class="flex justify-between gap-4"><span class="text-slate-600">Miscellaneous fee</span><strong x-text="money(breakdown.misc)"></strong></div>
+                        <div class="flex justify-between gap-4"><span class="text-slate-600">Books and LMS</span><strong x-text="money(breakdown.books)"></strong></div>
+                        <div x-show="breakdown.discount > 0" class="flex justify-between gap-4 text-emerald-700"><span x-text="'Sibling discount (' + Number(breakdown.discount_percentage).toFixed(0) + '%)'"></span><strong x-text="'-' + money(breakdown.discount)"></strong></div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <p class="mb-3 text-xs font-extrabold uppercase tracking-wide text-slate-500">Payment plan calculation</p>
+                            <div class="flex justify-between gap-4">
+                                <span class="text-slate-600">Total school fees</span>
+                                <strong x-text="money(breakdown.total)"></strong>
                             </div>
-                            <button @click="if (!settleLoading) showSettlePaymentModal = false"
-                                    style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid #e2e8f0; background: #f8fafc; color: #64748b; cursor: pointer; flex-shrink: 0; transition: all 0.15s;"
-                                    onmouseover="this.style.background='#fee2e2'; this.style.color='#dc2626'; this.style.borderColor='#fca5a5';"
-                                    onmouseout="this.style.background='#f8fafc'; this.style.color='#64748b'; this.style.borderColor='#e2e8f0';">
-                                <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
+                            <div class="mt-2 flex justify-between gap-4">
+                                <span class="text-slate-600">Less: Enrollment / initial payment <small class="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-700">Paid</small></span>
+                                <strong class="text-emerald-700" x-text="'-' + money(breakdown.enrollment)"></strong>
+                            </div>
+                            <div class="mt-3 flex justify-between gap-4 border-t border-slate-200 pt-3">
+                                <span><strong class="block text-slate-800">Monthly tuition plan</strong><small class="text-slate-500" x-text="breakdown.installments + ' scheduled installments'"></small></span>
+                                <strong class="text-lg text-slate-900" x-text="money(breakdown.installment_plan_total)"></strong>
+                            </div>
+                        </div>
+
+                        <div class="overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50">
+                            <button type="button" class="flex w-full items-center justify-between gap-4 p-4 text-left" @click="installmentsOpen = !installmentsOpen" :aria-expanded="installmentsOpen.toString()">
+                                <span>
+                                    <span class="block font-bold text-emerald-950" x-text="breakdown.installments + ' monthly tuition installments'"></span>
+                                    <span class="mt-0.5 block text-xs text-emerald-700" x-text="installmentsOpen ? 'Hide exact monthly schedule' : 'View exact monthly schedule'"></span>
+                                </span>
+                                <span class="flex flex-shrink-0 items-center gap-3">
+                                    <span class="text-right"><strong class="block text-emerald-950" x-text="money(breakdown.monthly) + ' regular'"></strong><small x-show="Math.abs(breakdown.final_installment - breakdown.monthly) > 0.001" class="text-emerald-700" x-text="money(breakdown.final_installment) + ' final month'"></small></span>
+                                    <svg class="h-4 w-4 text-emerald-700 transition" :class="installmentsOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </span>
                             </button>
-                        </div>
 
-                        <!-- Full Name + Balance -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 14px;">
-                                <span style="font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 3px;">Full Name</span>
-                                <strong x-text="settleStudentName" style="font-size: 13px; font-weight: 900; color: #0f172a; text-transform: uppercase; display: block; line-height: 1.3;"></strong>
-                            </div>
-                            <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 1px solid #6ee7b7; border-radius: 14px; padding: 12px 14px;">
-                                <span style="font-size: 9px; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 3px;">Remaining Balance</span>
-                                <strong style="font-size: 16px; font-weight: 900; color: #064e3b; display: block;">&#8369;<span x-text="Number(settleRemainingBalance).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></strong>
-                            </div>
-                        </div>
-
-                        <!-- FORM -->
-                        <form @submit.prevent="submitSettlePayment()" style="display: flex; flex-direction: column; gap: 16px; flex: 1;">
-
-                            <!-- Payment Method -->
-                            <div>
-                                <label style="display: block; font-size: 9px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;">Payment Method</label>
-                                <select x-model="settleMethod" :disabled="settleLoading" required
-                                        style="width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 11px 36px 11px 14px; outline: none; background-color: #f8fafc; font-family: inherit; font-size: 14px; font-weight: 700; color: #0f172a; cursor: pointer; transition: all 0.15s; appearance: none; background-image: url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2364748b%22 stroke-width=%222.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpolyline points=%226 9 12 15 18 9%22%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; box-sizing: border-box;"
-                                        onfocus="this.style.borderColor='#059669'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(5,150,105,0.12)';"
-                                        onblur="this.style.borderColor='#e2e8f0'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none';">
-                                    <option value="gcash">GCash</option>
-                                    <option value="bdo">BDO Bank Transfer</option>
-                                    <option value="remittance">Remittance</option>
-                                </select>
-                            </div>
-
-                            <!-- Amount to Pay -->
-                            <div>
-                                <label style="display: block; font-size: 9px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;">Amount to Pay (&#8369;)</label>
-                                <input type="number" x-model.number="settleAmount" :max="settleRemainingBalance" min="1" step="0.01" :disabled="settleLoading" required
-                                       style="width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 11px 14px; outline: none; background-color: #f8fafc; font-family: inherit; font-size: 16px; font-weight: 900; color: #064e3b; transition: all 0.15s; box-sizing: border-box;"
-                                       onfocus="this.style.borderColor='#059669'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(5,150,105,0.12)';"
-                                       onblur="this.style.borderColor='#e2e8f0'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none';">
-                            </div>
-
-                            <!-- Reference / Transaction ID -->
-                            <div>
-                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                                    <label style="font-size: 9px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.08em;">Reference / Transaction ID</label>
-                                    <span style="display: inline-flex; align-items: center; gap: 3px; background: linear-gradient(135deg, #4285f4, #34a853); color: white; font-size: 8px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;">
-                                        <svg style="width:9px;height:9px;" viewBox="0 0 24 24" fill="currentColor"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
-                                        Google AI Vision
-                                    </span>
-                                </div>
-                                <input type="text" x-model="settleReference" placeholder="e.g. GCash Ref # / BDO Trace Code" :disabled="settleLoading"
-                                       style="width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 11px 14px; outline: none; background-color: #f8fafc; font-family: inherit; font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; transition: all 0.15s; box-sizing: border-box;"
-                                       onfocus="this.style.borderColor='#059669'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(5,150,105,0.12)';"
-                                       onblur="this.style.borderColor='#e2e8f0'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none';">
-                                <p style="font-size: 10px; color: #94a3b8; margin: 5px 0 0; font-style: italic;">Our AI will scan your receipt and verify this reference number automatically.</p>
-                            </div>
-
-                            <!-- Proof of Payment -->
-                            <div>
-                                <label style="display: block; font-size: 9px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;">Proof of Payment Receipt</label>
-                                <div x-show="!settleReceiptPreview" x-cloak>
-                                    <label style="display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed #cbd5e1; border-radius: 14px; padding: 22px 16px; background: #f8fafc; cursor: pointer; transition: all 0.2s;"
-                                           onmouseover="this.style.borderColor='#059669'; this.style.background='#f0fdf4';"
-                                           onmouseout="this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc';">
-                                        <svg style="width:28px;height:28px;color:#94a3b8;margin-bottom:8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                        </svg>
-                                        <span style="font-size: 13px; font-weight: 700; color: #334155;">Upload Receipt Screenshot</span>
-                                        <span style="font-size: 11px; color: #94a3b8; margin-top: 3px;">JPG, JPEG, or PNG — up to 5MB</span>
-                                        <input type="file" x-ref="settleFileInput" @change="handleSettleFileChange($event)" accept="image/*" class="hidden" :required="!settleReceiptFile">
-                                    </label>
-                                </div>
-                                <div x-show="settleReceiptPreview" style="display: flex; flex-direction: column; align-items: center;" x-cloak>
-                                    <div style="position: relative; width: 150px; height: 150px; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background: #f8fafc;">
-                                        <img :src="settleReceiptPreview" style="width: 100%; height: 100%; object-fit: cover;">
-                                        <button type="button" @click="removeSettleFile()" :disabled="settleLoading"
-                                                style="position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; background: #dc2626; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white;">
-                                            <svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
-                                            </svg>
-                                        </button>
+                            <div x-show="installmentsOpen" class="border-t border-emerald-200 bg-white">
+                                <template x-if="breakdown.installment_breakdown.length === 0">
+                                    <p class="px-4 py-5 text-center text-sm text-slate-500">No monthly installment schedule is available yet.</p>
+                                </template>
+                                <template x-for="installment in breakdown.installment_breakdown" :key="installment.month">
+                                    <div class="border-b border-slate-100 px-4 py-3 last:border-b-0">
+                                        <div class="flex items-start justify-between gap-4">
+                                            <span class="min-w-0">
+                                                <strong class="block text-sm text-slate-900" x-text="installment.month"></strong>
+                                                <small class="mt-0.5 block text-slate-500" x-text="'Due ' + (installment.due_date || 'date not set')"></small>
+                                            </span>
+                                            <span class="text-right">
+                                                <strong class="block text-sm text-slate-900" x-text="money(installment.original)"></strong>
+                                                <small class="mt-0.5 inline-flex rounded-full px-2 py-0.5 font-bold"
+                                                       :class="{
+                                                           'bg-emerald-50 text-emerald-700': installment.status === 'Paid',
+                                                           'bg-rose-50 text-rose-700': installment.status === 'Overdue',
+                                                           'bg-blue-50 text-blue-700': installment.status === 'Current',
+                                                           'bg-slate-100 text-slate-600': installment.status === 'Upcoming'
+                                                       }"
+                                                       x-text="installment.status"></small>
+                                            </span>
+                                        </div>
+                                        <div class="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs">
+                                            <span class="text-slate-500">Verified paid <strong class="text-slate-700" x-text="money(installment.verified)"></strong></span>
+                                            <span class="text-slate-500">Remaining <strong :class="installment.remaining > 0 ? 'text-amber-700' : 'text-emerald-700'" x-text="money(installment.remaining)"></strong></span>
+                                        </div>
                                     </div>
-                                    <span x-text="settleReceiptFile?.name" style="margin-top: 6px; font-size: 10px; color: #94a3b8; font-weight: 700; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; text-align: center;"></span>
-                                </div>
+                                </template>
                             </div>
+                        </div>
 
-                            <!-- Notifications -->
-                            <div x-show="settleErrorMsg" x-text="settleErrorMsg"
-                                 style="padding: 11px 14px; font-size: 12px; font-weight: 600; color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px;" x-cloak></div>
-                            <div x-show="settleSuccessMsg" x-text="settleSuccessMsg"
-                                 style="padding: 11px 14px; font-size: 12px; font-weight: 600; color: #065f46; background: #f0fdf4; border: 1px solid #a7f3d0; border-radius: 12px;" x-cloak></div>
-
-                            <!-- Actions -->
-                            <div style="display: flex; gap: 10px; padding-top: 14px; border-top: 1px solid #f1f5f9; margin-top: auto;">
-                                <button type="button" @click="if (!settleLoading) showSettlePaymentModal = false" :disabled="settleLoading"
-                                        style="flex: 1; padding: 12px 16px; font-size: 13px; font-weight: 700; color: #475569; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.15s;"
-                                        onmouseover="this.style.background='#f1f5f9';"
-                                        onmouseout="this.style.background='#f8fafc';">
-                                    Cancel
-                                </button>
-                                <button type="submit" :disabled="settleLoading"
-                                        style="flex: 2; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; font-size: 13px; font-weight: 800; color: #ffffff; background: #047857; border: none; border-radius: 12px; cursor: pointer; transition: all 0.15s; box-shadow: 0 2px 10px rgba(4,120,87,0.35);"
-                                        onmouseover="this.style.background='#065f46';"
-                                        onmouseout="this.style.background='#047857';">
-                                    <svg x-show="settleLoading" style="width:16px;height:16px;animation:spin 1s linear infinite;" fill="none" viewBox="0 0 24 24">
-                                        <circle style="opacity:0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path style="opacity:0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                    </svg>
-                                    <span x-text="settleLoading ? 'Submitting...' : 'Submit Payment'"></span>
-                                </button>
-                            </div>
-                        </form>
+                        <div class="rounded-xl border border-emerald-100 bg-white p-4 shadow-sm">
+                            <div class="flex justify-between gap-4"><span class="text-slate-600">Monthly tuition plan</span><strong x-text="money(breakdown.installment_plan_total)"></strong></div>
+                            <div class="mt-2 flex justify-between gap-4"><span class="text-slate-600">Less: Verified monthly payments</span><strong class="text-emerald-700" x-text="'-' + money(breakdown.installment_verified)"></strong></div>
+                            <div class="mt-3 flex justify-between gap-4 border-t border-slate-200 pt-3"><span><strong class="block text-slate-800">Current remaining balance</strong><small class="text-slate-500">Automatically updated after Finance approval</small></span><strong class="text-lg text-emerald-800" x-text="money(breakdown.installment_remaining)"></strong></div>
+                        </div>
                     </div>
+                </template>
+                <div class="mt-6 flex gap-3">
+                    <button type="button" class="min-h-11 flex-1 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50" @click="showBreakdown = false">Close</button>
+                    <button x-show="breakdown?.next_payment" type="button" class="min-h-11 flex-[1.6] rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-800" @click="showBreakdown = false; activeTab = 'monthly'">
+                        View family payment schedule
+                    </button>
+                </div>
+            </div>
+        </div>
 
-                    <!-- ═══ COLUMN 2: GOOGLE AI VISION OCR SCAN DETAILS ═══ -->
-                    <div class="modal-col-2">
-                        
-                        <!-- Panel Title -->
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <div>
-                                <span style="font-size: 9px; font-weight: 800; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 4px;">Real-time Analysis</span>
-                                <h4 style="font-size: 16px; font-weight: 900; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 6px;">
-                                    <svg style="width:18px;height:18px;color:#3b82f6;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                                    </svg>
-                                    Google AI Vision OCR
-                                </h4>
-                            </div>
-                            <!-- Live Status Badge -->
-                            <span x-show="ocrScanning" class="animate-pulse" style="background: #eff6ff; color: #1d4ed8; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 4px;" x-cloak>
-                                <svg class="animate-spin" style="width: 10px; height: 10px;" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                </svg>
-                                Scanning...
-                            </span>
-                            <span x-show="!ocrScanning && ocrResult" style="background: #ecfdf5; color: #047857; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;" x-cloak>
-                                Completed
-                            </span>
-                        </div>
-
-                        <!-- 1. EMPTY STATE -->
-                        <div x-show="!ocrScanning && !ocrResult" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border: 2px dashed #f1f5f9; border-radius: 20px; padding: 30px 20px; background: #fafafa; margin-top: 10px;">
-                            <div style="background: #f1f5f9; padding: 14px; border-radius: 50%; margin-bottom: 12px; color: #94a3b8;">
-                                <svg style="width: 32px; height: 32px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                            </div>
-                            <h5 style="font-size: 13px; font-weight: 800; color: #475569; margin: 0 0 6px;">No Scanned Data</h5>
-                            <p style="font-size: 11px; color: #94a3b8; max-width: 220px; line-height: 1.5; margin: 0;">Upload a receipt screenshot in the left column to run real-time Google AI OCR scanning.</p>
-                        </div>
-
-                        <!-- 2. SCANNING STATE -->
-                        <div x-show="ocrScanning" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border: 2px dashed #e0f2fe; border-radius: 20px; padding: 30px 20px; background: #f0f9ff; margin-top: 10px;" x-cloak>
-                            <div class="relative flex items-center justify-center" style="margin-bottom: 16px;">
-                                <!-- Spinner ring -->
-                                <div class="animate-spin rounded-full border-4 border-blue-500 border-t-transparent" style="width: 56px; height: 56px;"></div>
-                                <!-- Inside scanner icon -->
-                                <svg style="width: 24px; height: 24px; color: #0284c7; position: absolute;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
-                                </svg>
-                            </div>
-                            <h5 style="font-size: 13px; font-weight: 800; color: #0369a1; margin: 0 0 6px;">Google AI Vision OCR</h5>
-                            <p style="font-size: 11px; color: #0284c7; max-width: 220px; line-height: 1.5; margin: 0;">Reading receipt, verifying reference numbers, sender names, and amount paid...</p>
-                        </div>
-
-                        <!-- 3. RESULTS STATE -->
-                        <div x-show="!ocrScanning && ocrResult" style="display: flex; flex-direction: column; gap: 14px;" x-cloak>
-                            
-                            <!-- Confidence & Quality Indicator -->
-                            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                                    <span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">AI Scan Confidence</span>
-                                    <span style="font-size: 14px; font-weight: 900;" :style="ocrResult?.confidence >= 0.85 ? 'color: #059669;' : 'color: #d97706;'" x-text="(ocrResult?.confidence ? Math.round(ocrResult.confidence * 100) : 95) + '%'"></span>
-                                </div>
-                                <div style="height: 6px; background: #f1f5f9; border-radius: 10px; overflow: hidden;">
-                                    <div style="height: 100%; border-radius: 10px; transition: width 0.6s ease;" :style="'width: ' + ((ocrResult?.confidence ? ocrResult.confidence * 100 : 95)) + '%;' + (ocrResult?.confidence >= 0.85 ? 'background: #10b981;' : 'background: #f59e0b;')"></div>
-                                </div>
-                            </div>
-
-                            <!-- Detected Fields List (The 11 fields) -->
-                            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-                                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; display: block; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">Detected Metadata</span>
-                                
-                                <!-- 1. Reference ID -->
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; font-size: 12px; line-height: 1.4;">
-                                    <span style="color: #64748b; font-weight: 700;">Ref / Txn ID</span>
-                                    <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
-                                        <span x-show="ocrResult?.ref" class="font-mono text-slate-900" style="font-weight: 800; text-transform: uppercase;" x-text="ocrResult?.ref"></span>
-                                        <span x-show="!ocrResult?.ref" style="color: #94a3b8; font-style: italic;">Not detected</span>
-                                        <span x-show="ocrResult?.ref" style="font-size: 9px; color: #10b981; font-weight: 800; display: inline-flex; align-items: center; gap: 2px;">
-                                            <span style="width: 4px; height: 4px; border-radius: 50%; background: #10b981;"></span> Auto-filled
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <!-- 2. Amount Paid -->
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; font-size: 12px; line-height: 1.4; border-top: 1px solid #f8fafc; padding-top: 8px;">
-                                    <span style="color: #64748b; font-weight: 700;">Amount Paid</span>
-                                    <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
-                                        <span x-show="ocrResult?.amount" class="text-emerald-700" style="font-weight: 800;" x-text="'₱' + Number(ocrResult.amount).toLocaleString(undefined, {minimumFractionDigits: 2})"></span>
-                                        <span x-show="!ocrResult?.amount" style="color: #94a3b8; font-style: italic;">Not detected</span>
-                                        <span x-show="ocrResult?.amount" style="font-size: 9px; color: #10b981; font-weight: 800; display: inline-flex; align-items: center; gap: 2px;">
-                                            <span style="width: 4px; height: 4px; border-radius: 50%; background: #10b981;"></span> Auto-filled
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <!-- 3. Date & Time -->
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; font-size: 12px; line-height: 1.4; border-top: 1px solid #f8fafc; padding-top: 8px;">
-                                    <span style="color: #64748b; font-weight: 700;">Date & Time</span>
-                                    <div style="text-align: right;">
-                                        <span x-show="ocrResult?.date" class="text-slate-900" style="font-weight: 800;" x-text="ocrResult?.date"></span>
-                                        <span x-show="!ocrResult?.date" style="color: #94a3b8; font-style: italic;">Not detected</span>
-                                    </div>
-                                </div>
-
-                                <!-- 4. Sender Name -->
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; font-size: 12px; line-height: 1.4; border-top: 1px solid #f8fafc; padding-top: 8px;">
-                                    <span style="color: #64748b; font-weight: 700;">Sender Name</span>
-                                    <div style="text-align: right;">
-                                        <span x-show="ocrResult?.sender" class="text-slate-900" style="font-weight: 800; text-transform: uppercase;" x-text="ocrResult?.sender"></span>
-                                        <span x-show="!ocrResult?.sender" style="color: #94a3b8; font-style: italic;">Not detected</span>
-                                    </div>
-                                </div>
-
-                                <!-- 5. Receiver Name -->
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; font-size: 12px; line-height: 1.4; border-top: 1px solid #f8fafc; padding-top: 8px;">
-                                    <span style="color: #64748b; font-weight: 700;">Receiver Name</span>
-                                    <div style="text-align: right;">
-                                        <span x-show="ocrResult?.receiver" class="text-slate-900" style="font-weight: 800; text-transform: uppercase;" x-text="ocrResult?.receiver"></span>
-                                        <span x-show="!ocrResult?.receiver" style="color: #94a3b8; font-style: italic;">Not detected</span>
-                                    </div>
-                                </div>
-
-                                <!-- 6. Payment Method -->
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; font-size: 12px; line-height: 1.4; border-top: 1px solid #f8fafc; padding-top: 8px;">
-                                    <span style="color: #64748b; font-weight: 700;">Payment Method</span>
-                                    <div style="text-align: right;">
-                                        <span x-show="ocrResult?.method" class="text-slate-900" style="font-weight: 800; text-transform: uppercase;" x-text="ocrResult?.method"></span>
-                                        <span x-show="!ocrResult?.method" style="color: #94a3b8; font-style: italic;">Not detected</span>
-                                    </div>
-                                </div>
-
-                                <!-- 7. Account / Mobile -->
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; font-size: 12px; line-height: 1.4; border-top: 1px solid #f8fafc; padding-top: 8px;">
-                                    <span style="color: #64748b; font-weight: 700;">Account / Mobile</span>
-                                    <div style="text-align: right;">
-                                        <span x-show="ocrResult?.account" class="text-slate-900 font-mono" style="font-weight: 800;" x-text="ocrResult?.account"></span>
-                                        <span x-show="!ocrResult?.account" style="color: #94a3b8; font-style: italic;">Not detected</span>
-                                    </div>
-                                </div>
-
-                                <!-- 8. Merchant Name -->
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; font-size: 12px; line-height: 1.4; border-top: 1px solid #f8fafc; padding-top: 8px;">
-                                    <span style="color: #64748b; font-weight: 700;">Merchant Name</span>
-                                    <div style="text-align: right;">
-                                        <span x-show="ocrResult?.merchant" class="text-slate-900" style="font-weight: 800; text-transform: uppercase;" x-text="ocrResult?.merchant"></span>
-                                        <span x-show="!ocrResult?.merchant" style="color: #94a3b8; font-style: italic;">Not detected</span>
-                                    </div>
-                                </div>
-
-                                <!-- 9. QR Code Hint -->
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; font-size: 12px; line-height: 1.4; border-top: 1px solid #f8fafc; padding-top: 8px;">
-                                    <span style="color: #64748b; font-weight: 700;">QR Code Detected?</span>
-                                    <div style="text-align: right;">
-                                        <span :class="ocrResult?.has_qr ? 'text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md font-bold' : 'text-slate-500 font-bold'" x-text="ocrResult?.has_qr ? 'Yes' : 'No'"></span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 11. Full Raw Receipt Text (Scrollable Box) -->
-                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px;">
-                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; cursor: pointer;" @click="showRawOcrText = !showRawOcrText">
-                                    <span style="font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 4px;">
-                                        <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"/>
-                                        </svg>
-                                        Full OCR Scanned Text
-                                    </span>
-                                    <svg style="width:12px;height:12px;color:#64748b;transition: transform 0.2s;" :style="showRawOcrText ? 'transform: rotate(180deg);' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
-                                    </svg>
-                                </div>
-                                <div x-show="showRawOcrText" style="margin-top: 6px;" x-cloak>
-                                    <div class="font-mono text-slate-600 scrollbar-thin" style="font-size: 10px; max-height: 120px; overflow-y: auto; white-space: pre-wrap; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; line-height: 1.5;" x-text="ocrResult?.raw_text"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <!-- ═══ COLUMN 3: PAYMENT DETAILS PANEL ═══ -->
-                    <div class="modal-col-3">
-
-                        <!-- Panel Title -->
+        {{-- Grouped transaction details modal --}}
+        <div x-show="showTransaction" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" @click.self="showTransaction = false">
+            <div class="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="transaction-title">
+                <div class="h-1.5 bg-gradient-to-r from-emerald-700 via-teal-500 to-sky-500"></div>
+                <div class="p-6">
+                    <div class="mb-5 flex items-start justify-between gap-4">
                         <div>
-                            <span style="font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 4px;">Where to Send Payment</span>
-                            <h4 style="font-size: 16px; font-weight: 900; color: #0f172a; margin: 0;"
-                                x-text="settleMethod === 'gcash' ? 'GCash Details' : settleMethod === 'bdo' ? 'BDO Bank Details' : 'Remittance Details'"></h4>
+                            <span class="payment-section-kicker" x-text="transaction?.is_consolidated ? 'Consolidated family receipt' : (transaction?.status === 'verified' ? 'Official payment receipt' : 'Payment submission')"></span>
+                            <h2 id="transaction-title" class="text-xl font-extrabold text-slate-900" x-text="transaction?.number"></h2>
+                            <p class="mt-1 text-sm text-slate-500" x-text="transaction?.date"></p>
                         </div>
-
-                        <!-- ── GCash Panel ── -->
-                        <div x-show="settleMethod === 'gcash'" x-cloak style="display: flex; flex-direction: column; gap: 12px;">
-                            <div style="background: white; border: 1px solid #dbeafe; border-radius: 16px; padding: 16px; box-shadow: 0 1px 4px rgba(37,99,235,0.07);">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
-                                    <div style="background: #1e40af; color: white; font-size: 11px; font-weight: 900; padding: 4px 10px; border-radius: 8px; letter-spacing: 0.03em;">GCash</div>
-                                    <span style="font-size: 12px; font-weight: 700; color: #1d4ed8;">Mobile Transfer</span>
-                                </div>
-                                <div style="display: flex; flex-direction: column; gap: 10px;">
-                                    <div style="background: #eff6ff; border-radius: 10px; padding: 10px 12px;">
-                                        <span style="font-size: 9px; font-weight: 800; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.07em; display: block; margin-bottom: 3px;">Account 1</span>
-                                        <span style="font-size: 18px; font-weight: 900; color: #1e40af; display: block; letter-spacing: 0.02em;">(+63) 927 299 1833</span>
-                                    </div>
-                                    <div style="background: #eff6ff; border-radius: 10px; padding: 10px 12px;">
-                                        <span style="font-size: 9px; font-weight: 800; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.07em; display: block; margin-bottom: 3px;">Account 2</span>
-                                        <span style="font-size: 18px; font-weight: 900; color: #1e40af; display: block; letter-spacing: 0.02em;">(+63) 995 233 9423</span>
-                                    </div>
-                                </div>
-                                <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #dbeafe;">
-                                    <span style="font-size: 9px; font-weight: 800; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.07em; display: block; margin-bottom: 3px;">Account Name</span>
-                                    <span style="font-size: 14px; font-weight: 900; color: #1e3a8a; display: block;">CABEL B. NURHASAN</span>
-                                </div>
-                            </div>
-                            <div style="background: #dbeafe; border-radius: 10px; padding: 10px 12px; font-size: 11px; color: #1e40af; font-weight: 600; line-height: 1.6;">
-                                &#128242; Send the exact amount and screenshot the successful transaction receipt.
-                            </div>
-                        </div>
-
-                        <!-- ── BDO Panel ── -->
-                        <div x-show="settleMethod === 'bdo'" x-cloak style="display: flex; flex-direction: column; gap: 12px;">
-                            <div style="background: white; border: 1px solid #dbeafe; border-radius: 16px; padding: 16px; box-shadow: 0 1px 4px rgba(37,99,235,0.07);">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
-                                    <div style="background: #1e3a8a; color: white; font-size: 11px; font-weight: 900; padding: 4px 10px; border-radius: 8px;">BDO</div>
-                                    <span style="font-size: 12px; font-weight: 700; color: #1d4ed8;">Bank Deposit / Transfer</span>
-                                </div>
-                                <div style="display: flex; flex-direction: column; gap: 10px;">
-                                    <div style="background: #eff6ff; border-radius: 10px; padding: 10px 12px;">
-                                        <span style="font-size: 9px; font-weight: 800; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.07em; display: block; margin-bottom: 2px;">Account 1 — Savings</span>
-                                        <span style="font-size: 20px; font-weight: 900; color: #1e40af; display: block; letter-spacing: 0.04em;">010478011996</span>
-                                        <span style="font-size: 10px; font-weight: 700; color: #3b82f6; display: block; margin-top: 3px;">AL MUNAWWARA ISLAMIC SCHOOL Inc.</span>
-                                    </div>
-                                    <div style="background: #eff6ff; border-radius: 10px; padding: 10px 12px;">
-                                        <span style="font-size: 9px; font-weight: 800; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.07em; display: block; margin-bottom: 2px;">Account 2 — Current</span>
-                                        <span style="font-size: 20px; font-weight: 900; color: #1e40af; display: block; letter-spacing: 0.04em;">010478008782</span>
-                                        <span style="font-size: 10px; font-weight: 700; color: #3b82f6; display: block; margin-top: 3px;">CABEL B. NURHASAN</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div style="background: #dbeafe; border-radius: 10px; padding: 10px 12px; font-size: 11px; color: #1e40af; font-weight: 600; line-height: 1.6;">
-                                &#127970; Deposit over-the-counter or via online banking. Upload your deposit slip or transfer confirmation.
-                            </div>
-                        </div>
-
-                        <!-- ── Remittance Panel ── -->
-                        <div x-show="settleMethod === 'remittance'" x-cloak style="display: flex; flex-direction: column; gap: 12px;">
-                            <div style="background: white; border: 1px solid #fde68a; border-radius: 16px; padding: 16px; box-shadow: 0 1px 4px rgba(217,119,6,0.07);">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
-                                    <div style="background: #d97706; color: white; font-size: 11px; font-weight: 900; padding: 4px 10px; border-radius: 8px;">REM</div>
-                                    <span style="font-size: 12px; font-weight: 700; color: #92400e;">Remittance</span>
-                                </div>
-                                <div style="background: #fefce8; border-radius: 10px; padding: 12px 14px;">
-                                    <span style="font-size: 9px; font-weight: 800; color: #d97706; text-transform: uppercase; letter-spacing: 0.07em; display: block; margin-bottom: 4px;">Send Payment To</span>
-                                    <span style="font-size: 18px; font-weight: 900; color: #78350f; display: block;">CABEL B. NURHASAN</span>
-                                </div>
-                            </div>
-                            <div style="background: #fef9c3; border-radius: 10px; padding: 10px 12px; font-size: 11px; color: #92400e; font-weight: 600; line-height: 1.6;">
-                                &#128230; Please coordinate with the Finance Office for complete remittance center details before sending.
-                            </div>
-                        </div>
-
-                        <!-- Reminders -->
-                        <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: auto;">
-                            <p style="font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 10px;">&#128203; Reminders</p>
-                            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
-                                <li style="display: flex; gap: 7px; align-items: flex-start; font-size: 11px; color: #64748b; font-weight: 500; line-height: 1.5;">
-                                    <span style="color: #059669; font-weight: 900; flex-shrink: 0; margin-top: 1px;">&#10003;</span>
-                                    Upload a clear, full screenshot of your receipt
-                                </li>
-                                <li style="display: flex; gap: 7px; align-items: flex-start; font-size: 11px; color: #64748b; font-weight: 500; line-height: 1.5;">
-                                    <span style="color: #059669; font-weight: 900; flex-shrink: 0; margin-top: 1px;">&#10003;</span>
-                                    Make sure the reference number is visible in the receipt
-                                </li>
-                                <li style="display: flex; gap: 7px; align-items: flex-start; font-size: 11px; color: #64748b; font-weight: 500; line-height: 1.5;">
-                                    <span style="color: #059669; font-weight: 900; flex-shrink: 0; margin-top: 1px;">&#10003;</span>
-                                    Finance Office verifies within 1-2 business days
-                                </li>
-                            </ul>
-                        </div>
+                        <button type="button" aria-label="Close transaction details" class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100" @click="showTransaction = false">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
                     </div>
+                    <template x-if="transaction">
+                        <div class="space-y-4">
+                            <section x-show="transaction.status === 'verified' && transaction.is_consolidated" class="payment-receipt-stack">
+                                <template x-for="(payment, paymentIndex) in transaction.payments" :key="payment.official_receipt_number || paymentIndex">
+                                    <article class="payment-receipt-slip">
+                                        <div class="payment-receipt-zigzag is-top" aria-hidden="true"></div>
+                                        <header class="payment-receipt-slip-header">
+                                            <span class="payment-receipt-slip-logo">AMIS</span>
+                                            <div><strong>Al-Hikmah International Academy</strong><small>Family Finance Office · Official Payment Receipt</small></div>
+                                        </header>
 
+                                        <h3 class="payment-receipt-slip-title" x-text="payment.receipt_title"></h3>
+
+                                        <div class="payment-receipt-slip-number">
+                                            <span><small>Official Receipt No.</small><strong x-text="payment.official_receipt_number"></strong></span>
+                                            <span><small>Status</small><strong>VERIFIED</strong></span>
+                                        </div>
+
+                                        <div class="payment-receipt-slip-highlight">
+                                            <span><small>Date</small><strong x-text="payment.date || 'Not recorded'"></strong></span>
+                                            <span><small>Time</small><strong x-text="payment.time || 'Not recorded'"></strong></span>
+                                            <span class="is-amount"><small>Amount paid</small><strong x-text="money(payment.amount)"></strong></span>
+                                        </div>
+
+                                        <dl class="payment-receipt-slip-meta">
+                                            <div><dt>Payment source</dt><dd x-text="payment.source"></dd></div>
+                                            <div><dt>Mode of payment</dt><dd x-text="payment.method"></dd></div>
+                                            <div><dt>Transaction / Reference No.</dt><dd x-text="payment.reference || 'Not recorded'"></dd></div>
+                                            <div><dt>Family / Payer</dt><dd x-text="transaction.payer || 'Family account'"></dd></div>
+                                        </dl>
+
+                                        <section class="payment-receipt-allocations">
+                                            <h4>PAYMENT ALLOCATION</h4>
+                                            <div x-show="payment.children.length === 0" class="payment-receipt-slip-empty">No open student balance was available. The amount was recorded as advance credit.</div>
+                                            <template x-for="(child, childIndex) in payment.children" :key="child.name + childIndex">
+                                                <div class="payment-receipt-allocation">
+                                                    <div class="payment-receipt-allocation-heading">
+                                                        <span><strong x-text="child.name"></strong><small x-text="child.month || 'Family payment'"></small></span>
+                                                        <em :class="{ 'is-paid': child.status === 'PAID', 'is-partial': child.status === 'PARTIAL', 'is-unpaid': child.status === 'UNPAID' }" x-text="child.status"></em>
+                                                    </div>
+                                                    <dl class="payment-receipt-allocation-values">
+                                                        <div><dt>Monthly Due Before Payment</dt><dd x-text="money(child.due_before)"></dd></div>
+                                                        <div class="is-applied"><dt>Allocated Payment</dt><dd x-text="money(child.applied)"></dd></div>
+                                                        <div><dt>Remaining Balance</dt><dd x-text="money(child.remaining)"></dd></div>
+                                                        <div><dt>Status</dt><dd x-text="child.status_label"></dd></div>
+                                                    </dl>
+                                                </div>
+                                            </template>
+                                            <div class="payment-receipt-allocation-total"><span>TOTAL APPLIED</span><strong x-text="money(payment.applied_total)"></strong></div>
+                                        </section>
+
+                                        <section class="payment-receipt-payment-summary">
+                                            <h4>PAYMENT SUMMARY</h4>
+                                            <div><span>Total Monthly Due</span><strong x-text="money(payment.total_monthly_due)"></strong></div>
+                                            <div><span>Amount Received</span><strong x-text="money(payment.amount)"></strong></div>
+                                            <div><span>Payment Method</span><strong x-text="payment.method"></strong></div>
+                                            <div class="is-total"><span>Total Applied</span><strong x-text="money(payment.applied_total)"></strong></div>
+                                            <div><span>Remaining for Covered Month(s)</span><strong x-text="money(payment.remaining_for_covered_months)"></strong></div>
+                                            <div x-show="payment.advance_credit > 0"><span>Advance Credit</span><strong x-text="money(payment.advance_credit)"></strong></div>
+                                        </section>
+
+                                        <section class="payment-receipt-family-summary">
+                                            <h4>FAMILY ACCOUNT SUMMARY</h4>
+                                            <div><span>Outstanding Before Payment</span><strong x-text="money(payment.family_balance_before)"></strong></div>
+                                            <div class="is-after"><span>Outstanding After Payment</span><strong x-text="money(payment.family_balance_after)"></strong></div>
+                                            <p>Combined unpaid balances across all children, billing months, and partial installments.</p>
+                                        </section>
+
+                                        <footer class="payment-receipt-slip-footer">
+                                            <strong>Payment verified by AMIS Finance</strong>
+                                            <span>Allocation is automatic and settles the oldest outstanding family balance first.</span>
+                                        </footer>
+                                        <div class="payment-receipt-zigzag is-bottom" aria-hidden="true"></div>
+                                    </article>
+                                </template>
+                            </section>
+
+                            <section x-show="transaction.status === 'verified' && !transaction.is_consolidated" class="payment-long-receipt">
+                                <header class="payment-long-receipt-header">
+                                    <div><span class="payment-long-receipt-mark">AMIS</span><strong>Al-Hikmah International Academy</strong><small>Family Finance Office</small></div>
+                                    <div><h3 x-text="transaction.is_consolidated ? 'FULL RECEIPT' : 'RECEIPT'"></h3><span><small x-text="transaction.is_consolidated ? 'Official receipts included' : 'Official Receipt No.'"></small><strong x-text="transaction.is_consolidated ? transaction.receipt_count : transaction.official_receipt_number"></strong></span><span><small>Receipt date</small><strong x-text="transaction.receipt_date || 'Not recorded'"></strong></span></div>
+                                </header>
+
+                                <section class="payment-long-receipt-party">
+                                    <div><small>Billed to</small><strong x-text="transaction.payer || 'Family account'"></strong><span>Students: <b x-text="transaction.covered_students.length ? transaction.covered_students.join(', ') : 'Advance credit'"></b></span></div>
+                                    <div><span><small>Payment source</small><strong x-text="transaction.source"></strong></span><span><small>Payment method</small><strong x-text="transaction.method"></strong></span><span><small>Payment reference</small><strong x-text="transaction.reference || 'Not recorded'"></strong></span></div>
+                                </section>
+
+                                <section class="payment-long-receipt-items">
+                                    <div class="payment-long-receipt-table-head"><strong x-text="transaction.is_consolidated ? 'Student / billing balance' : 'Description'"></strong><strong>Amount</strong></div>
+                                    <div x-show="transaction.allocations.length === 0" class="payment-long-receipt-empty">No open billing balance was available. This payment was recorded as advance credit.</div>
+                                    <template x-for="(allocation, index) in transaction.allocations" :key="index">
+                                        <div class="payment-long-receipt-item">
+                                            <span><strong x-text="allocation.student"></strong><small><span x-text="allocation.month"></span> · Balance before payment</small></span>
+                                            <strong x-text="money(allocation.balance_before)"></strong>
+                                        </div>
+                                    </template>
+                                </section>
+
+                                <section x-show="transaction.is_consolidated" class="payment-long-receipt-payments">
+                                    <div class="payment-long-receipt-payment-head"><strong>Verified payment history</strong><strong>Deduction</strong></div>
+                                    <template x-for="(payment, index) in transaction.payments" :key="payment.official_receipt_number || index">
+                                        <div class="payment-long-receipt-payment-row">
+                                            <span><strong x-text="payment.official_receipt_number || 'Verified payment'"></strong><small><span x-text="payment.source"></span> · <span x-text="payment.method"></span> · <span x-text="payment.date || 'Date not recorded'"></span></small></span>
+                                            <strong x-text="'-' + money(payment.amount)"></strong>
+                                        </div>
+                                    </template>
+                                </section>
+
+                                <section class="payment-long-receipt-totals">
+                                    <div><span>Subtotal — listed balances</span><strong x-text="money(transaction.itemized_charges_total)"></strong></div>
+                                    <div x-show="!transaction.is_consolidated" class="is-deduction"><span>Less: <b x-text="transaction.source"></b> · <b x-text="transaction.method"></b></span><strong x-text="'-' + money(transaction.applied_total)"></strong></div>
+                                    <div x-show="transaction.is_consolidated" class="is-deduction"><span>Less: total verified payments applied</span><strong x-text="'-' + money(transaction.applied_total)"></strong></div>
+                                    <div><span>Remaining on listed balances</span><strong x-text="money(transaction.itemized_remaining_total)"></strong></div>
+                                    <div x-show="transaction.advance_credit > 0"><span>Advance credit</span><strong x-text="money(transaction.advance_credit)"></strong></div>
+                                    <div class="is-total"><span>Total amount paid</span><strong x-text="money(transaction.total)"></strong></div>
+                                    <div x-show="transaction.balance_after !== null" class="is-family-balance"><span>Remaining family balance after payment</span><strong x-text="money(transaction.balance_after)"></strong></div>
+                                </section>
+
+                                <footer class="payment-long-receipt-notes"><strong>Notes</strong><p x-text="transaction.remarks || 'Verified by AMIS Finance. Payment allocation was completed automatically using the oldest outstanding family balance first.'"></p><small x-text="transaction.is_consolidated ? 'This consolidated view combines the family payment history. Every payment keeps its own permanent Official Receipt number.' : 'This official payment record is permanently linked to the AMIS Finance audit trail.'"></small></footer>
+                            </section>
+
+                            <section x-show="transaction.status !== 'verified'" class="space-y-4">
+                                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Status</small><strong class="mt-1 block capitalize" x-text="transaction.status"></strong></div>
+                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Payment Source</small><strong class="mt-1 block" x-text="transaction.source"></strong></div>
+                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Payment Method</small><strong class="mt-1 block" x-text="transaction.method"></strong></div>
+                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Submitted</small><strong class="mt-1 block" x-text="transaction.receipt_date || 'Not recorded'"></strong></div>
+                                    <div class="col-span-2 rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Submission No.</small><strong class="mt-1 block break-all" x-text="transaction.submission_number"></strong></div>
+                                    <div class="col-span-2 rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Payment Reference</small><strong class="mt-1 block break-all" x-text="transaction.reference || 'Not recorded'"></strong></div>
+                                </div>
+                                <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong class="block">Awaiting Finance verification</strong><span>No family balance has changed yet. AMIS will allocate the payment only after approval.</span></div>
+                            </section>
+                            <a x-show="transaction.receipt" :href="transaction.receipt" target="_blank" rel="noopener" class="inline-flex min-h-11 items-center rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">View uploaded receipt</a>
+                            <button x-show="transaction.status === 'rejected'" type="button" class="ml-2 min-h-11 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800" @click="showTransaction = false; activeTab = 'monthly'">Review Monthly Balance</button>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            function paymentDashboard() {
+                return {
+                    showAddStudent: false,
+                    activeTab: 'notifications',
+                    studentNumber: '',
+                    studentDob: '',
+                    linkLoading: false,
+                    linkError: '',
+                    linkSuccess: '',
+                    showBreakdown: false,
+                    breakdown: null,
+                    installmentsOpen: false,
+                    showTransaction: false,
+                    transaction: null,
+                    transactionFilter: 'all',
+                    openMonth: null,
+
+                    init() {
+                        const requestedTab = new URLSearchParams(window.location.search).get('tab');
+                        if (['notifications', 'monthly', 'transactions'].includes(requestedTab)) this.activeTab = requestedTab;
+                    },
+
+                    money(value) {
+                        return '₱' + Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    },
+
+                    closeTopModal() {
+                        if (this.showTransaction) return this.showTransaction = false;
+                        if (this.showBreakdown) return this.showBreakdown = false;
+                        if (this.showAddStudent && !this.linkLoading) this.showAddStudent = false;
+                    },
+
+                    async linkStudent() {
+                        this.linkLoading = true;
+                        this.linkError = '';
+                        this.linkSuccess = '';
+                        try {
+                            const response = await fetch(@json(route('payment.link-student')), {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({ student_number: this.studentNumber, date_of_birth: this.studentDob })
+                            });
+                            const data = await response.json();
+                            if (!response.ok) throw new Error(data.message || 'We could not add this student. Please check the details.');
+                            this.linkSuccess = data.message || 'Student linked successfully.';
+                            setTimeout(() => window.location.reload(), 1200);
+                        } catch (error) {
+                            this.linkError = error.message;
+                            this.linkLoading = false;
+                        }
+                    },
+
+                    openBreakdown(data) {
+                        this.breakdown = data;
+                        this.installmentsOpen = false;
+                        this.showBreakdown = true;
+                    },
+
+                    openTransaction(data) {
+                        this.transaction = data;
+                        this.showTransaction = true;
+                    },
+
+                    goToMonth(monthKey) {
+                        this.showBreakdown = false;
+                        this.activeTab = 'monthly';
+                        this.openMonth = monthKey;
+                        this.$nextTick(() => document.getElementById('schedule-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+                    },
+
+                };
+            }
+        </script>
+    @endpush
 </x-app-layout>

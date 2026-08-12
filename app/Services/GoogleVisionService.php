@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Services\Receipts\ReceiptFieldNormalizer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -16,7 +17,7 @@ class GoogleVisionService
      */
     public function scanReceipt(string $filePath): array
     {
-        $apiKey = env('GOOGLE_VISION_KEY');
+        $apiKey = config('services.google_vision.key');
 
         if (empty($apiKey)) {
             Log::warning('Google Vision OCR skipped: GOOGLE_VISION_KEY is not configured in .env');
@@ -74,7 +75,7 @@ class GoogleVisionService
                 'confidence'          => $confidence,          // float 0-1 or null
 
                 // Core transaction fields
-                'detected_ref'        => $this->parseReferenceNumber($cleanText),
+                'detected_ref'        => $this->parseReferenceNumber($rawText),
                 'detected_amount'     => $this->parseAmount($cleanText),
                 'detected_datetime'   => $this->parseDatetime($cleanText),
 
@@ -107,26 +108,7 @@ class GoogleVisionService
      */
     private function parseReferenceNumber(string $text): ?string
     {
-        // Explicit labels first (highest confidence)
-        $labelPatterns = [
-            '/(?:Ref(?:erence)?\.?\s*(?:No\.?|#|Number)?|Transaction\s*(?:No\.?|#|ID)|Trace\s*(?:No\.?|#))\s*[:\-]?\s*([A-Z0-9]{6,20})/i',
-            '/(?:Control\s*(?:No\.?|#)|Confirmation\s*(?:No\.?|#|Code))\s*[:\-]?\s*([A-Z0-9]{6,20})/i',
-        ];
-        foreach ($labelPatterns as $p) {
-            if (preg_match($p, $text, $m)) return strtoupper(trim($m[1]));
-        }
-
-        // GCash 13-digit (starts with 5 or 9), strip spaces between digits
-        $normalized = preg_replace('/(?<=\d)\s+(?=\d)/', '', $text);
-        if (preg_match('/\b([59]\d{12})\b/', $normalized, $m)) return $m[1];
-
-        // Maya / PayMaya ref format
-        if (preg_match('/\b([A-Z]{2,4}\d{6,15})\b/', $text, $m)) return $m[1];
-
-        // Fallback: any 9–18 digit run
-        if (preg_match('/\b(\d{9,18})\b/', $text, $m)) return $m[1];
-
-        return null;
+        return (new ReceiptFieldNormalizer)->extractTransactionReference($text);
     }
 
     /**
@@ -134,12 +116,13 @@ class GoogleVisionService
      */
     private function parseAmount(string $text): ?float
     {
-        // With currency symbol ₱ / PHP / Php
-        if (preg_match('/(?:₱|PHP|Php)\s*([\d,]+\.\d{2})\b/u', $text, $m)) {
+        // Prefer a labelled transaction amount over balances or fees that may
+        // also appear elsewhere in the screenshot.
+        if (preg_match('/(?:Total\s*Amount|Amount\s*(?:Sent|Paid|Transferred?)?)\s*[:\-]?\s*(?:₱|PHP|Php)?\s*([\d,]+\.\d{2})/iu', $text, $m)) {
             return (float) str_replace(',', '', $m[1]);
         }
-        // After labels: Amount Sent / Total Amount
-        if (preg_match('/(?:Total\s*Amount|Amount\s*(?:Sent|Paid|Transferred?)?)\s*[:\-]?\s*(?:₱|PHP|Php)?\s*([\d,]+\.\d{2})/iu', $text, $m)) {
+        // With currency symbol ₱ / PHP / Php
+        if (preg_match('/(?:₱|PHP|Php)\s*([\d,]+\.\d{2})\b/u', $text, $m)) {
             return (float) str_replace(',', '', $m[1]);
         }
         // Generic decimal number

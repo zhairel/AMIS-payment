@@ -4,6 +4,7 @@
 @import './dashboard-family.css';
 @import './enrollment.css';
 @import './mobile-responsive.css';
+@import './payment-dashboard.css';
 
 @tailwind base;
 @tailwind components;
