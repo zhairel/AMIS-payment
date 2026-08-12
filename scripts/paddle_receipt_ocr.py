@@ -148,19 +148,31 @@ def main():
     compact = re.sub(r"\s+", " ", text)
     reference = transaction_reference(text)
     amount_text = first_match([
-        r"(?:total amount|amount sent|amount paid|transfer amount|principal amount|receive amount|you sent)\s*[:#-]?\s*(?:₱|PHP|\$)?\s*([\d,]+(?:\.\d{2})?)",
-        r"(?:₱|PHP|\$)\s*([\d,]+(?:\.\d{2})?)",
+        r"(?:amount in destination currency|destination amount|receive amount|total amount|amount sent|you sent|transfer amount|amount paid|principal amount)\s*[:#-]?\s*(?:SAR|PHP|USD|QAR|AED|KWD|BHD|OMR|Php|₱|\$)?\s*([\d,]+(?:\.\d{2})?)",
+        r"(?:SAR|PHP|USD|QAR|AED|KWD|BHD|OMR|Php|₱|\$)\s*([\d,]+(?:\.\d{2})?)",
+        r"\b([\d,]+\.\d{2})\b",
     ], compact)
     date = first_match([
-        r"\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+20\d{2}(?:\s+\d{1,2}:\d{2}(?:\s*[AP]M)?)?)\b",
-        r"\b(\d{1,2}[/-]\d{1,2}[/-]20\d{2}(?:\s+\d{1,2}:\d{2}(?:\s*[AP]M)?)?)\b",
-        r"\b(20\d{2}[/-]\d{1,2}[/-]\d{1,2}(?:\s+\d{1,2}:\d{2})?)\b",
+        r"\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+20\d{2}(?:\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AP]M)?)?)\b",
+        r"\b(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+20\d{2}(?:\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AP]M)?)?)\b",
+        r"\b(\d{1,2}[/-]\d{1,2}[/-]20\d{2}(?:\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AP]M)?)?)\b",
+        r"\b(20\d{2}[/-]\d{1,2}[/-]\d{1,2}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?)\b",
     ], compact)
 
     mode = None
     for value, pattern in [
-        ("gcash", r"\bgcash\b"), ("maya", r"\b(?:maya|paymaya)\b"),
-        ("bdo_online", r"\bbdo\b"), ("remittance", r"\b(?:moneygram|western union|palawan|cebuana|remittance)\b"),
+        ("ANB / TeleMoney Transfer", r"\b(?:anb|telemoney)\b"),
+        ("D360", r"\bd360\b"),
+        ("GCash", r"\bgcash\b"),
+        ("Maya", r"\b(?:maya|paymaya)\b"),
+        ("BDO", r"\b(?:bdo|banco de oro)\b"),
+        ("BPI", r"\b(?:bpi|bank of the philippine islands)\b"),
+        ("Metrobank", r"\bmetrobank\b"),
+        ("Western Union", r"\bwestern union\b"),
+        ("MoneyGram", r"\bmoneygram\b"),
+        ("Cebuana Lhuillier", r"\bcebuana\b"),
+        ("PalawanPay", r"\bpalawan\b"),
+        ("remittance", r"\b(?:remittance)\b"),
     ]:
         if re.search(pattern, compact, re.I):
             mode = value

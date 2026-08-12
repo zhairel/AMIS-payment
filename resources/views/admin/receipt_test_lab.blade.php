@@ -141,7 +141,20 @@
                                     <div><strong>OCR Engine:</strong> <span class="text-sky-400" x-text="item.result?.technical_details?.ocr_engine || 'PaddleOCR PP-OCRv6'"></span></div>
                                     <div><strong>Image Dimensions:</strong> <span class="text-indigo-300" x-text="item.result?.technical_details?.image_dimensions || 'Unknown'"></span></div>
                                     <div><strong>Text Regions Detected:</strong> <span class="text-purple-300" x-text="item.result?.technical_details?.text_regions_detected ?? '0'"></span></div>
-                                    <div><strong>Raw Text:</strong> <span class="text-emerald-400" x-text="item.result?.technical_details?.raw_text"></span></div>
+                                    <div><strong>OCR Raw Text:</strong> <span class="text-emerald-400 block whitespace-pre-wrap mt-1 bg-slate-950 p-2.5 rounded border border-slate-800 text-[11px]" x-text="item.result?.technical_details?.raw_text || 'No raw text detected'"></span></div>
+                                    <div><strong>Parser Result:</strong>
+                                        <div class="text-slate-300 bg-slate-950 p-2.5 rounded border border-slate-800 mt-1 space-y-0.5 text-[11px]">
+                                            <div>Provider: <span class="text-amber-300" x-text="item.result?.technical_details?.parser_result?.provider || 'Other / Unknown'"></span></div>
+                                            <div>Mode: <span class="text-amber-200" x-text="item.result?.technical_details?.parser_result?.mode || 'N/A'"></span></div>
+                                            <div>Reference: <span class="text-sky-300" x-text="item.result?.technical_details?.parser_result?.reference || 'Not detected'"></span></div>
+                                            <div>Date: <span class="text-purple-300" x-text="item.result?.technical_details?.parser_result?.date || 'Not detected'"></span></div>
+                                            <div>Time: <span class="text-purple-200" x-text="item.result?.technical_details?.parser_result?.time || 'null'"></span></div>
+                                            <div>Amount: <span class="text-emerald-300" x-text="item.result?.technical_details?.parser_result?.amount !== null ? item.result?.technical_details?.parser_result?.amount : 'Not detected'"></span></div>
+                                            <div>Currency: <span class="text-emerald-200" x-text="item.result?.technical_details?.parser_result?.currency || 'PHP'"></span></div>
+                                        </div>
+                                    </div>
+                                    <div><strong>Extraction Method:</strong> <span class="text-sky-400 font-bold" x-text="item.result?.technical_details?.extraction_method || 'Alias Parser / Provider Parser'"></span></div>
+                                    <div><strong>Normalization Warnings:</strong> <span class="text-rose-400" x-text="JSON.stringify(item.result?.technical_details?.normalization_warnings || [])"></span></div>
                                     <div><strong>Confidence:</strong> <span class="text-amber-400" x-text="item.result?.confidence !== null ? `${item.result?.confidence}%` : 'N/A'"></span></div>
                                     <div><strong>Duplicate Check:</strong> <span class="text-sky-400" x-text="JSON.stringify(item.result?.technical_details?.duplicate_lookup)"></span></div>
                                     <div><strong>Parsed Json:</strong> <pre class="text-slate-300 text-[10px] mt-1" x-text="JSON.stringify(item.result?.technical_details?.parsed_fields, null, 2)"></pre></div>
