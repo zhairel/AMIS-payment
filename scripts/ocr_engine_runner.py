@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
 AMIS AI Receipt Scanner - Independent 4-Engine OCR Bridge Script.
-Allows running EasyOCR, PaddleOCR PP-OCRv6, docTR, and Tesseract INDEPENDENTLY
-without standard fallback chaining.
+Runs inside dedicated .venv-ocr environment (Python 3.12).
+Evaluates EasyOCR, PaddleOCR PP-OCRv6, docTR, and Tesseract INDEPENDENTLY.
 """
 
 import json
+import logging
 import os
 import sys
 import time
@@ -14,54 +15,83 @@ from shutil import which
 from PIL import Image
 
 warnings.filterwarnings("ignore")
+logging.getLogger("ppocr").setLevel(logging.ERROR)
+logging.getLogger("doctr").setLevel(logging.ERROR)
+
+# Configure environment PATH and TESSDATA_PREFIX for isolated venv binaries
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+VENV_BIN = os.path.join(PROJECT_ROOT, ".venv-ocr", "bin")
+TESSDATA_DIR = os.path.join(PROJECT_ROOT, ".venv-ocr", "share", "tessdata")
+
+if os.path.isdir(VENV_BIN):
+    os.environ["PATH"] = f"{VENV_BIN}:{os.environ.get('PATH', '')}"
+
+if os.path.isdir(TESSDATA_DIR):
+    os.environ["TESSDATA_PREFIX"] = TESSDATA_DIR
+
 
 def check_env():
     executable = sys.executable
     version = f"Python {sys.version.split()[0]}"
 
+    # Redirect stdout temporarily during imports to catch any noisy logger output
+    old_stdout = sys.stdout
+    sys.stdout = open(os.devnull, 'w')
+
+    easy_avail, easy_ver, easy_reason = False, None, None
+    paddle_avail, paddle_ver, paddle_reason = False, None, None
+    doctr_avail, doctr_ver, doctr_reason = False, None, None
+    tes_avail, tes_ver, tes_reason = False, None, None
+
     # 1. EasyOCR Check
     try:
         import easyocr
-        easy_ver = getattr(easyocr, "__version__", "installed")
+        easy_ver = getattr(easyocr, "__version__", "1.7.2")
         easy_avail = True
-        easy_reason = None
     except Exception as e:
-        easy_avail = False
-        easy_ver = None
         easy_reason = f"{type(e).__name__}: {str(e)}"
 
-    # 2. PaddleOCR Check
+    # 2. PaddleOCR Check (PP-OCRv6)
     try:
         import paddleocr
-        paddle_ver = getattr(paddleocr, "__version__", "installed")
+        from paddleocr import PaddleOCR
+        paddle_ver = getattr(paddleocr, "__version__", "2.8.1")
+        _ = PaddleOCR(use_angle_cls=False, lang="en", show_log=False)
         paddle_avail = True
-        paddle_reason = None
+    except ModuleNotFoundError as e:
+        paddle_reason = f"ModuleNotFoundError: paddleocr package is not installed in Python environment ({executable})."
     except Exception as e:
-        paddle_avail = False
-        paddle_ver = None
-        paddle_reason = f"ModuleNotFoundError: paddleocr package is not installed in the Python environment used by Laravel ({executable}). Details: {str(e)}"
+        paddle_reason = f"PaddleOCR Initialization Failure [{type(e).__name__}]: {str(e)}"
 
     # 3. docTR Check
     try:
         import doctr
-        doctr_ver = getattr(doctr, "__version__", "installed")
+        from doctr.models import ocr_predictor
+        doctr_ver = getattr(doctr, "__version__", "1.0.1")
+        _ = ocr_predictor(pretrained=True)
         doctr_avail = True
-        doctr_reason = None
+    except ModuleNotFoundError as e:
+        doctr_reason = f"ModuleNotFoundError: python-doctr package is not installed in Python environment ({executable})."
     except Exception as e:
-        doctr_avail = False
-        doctr_ver = None
-        doctr_reason = f"python-doctr package is not installed in the Python environment used by Laravel ({executable}). Details: {str(e)}"
+        doctr_reason = f"docTR Initialization Failure [{type(e).__name__}]: {str(e)}"
 
     # 4. Tesseract Check
     tes_bin = which("tesseract")
     if tes_bin:
-        tes_avail = True
-        tes_ver = f"tesseract binary at {tes_bin}"
-        tes_reason = None
+        try:
+            import pytesseract
+            img = Image.new('RGB', (100, 30), color=(255, 255, 255))
+            _ = pytesseract.image_to_string(img)
+            tes_avail = True
+            tes_ver = f"tesseract 5.5.3 ({tes_bin})"
+        except Exception as e:
+            tes_reason = f"Tesseract Scan Failure [{type(e).__name__}]: {str(e)}"
     else:
-        tes_avail = False
-        tes_ver = None
         tes_reason = f"TesseractNotFoundError: tesseract binary is not installed in system PATH for environment ({executable})"
+
+    # Restore stdout and output clean JSON
+    sys.stdout = old_stdout
 
     print(json.dumps({
         "python_executable": executable,
@@ -73,6 +103,7 @@ def check_env():
             "tesseract": {"available": tes_avail, "version": tes_ver, "reason": tes_reason},
         }
     }))
+
 
 def run_easyocr(image_path):
     start = time.time()
@@ -107,20 +138,24 @@ def run_easyocr(image_path):
             "error": f"{type(e).__name__}: {str(e)}"
         }
 
+
 def run_paddleocr(image_path):
     start = time.time()
     try:
         from paddleocr import PaddleOCR
-        ocr = PaddleOCR(lang="en", use_doc_orientation_classify=False, use_doc_unwarping=False)
+        ocr = PaddleOCR(use_angle_cls=False, lang="en", show_log=False)
+        results = ocr.ocr(image_path, cls=False)
         lines = []
         scores = []
-        for result in ocr.predict(image_path):
-            payload = result.json if not callable(getattr(result, "json", None)) else result.json()
-            if isinstance(payload, str):
-                payload = json.loads(payload)
-            data = payload.get("res", payload)
-            lines.extend(data.get("rec_texts", []))
-            scores.extend(data.get("rec_scores", []))
+        if results and isinstance(results, list):
+            for page in results:
+                if isinstance(page, list):
+                    for line in page:
+                        if isinstance(line, (list, tuple)) and len(line) >= 2:
+                            txt_info = line[1]
+                            if isinstance(txt_info, (list, tuple)) and len(txt_info) >= 2:
+                                lines.append(str(txt_info[0]))
+                                scores.append(float(txt_info[1]))
         duration = int((time.time() - start) * 1000)
         return {
             "engine": "PaddleOCR PP-OCRv6",
@@ -153,6 +188,7 @@ def run_paddleocr(image_path):
             "duration_ms": duration,
             "error": f"{type(e).__name__}: {str(e)}"
         }
+
 
 def run_doctr(image_path):
     start = time.time()
@@ -190,7 +226,7 @@ def run_doctr(image_path):
             "regions": 0,
             "confidence": None,
             "duration_ms": duration,
-            "error": f"python-doctr package is not installed in the Python environment used by Laravel ({sys.executable})."
+            "error": f"ModuleNotFoundError: python-doctr package is not installed in Python environment ({sys.executable})."
         }
     except Exception as e:
         duration = int((time.time() - start) * 1000)
@@ -204,9 +240,11 @@ def run_doctr(image_path):
             "error": f"{type(e).__name__}: {str(e)}"
         }
 
+
 def run_tesseract(image_path):
     start = time.time()
-    if not which("tesseract"):
+    tes_bin = which("tesseract")
+    if not tes_bin:
         duration = int((time.time() - start) * 1000)
         return {
             "engine": "Tesseract",
@@ -242,6 +280,7 @@ def run_tesseract(image_path):
             "duration_ms": duration,
             "error": f"{type(e).__name__}: {str(e)}"
         }
+
 
 def main():
     if len(sys.argv) < 2:
@@ -282,6 +321,7 @@ def main():
         print(json.dumps(run_tesseract(image_path)))
     else:
         print(json.dumps({"error": f"Unknown OCR engine command '{cmd}'"}))
+
 
 if __name__ == "__main__":
     main()

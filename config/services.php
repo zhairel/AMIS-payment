@@ -41,6 +41,20 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'google_vision' => [
+        'key' => env('GOOGLE_VISION_KEY'),
+    ],
+
+    'paddle_ocr' => [
+        'enabled' => env('PADDLE_OCR_ENABLED', true),
+        'python' => env('OCR_PYTHON_BINARY', env('PADDLE_OCR_PYTHON', base_path('.venv-ocr/bin/python'))),
+        'timeout' => env('PADDLE_OCR_TIMEOUT', 75),
+    ],
+
+    'tesseract' => [
+        'timeout' => env('TESSERACT_OCR_TIMEOUT', 60),
+    ],
+
     'microsoft' => [
         'client_id' => env('MICROSOFT_CLIENT_ID'),
         'client_secret' => env('MICROSOFT_CLIENT_SECRET'),

@@ -2,19 +2,26 @@
     <x-slot name="header">
         <div class="amis-test-header">
             <div>
-                <h1 class="text-xl font-bold text-slate-900">AMIS AI Receipt Scanner Test Lab</h1>
-                <p class="text-xs text-slate-500 mt-0.5">Test receipt detection, OCR extraction, duplicate checking, and verification without creating real payment records.</p>
+                <h1 class="text-xl font-bold text-slate-900">AMIS AI Receipt Scanner Test Lab & Benchmark</h1>
+                <p class="text-xs text-slate-500 mt-0.5">Batch benchmark receipts, run 4-engine OCR comparison side-by-side, inspect raw text and JSON without opening individual modals.</p>
             </div>
             <span class="amis-badge-isolated">Isolated Testing Environment</span>
         </div>
     </x-slot>
 
     <div class="py-6" x-data="receiptTestLab()" x-init="fetchEnvDiagnostics()">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+
+            {{-- Copy Success Toast Notification --}}
+            <div x-show="toastMessage" x-cloak x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span x-text="toastMessage"></span>
+            </div>
+
             {{-- Toolbar & Upload Section --}}
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
                 <div class="flex flex-wrap items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
+                    <div class="flex flex-wrap items-center gap-3">
                         <label class="cursor-pointer inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-semibold text-xs transition shadow-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                             <span>Upload Test Images</span>
@@ -23,11 +30,25 @@
 
                         <button type="button" @click="runAllTests()" :disabled="testItems.length === 0 || isProcessingAll" class="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl font-semibold text-xs transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
-                            <span x-text="isProcessingAll ? 'Running Tests...' : 'Run All Tests'"></span>
+                            <span x-text="isProcessingAll ? 'Running Tests...' : 'Run All Tests (Normal)'"></span>
+                        </button>
+
+                        <button type="button" @click="runAllCompareTests()" :disabled="testItems.length === 0 || isComparingAll" class="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl font-semibold text-xs transition shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            <span x-text="isComparingAll ? 'Running 4-Engine Benchmark...' : 'Run All OCR Comparisons'"></span>
                         </button>
                     </div>
 
                     <div class="flex items-center gap-2">
+                        <div class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
+                            <button type="button" @click="viewMode = 'summary'" class="px-3 py-1.5 text-xs font-bold rounded-lg transition" :class="viewMode === 'summary' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'">
+                                Summary View
+                            </button>
+                            <button type="button" @click="viewMode = 'all_expanded'" class="px-3 py-1.5 text-xs font-bold rounded-lg transition" :class="viewMode === 'all_expanded' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'">
+                                Display All Results
+                            </button>
+                        </div>
+
                         <button type="button" @click="clearResults()" :disabled="testItems.length === 0" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-200 rounded-xl hover:bg-slate-50 transition">
                             Clear Results
                         </button>
@@ -37,32 +58,138 @@
                     </div>
                 </div>
 
-                {{-- Batch Summary Header --}}
-                <div x-show="testItems.length > 0" class="mt-6 pt-5 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-6 gap-3">
-                    <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
-                        <small class="text-slate-500 font-semibold block text-[10px] uppercase tracking-wider">Total Tested</small>
-                        <strong class="text-slate-900 text-lg font-black" x-text="testItems.length">0</strong>
+                {{-- Global Batch Controls Bar --}}
+                <div x-show="testItems.length > 0" class="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Global Controls:</span>
+                        <button type="button" @click="expandAllRawText()" class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                            Expand All Raw Text
+                        </button>
+                        <button type="button" @click="expandAllJson()" class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                            Expand All JSON
+                        </button>
+                        <button type="button" @click="collapseAll()" class="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg transition">
+                            Collapse All
+                        </button>
                     </div>
-                    <div class="bg-emerald-50 rounded-xl p-3 text-center border border-emerald-100">
-                        <small class="text-emerald-700 font-semibold block text-[10px] uppercase tracking-wider">Passed</small>
-                        <strong class="text-emerald-700 text-lg font-black" x-text="countByStatus('passed')">0</strong>
+
+                    <div>
+                        <button type="button" @click="copyAllResultsJson()" class="px-3.5 py-1.5 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition inline-flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            <span>Copy All Results (Batch JSON)</span>
+                        </button>
                     </div>
-                    <div class="bg-amber-50 rounded-xl p-3 text-center border border-amber-100">
-                        <small class="text-amber-700 font-semibold block text-[10px] uppercase tracking-wider">Needs Review</small>
-                        <strong class="text-amber-700 text-lg font-black" x-text="countByStatus('needs_review')">0</strong>
+                </div>
+            </div>
+
+            {{-- Python Environment Diagnostic Header Banner --}}
+            <div class="bg-slate-900 text-slate-100 rounded-2xl p-5 text-xs font-mono border border-slate-800 space-y-3 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <div>
+                        <strong class="text-sky-400">AMIS OCR Python Executable:</strong>
+                        <span class="text-amber-300 ml-1.5" x-text="envDiagnostics?.python_executable || '/home/tatsuya/Projects/AMIS/amis_payment/.venv-ocr/bin/python'"></span>
                     </div>
-                    <div class="bg-rose-50 rounded-xl p-3 text-center border border-rose-100">
-                        <small class="text-rose-700 font-semibold block text-[10px] uppercase tracking-wider">Not a Receipt</small>
-                        <strong class="text-rose-700 text-lg font-black" x-text="countByStatus('not_a_receipt')">0</strong>
+                    <div>
+                        <strong class="text-slate-400">Environment Version:</strong>
+                        <span class="text-slate-200 ml-1" x-text="envDiagnostics?.python_version || 'Python 3.12.13'"></span>
                     </div>
-                    <div class="bg-purple-50 rounded-xl p-3 text-center border border-purple-100">
-                        <small class="text-purple-700 font-semibold block text-[10px] uppercase tracking-wider">Duplicate</small>
-                        <strong class="text-purple-700 text-lg font-black" x-text="countByStatus('duplicate')">0</strong>
-                    </div>
-                    <div class="bg-slate-100 rounded-xl p-3 text-center border border-slate-200">
-                        <small class="text-slate-600 font-semibold block text-[10px] uppercase tracking-wider">Pending</small>
-                        <strong class="text-slate-700 text-lg font-black" x-text="countByStatus('pending')">0</strong>
-                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                    <template x-for="(status, name) in (envDiagnostics?.engines || {})" :key="name">
+                        <div class="p-3 rounded-xl border text-[11px]" :class="status.available ? 'bg-emerald-950/60 border-emerald-800/80 text-emerald-200' : 'bg-rose-950/40 border-rose-900/60 text-rose-300'">
+                            <div class="flex items-center justify-between font-bold mb-1">
+                                <span x-text="engineDisplayName(name)"></span>
+                                <span class="px-2 py-0.5 text-[9px] rounded font-extrabold uppercase" :class="status.available ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'" x-text="status.available ? 'AVAILABLE' : 'NOT AVAILABLE'"></span>
+                            </div>
+                            <small class="block text-[10px] text-slate-400 font-sans leading-tight truncate" x-text="status.available ? `Version: ${status.version || 'installed'}` : (status.reason || 'Not installed')"></small>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            {{-- Batch Summary Dashboard & Engine Performance Cards --}}
+            <div x-show="testItems.length > 0" class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-base font-black text-slate-900 uppercase tracking-wider">Batch Engine Performance Summary</h2>
+                    <span class="text-xs text-slate-500 font-medium" x-text="`${countComparedReceipts()} of ${testItems.length} receipts compared across 4 engines`"></span>
+                </div>
+
+                {{-- 4 Engine Summary Metric Cards --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <template x-for="engineKey in ['easyocr', 'paddleocr', 'doctr', 'tesseract']" :key="engineKey">
+                        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
+                                    <h3 class="font-extrabold text-sm text-slate-900" x-text="engineDisplayName(engineKey)"></h3>
+                                    <span class="px-2 py-0.5 text-[10px] font-black rounded uppercase" :class="envDiagnostics?.engines?.[engineKey]?.available ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'" x-text="envDiagnostics?.engines?.[engineKey]?.available ? 'ONLINE' : 'OFFLINE'"></span>
+                                </div>
+
+                                <div class="space-y-2 text-xs">
+                                    <div class="flex justify-between items-center text-slate-600">
+                                        <span>Receipts Tested:</span>
+                                        <strong class="text-slate-900 font-bold" x-text="engineStats(engineKey).testedCount">0</strong>
+                                    </div>
+                                    <div class="flex justify-between items-center text-slate-600">
+                                        <span x-text="engineStats(engineKey).hasGroundTruth ? 'Avg Accuracy Score:' : 'Avg Fields Detected:'"></span>
+                                        <strong class="font-black text-emerald-600" x-text="engineStats(engineKey).hasGroundTruth ? `${engineStats(engineKey).avgCorrect} / 4 Correct` : `${engineStats(engineKey).avgFieldsDetected} / 4 Fields`">0 / 4</strong>
+                                    </div>
+                                    <div class="flex justify-between items-center text-slate-600">
+                                        <span>Avg Confidence:</span>
+                                        <strong class="text-amber-600 font-bold" x-text="engineStats(engineKey).avgConfidence !== null ? `${engineStats(engineKey).avgConfidence}%` : 'N/A'">N/A</strong>
+                                    </div>
+                                    <div class="flex justify-between items-center text-slate-600">
+                                        <span>Avg Processing Time:</span>
+                                        <strong class="text-sky-700 font-bold" x-text="`${engineStats(engineKey).avgDurationMs} ms`">0 ms</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                {{-- Batch Comparison Benchmark Matrix Table --}}
+                <div x-show="countComparedReceipts() > 0" class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm overflow-x-auto">
+                    <h3 class="font-extrabold text-sm text-slate-900 mb-3 uppercase tracking-wider">Batch Comparison Matrix Table</h3>
+                    <table class="w-full text-xs text-left">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200">
+                                <th class="p-3">Receipt Filename</th>
+                                <th class="p-3 text-center">EasyOCR</th>
+                                <th class="p-3 text-center">PaddleOCR PP-OCRv6</th>
+                                <th class="p-3 text-center">docTR</th>
+                                <th class="p-3 text-center">Tesseract</th>
+                                <th class="p-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <template x-for="(item, idx) in testItems" :key="item.id">
+                                <tr class="hover:bg-slate-50/80 transition">
+                                    <td class="p-3 font-semibold text-slate-900 truncate max-w-xs flex items-center gap-2">
+                                        <img :src="item.previewUrl" class="w-8 h-8 rounded object-cover border border-slate-200 flex-shrink-0">
+                                        <span x-text="item.filename"></span>
+                                    </td>
+                                    <td class="p-3 text-center font-bold">
+                                        <span class="px-2.5 py-1 rounded-lg text-xs" :class="itemEngineScoreClass(item, 'easyocr')" x-text="itemEngineScore(item, 'easyocr')"></span>
+                                    </td>
+                                    <td class="p-3 text-center font-bold">
+                                        <span class="px-2.5 py-1 rounded-lg text-xs" :class="itemEngineScoreClass(item, 'paddleocr')" x-text="itemEngineScore(item, 'paddleocr')"></span>
+                                    </td>
+                                    <td class="p-3 text-center font-bold">
+                                        <span class="px-2.5 py-1 rounded-lg text-xs" :class="itemEngineScoreClass(item, 'doctr')" x-text="itemEngineScore(item, 'doctr')"></span>
+                                    </td>
+                                    <td class="p-3 text-center font-bold">
+                                        <span class="px-2.5 py-1 rounded-lg text-xs" :class="itemEngineScoreClass(item, 'tesseract')" x-text="itemEngineScore(item, 'tesseract')"></span>
+                                    </td>
+                                    <td class="p-3 text-right">
+                                        <button type="button" @click="runEngineComparison(item)" :disabled="item.isComparing" class="px-2.5 py-1 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg border border-sky-200 transition">
+                                            <span x-text="item.isComparing ? 'Comparing...' : 'Run Compare'"></span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -72,101 +199,192 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 </div>
                 <h3 class="text-slate-900 font-bold text-base mb-1">No test receipts uploaded yet</h3>
-                <p class="text-slate-500 text-xs max-w-sm mx-auto mb-5">Upload sample receipts (GCash, Maya, Bank Transfers, Remittances, MTCN, selfies, posters) to test AMIS AI OCR classification.</p>
+                <p class="text-slate-500 text-xs max-w-sm mx-auto mb-5">Upload multiple receipt images to benchmark EasyOCR, PaddleOCR PP-OCRv6, docTR, and Tesseract side-by-side.</p>
             </div>
 
-            {{-- Result Cards Grid --}}
-            <div class="space-y-4">
+            {{-- Main Receipt Cards Display List --}}
+            <div class="space-y-6">
                 <template x-for="(item, index) in testItems" :key="item.id">
-                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 transition">
-                        <div class="flex flex-col md:flex-row gap-5 items-start">
-                            {{-- Image Thumbnail --}}
-                            <div class="w-full md:w-36 h-36 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center relative">
-                                <img :src="item.previewUrl" class="w-full h-full object-contain">
-                                <span class="absolute bottom-1 right-1 bg-slate-900/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded" x-text="item.size"></span>
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-5 transition">
+                        
+                        {{-- Top Per-Receipt Header & Final AMIS Summary Banner --}}
+                        <div class="flex flex-col lg:flex-row gap-5 items-start justify-between border-b border-slate-100 pb-5">
+                            <div class="flex items-start gap-4">
+                                <div class="w-24 h-24 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden flex-shrink-0 relative">
+                                    <img :src="item.previewUrl" class="w-full h-full object-contain">
+                                    <span class="absolute bottom-1 right-1 bg-slate-900/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded" x-text="item.size"></span>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-extrabold text-slate-900 text-base" x-text="item.filename"></h3>
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold" :class="statusBadgeClass(item.status)" x-text="item.label || 'PENDING'"></span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-1" x-text="item.message || 'Ready for test'"></p>
+
+                                    {{-- Quick Field Summary Pill Row --}}
+                                    <div class="flex flex-wrap gap-2 mt-3 text-xs">
+                                        <span class="px-2.5 py-1 bg-slate-100 rounded-lg text-slate-700 font-bold">Provider: <span class="text-amber-700" x-text="item.provider || 'Other / Unknown'"></span></span>
+                                        <span class="px-2.5 py-1 bg-slate-100 rounded-lg text-slate-700 font-bold">Ref: <span class="text-sky-700" x-text="item.reference_number || 'Not detected'"></span></span>
+                                        <span class="px-2.5 py-1 bg-slate-100 rounded-lg text-slate-700 font-bold">Date: <span class="text-purple-700" x-text="item.transaction_date || 'Not detected'"></span></span>
+                                        <span class="px-2.5 py-1 bg-slate-100 rounded-lg text-slate-700 font-bold">Amount: <span class="text-emerald-700" x-text="item.amount !== null ? `${item.currency} ${numberFormat(item.amount)}` : 'Not detected'"></span></span>
+                                    </div>
+                                </div>
                             </div>
 
-                            {{-- Card Details --}}
-                            <div class="flex-1 w-full">
-                                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                                    <div>
-                                        <h4 class="font-bold text-slate-900 text-sm truncate max-w-xs" x-text="item.filename"></h4>
-                                        <span class="text-[11px] text-slate-400 font-medium" x-text="item.processingTimeMs ? `${item.processingTimeMs} ms processing` : 'Ready for test'"></span>
-                                    </div>
-                                    <div>
-                                        <span class="px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1.5" :class="statusBadgeClass(item.status)">
-                                            <span x-text="item.label || 'PENDING'"></span>
-                                        </span>
-                                    </div>
-                                </div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <button type="button" @click="runSingleTest(index)" :disabled="item.isProcessing" class="px-3.5 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition">
+                                    <span x-text="item.isProcessing ? 'Processing...' : 'Run Test (Single)'"></span>
+                                </button>
+                                <button type="button" @click="runEngineComparison(item)" :disabled="item.isComparing" class="px-3.5 py-2 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl border border-sky-200 transition">
+                                    <span x-text="item.isComparing ? 'Comparing 4 Engines...' : 'Run Compare OCR'"></span>
+                                </button>
+                                <button type="button" @click="openScannerModal(item)" :disabled="!item.result" class="px-3.5 py-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 transition disabled:opacity-40">
+                                    View Scanner
+                                </button>
+                            </div>
+                        </div>
 
-                                {{-- Standardized 4 Fields Grid --}}
-                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50/70 p-3 rounded-xl border border-slate-100 mb-4">
-                                    <div>
-                                        <small class="text-[10px] font-semibold text-slate-400 uppercase block">Provider / Mode</small>
-                                        <strong class="text-xs font-bold text-slate-800 truncate block" x-text="item.provider || 'Other / Unknown'"></strong>
-                                    </div>
-                                    <div>
-                                        <small class="text-[10px] font-semibold text-slate-400 uppercase block">Reference No.</small>
-                                        <strong class="text-xs font-bold text-slate-800 truncate block" x-text="item.reference_number || 'Not detected'"></strong>
-                                    </div>
-                                    <div>
-                                        <small class="text-[10px] font-semibold text-slate-400 uppercase block">Date & Time</small>
-                                        <strong class="text-xs font-bold text-slate-800 truncate block" x-text="item.transaction_date ? `${item.transaction_date} ${item.transaction_time || ''}` : 'Not detected'"></strong>
-                                    </div>
-                                    <div>
-                                        <small class="text-[10px] font-semibold text-slate-400 uppercase block">Amount</small>
-                                        <strong class="text-xs font-bold text-slate-800 truncate block" x-text="item.amount !== null ? `${item.currency} ${numberFormat(item.amount)}` : 'Not detected'"></strong>
-                                    </div>
+                        {{-- Per-Receipt Ground Truth Input Section --}}
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-bold text-slate-800 uppercase tracking-wider text-[11px]">Expected Ground Truth (Optional Benchmark Evaluation)</h4>
+                                <button type="button" @click="runEngineComparison(item)" class="text-sky-700 font-semibold hover:underline">Re-evaluate Ground Truth</button>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Expected Provider</label>
+                                    <input type="text" x-model="item.expected.provider" placeholder="e.g. ANB / TeleMoney" class="w-full text-xs rounded-lg border-slate-200 p-1.5">
                                 </div>
-
-                                {{-- Action Buttons --}}
-                                <div class="flex flex-wrap items-center justify-between gap-3">
-                                    <p class="text-xs text-slate-500 italic truncate max-w-md" x-text="item.message || 'Click Run Test to evaluate this image.'"></p>
-                                    <div class="flex items-center gap-2">
-                                        <button type="button" @click="runSingleTest(index)" :disabled="item.isProcessing" class="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition">
-                                            <span x-text="item.isProcessing ? 'Processing...' : 'Run Test'"></span>
-                                        </button>
-                                        <button type="button" @click="openCompareModal(item)" :disabled="item.isComparing" class="px-3 py-1.5 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg border border-sky-200 transition">
-                                            <span x-text="item.isComparing ? 'Comparing...' : 'Compare OCR'"></span>
-                                        </button>
-                                        <button type="button" @click="openScannerModal(item)" :disabled="!item.result" class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition disabled:opacity-40">
-                                            View Scanner
-                                        </button>
-                                        <button type="button" @click="item.showTech = !item.showTech" :disabled="!item.result" class="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition disabled:opacity-40">
-                                            <span x-text="item.showTech ? 'Hide Details' : 'View Technical Details'"></span>
-                                        </button>
-                                    </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Expected Reference</label>
+                                    <input type="text" x-model="item.expected.reference" placeholder="e.g. 400857439" class="w-full text-xs rounded-lg border-slate-200 p-1.5">
                                 </div>
-
-                                {{-- Expandable Technical Details --}}
-                                <div x-show="item.showTech" x-cloak class="mt-4 pt-4 border-t border-slate-100 text-xs font-mono bg-slate-900 text-slate-200 p-4 rounded-xl overflow-x-auto space-y-2">
-                                    <div><strong>OCR Engine:</strong> <span class="text-sky-400" x-text="item.result?.technical_details?.ocr_engine || 'PaddleOCR PP-OCRv6'"></span></div>
-                                    <div><strong>Image Dimensions:</strong> <span class="text-indigo-300" x-text="item.result?.technical_details?.image_dimensions || 'Unknown'"></span></div>
-                                    <div><strong>Text Regions Detected:</strong> <span class="text-purple-300" x-text="item.result?.technical_details?.text_regions_detected ?? '0'"></span></div>
-                                    <div><strong>OCR Raw Text:</strong> <span class="text-emerald-400 block whitespace-pre-wrap mt-1 bg-slate-950 p-2.5 rounded border border-slate-800 text-[11px]" x-text="item.result?.technical_details?.raw_text || 'No raw text detected'"></span></div>
-                                    <div><strong>Parser Result:</strong>
-                                        <div class="text-slate-300 bg-slate-950 p-2.5 rounded border border-slate-800 mt-1 space-y-0.5 text-[11px]">
-                                            <div>Provider: <span class="text-amber-300" x-text="item.result?.technical_details?.parser_result?.provider || 'Other / Unknown'"></span></div>
-                                            <div>Mode: <span class="text-amber-200" x-text="item.result?.technical_details?.parser_result?.mode || 'N/A'"></span></div>
-                                            <div>Reference: <span class="text-sky-300" x-text="item.result?.technical_details?.parser_result?.reference || 'Not detected'"></span></div>
-                                            <div>Date: <span class="text-purple-300" x-text="item.result?.technical_details?.parser_result?.date || 'Not detected'"></span></div>
-                                            <div>Time: <span class="text-purple-200" x-text="item.result?.technical_details?.parser_result?.time || 'null'"></span></div>
-                                            <div>Amount: <span class="text-emerald-300" x-text="item.result?.technical_details?.parser_result?.amount !== null ? item.result?.technical_details?.parser_result?.amount : 'Not detected'"></span></div>
-                                            <div>Currency: <span class="text-emerald-200" x-text="item.result?.technical_details?.parser_result?.currency || 'PHP'"></span></div>
-                                        </div>
-                                    </div>
-                                    <div><strong>Extraction Method:</strong> <span class="text-sky-400 font-bold" x-text="item.result?.technical_details?.extraction_method || 'Alias Parser / Provider Parser'"></span></div>
-                                    <div><strong>Normalization Warnings:</strong> <span class="text-rose-400" x-text="JSON.stringify(item.result?.technical_details?.normalization_warnings || [])"></span></div>
-                                    <div><strong>Confidence:</strong> <span class="text-amber-400" x-text="item.result?.confidence !== null ? `${item.result?.confidence}%` : 'N/A'"></span></div>
-                                    <div><strong>Duplicate Check:</strong> <span class="text-sky-400" x-text="JSON.stringify(item.result?.technical_details?.duplicate_lookup)"></span></div>
-                                    <div><strong>Parsed Json:</strong> <pre class="text-slate-300 text-[10px] mt-1" x-text="JSON.stringify(item.result?.technical_details?.parsed_fields, null, 2)"></pre></div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Expected Date</label>
+                                    <input type="text" x-model="item.expected.date" placeholder="e.g. 2026-08-08" class="w-full text-xs rounded-lg border-slate-200 p-1.5">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Expected Amount</label>
+                                    <input type="text" x-model="item.expected.amount" placeholder="e.g. SAR 260.32" class="w-full text-xs rounded-lg border-slate-200 p-1.5">
                                 </div>
                             </div>
                         </div>
+
+                        {{-- Loading Indicator for Comparison --}}
+                        <div x-show="item.isComparing" class="p-8 text-center bg-slate-50 rounded-xl border border-slate-200">
+                            <div class="inline-block animate-spin w-7 h-7 border-3 border-sky-600 border-t-transparent rounded-full mb-2"></div>
+                            <h4 class="text-slate-800 font-bold text-xs">Running EasyOCR, PaddleOCR PP-OCRv6, docTR, and Tesseract independently...</h4>
+                        </div>
+
+                        {{-- 4 Engine Results Responsive Side-by-Side Grid --}}
+                        <div x-show="item.comparison" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <template x-for="engineKey in ['easyocr', 'paddleocr', 'doctr', 'tesseract']" :key="engineKey">
+                                <div class="bg-white rounded-xl border p-4 shadow-sm flex flex-col justify-between" :class="item.comparison?.engines?.[engineKey]?.status === 'SUCCESS' ? 'border-emerald-200' : 'border-slate-200'">
+                                    <div>
+                                        {{-- Engine Card Header --}}
+                                        <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                                            <div>
+                                                <h4 class="font-black text-xs text-slate-900" x-text="item.comparison?.engines?.[engineKey]?.engine"></h4>
+                                                <span class="text-[9px] text-slate-400 block" x-text="item.comparison?.engines?.[engineKey]?.attempted ? `${item.comparison?.engines?.[engineKey]?.duration_ms} ms` : 'Attempted: NO'"></span>
+                                            </div>
+                                            <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase" :class="badgeClassForStatus(item.comparison?.engines?.[engineKey]?.status)" x-text="item.comparison?.engines?.[engineKey]?.status || 'NOT AVAILABLE'"></span>
+                                        </div>
+
+                                        {{-- Ground Truth / Fields Score --}}
+                                        <div class="bg-slate-50 p-2 rounded-lg border border-slate-100 mb-3 flex items-center justify-between">
+                                            <small class="text-[9px] font-bold text-slate-400 uppercase" x-text="item.comparison?.engines?.[engineKey]?.ground_truth?.has_expected ? 'Accuracy Score' : 'Fields Detected'"></small>
+                                            <strong class="text-xs font-black text-sky-700" x-text="itemEngineScore(item, engineKey)"></strong>
+                                        </div>
+
+                                        {{-- Engine Metrics --}}
+                                        <div class="grid grid-cols-2 gap-2 text-[10px] bg-slate-50 p-2 rounded-lg border border-slate-100 mb-3">
+                                            <div>
+                                                <span class="text-slate-400 font-bold block text-[8px] uppercase">Regions</span>
+                                                <strong class="text-slate-800" x-text="item.comparison?.engines?.[engineKey]?.regions ?? '0'"></strong>
+                                            </div>
+                                            <div>
+                                                <span class="text-slate-400 font-bold block text-[8px] uppercase">Confidence</span>
+                                                <strong class="text-slate-800" x-text="item.comparison?.engines?.[engineKey]?.confidence !== null ? `${Math.round(item.comparison?.engines?.[engineKey]?.confidence * (item.comparison?.engines?.[engineKey]?.confidence <= 1 ? 100 : 1))}%` : 'N/A'"></strong>
+                                            </div>
+                                        </div>
+
+                                        {{-- Engine Error Reason Box --}}
+                                        <div x-show="item.comparison?.engines?.[engineKey]?.error" class="bg-rose-50 border border-rose-200 text-rose-800 p-2 rounded-lg text-[9px] font-mono mb-3 whitespace-pre-wrap leading-tight" x-text="item.comparison?.engines?.[engineKey]?.error"></div>
+
+                                        {{-- 4 Standardized AMIS Fields --}}
+                                        <div class="space-y-1.5 bg-slate-50/70 p-2.5 rounded-lg border border-slate-100 text-[11px]">
+                                            <div>
+                                                <small class="text-[8px] font-bold text-slate-400 uppercase block">Provider</small>
+                                                <strong class="font-bold text-slate-800 block truncate" x-text="item.comparison?.engines?.[engineKey]?.parsed?.provider || 'Other / Unknown'"></strong>
+                                            </div>
+                                            <div>
+                                                <small class="text-[8px] font-bold text-slate-400 uppercase block">Reference</small>
+                                                <strong class="font-bold text-slate-800 block truncate" x-text="item.comparison?.engines?.[engineKey]?.parsed?.reference_number || 'Not detected'"></strong>
+                                            </div>
+                                            <div>
+                                                <small class="text-[8px] font-bold text-slate-400 uppercase block">Date & Time</small>
+                                                <strong class="font-bold text-slate-800 block truncate" x-text="item.comparison?.engines?.[engineKey]?.parsed?.transaction_date ? `${item.comparison?.engines?.[engineKey]?.parsed?.transaction_date} ${item.comparison?.engines?.[engineKey]?.parsed?.transaction_time || ''}` : 'Not detected'"></strong>
+                                            </div>
+                                            <div>
+                                                <small class="text-[8px] font-bold text-slate-400 uppercase block">Amount</small>
+                                                <strong class="font-bold text-slate-800 block truncate" x-text="item.comparison?.engines?.[engineKey]?.parsed?.amount !== null ? `${item.comparison?.engines?.[engineKey]?.parsed?.currency || 'PHP'} ${numberFormat(item.comparison?.engines?.[engineKey]?.parsed?.amount)}` : 'Not detected'"></strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- Raw OCR Text & Engine JSON Collapsible Containers --}}
+                                    <div class="mt-3 pt-3 border-t border-slate-100 space-y-2">
+                                        {{-- Raw OCR Text Block --}}
+                                        <div>
+                                            <div class="flex items-center justify-between text-[10px]">
+                                                <button type="button" @click="item.showRaw[engineKey] = !item.showRaw[engineKey]" class="font-bold text-slate-600 hover:text-slate-900">
+                                                    <span>Raw OCR Text</span>
+                                                    <span x-text="item.showRaw[engineKey] ? '(Hide)' : '(Show)'"></span>
+                                                </button>
+                                                <button type="button" @click="copyToClipboard(item.comparison?.engines?.[engineKey]?.raw_text, `${engineDisplayName(engineKey)} Raw Text`)" class="text-sky-600 font-bold hover:underline">Copy</button>
+                                            </div>
+                                            <div x-show="item.showRaw[engineKey]" class="mt-1 bg-slate-950 text-emerald-400 p-2 rounded text-[9px] font-mono whitespace-pre-wrap max-h-40 overflow-y-auto" x-text="item.comparison?.engines?.[engineKey]?.raw_text || 'No text'"></div>
+                                        </div>
+
+                                        {{-- Engine Parsed JSON Block --}}
+                                        <div>
+                                            <div class="flex items-center justify-between text-[10px]">
+                                                <button type="button" @click="item.showJson[engineKey] = !item.showJson[engineKey]" class="font-bold text-slate-600 hover:text-slate-900">
+                                                    <span>Parsed JSON</span>
+                                                    <span x-text="item.showJson[engineKey] ? '(Hide)' : '(Show)'"></span>
+                                                </button>
+                                                <button type="button" @click="copyToClipboard(JSON.stringify(item.comparison?.engines?.[engineKey]?.parsed, null, 2), `${engineDisplayName(engineKey)} Parsed JSON`)" class="text-sky-600 font-bold hover:underline">Copy</button>
+                                            </div>
+                                            <pre x-show="item.showJson[engineKey]" class="mt-1 bg-slate-950 text-sky-300 p-2 rounded text-[9px] font-mono max-h-40 overflow-y-auto" x-text="JSON.stringify(item.comparison?.engines?.[engineKey]?.parsed, null, 2)"></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        {{-- Final Normalized AMIS JSON Box --}}
+                        <div x-show="item.result?.technical_details?.parsed_fields" class="bg-slate-900 text-slate-200 rounded-xl p-4 text-xs font-mono border border-slate-800">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+                                <div class="flex items-center gap-2">
+                                    <strong class="text-emerald-400 font-bold">Final AMIS Normalized Result JSON</strong>
+                                    <span class="text-[10px] text-slate-400" x-text="`Extraction Method: ${item.result?.technical_details?.extraction_method}`"></span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" @click="item.showFinalJson = !item.showFinalJson" class="text-[11px] font-semibold text-slate-400 hover:text-white">
+                                        <span x-text="item.showFinalJson ? 'Hide JSON' : 'View Final JSON'"></span>
+                                    </button>
+                                    <button type="button" @click="copyToClipboard(JSON.stringify(item.result?.technical_details?.parsed_fields, null, 2), 'Final AMIS Normalized JSON')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-sky-300 rounded font-bold text-[10px] transition">
+                                        Copy Final JSON
+                                    </button>
+                                </div>
+                            </div>
+                            <pre x-show="item.showFinalJson || viewMode === 'all_expanded'" class="text-slate-300 text-[10px] mt-2 max-h-60 overflow-y-auto bg-slate-950 p-3 rounded border border-slate-800" x-text="JSON.stringify(item.result?.technical_details?.parsed_fields, null, 2)"></pre>
+                        </div>
+
                     </div>
                 </template>
             </div>
+
         </div>
 
         {{-- AMIS AI Receipt Scanner Preview Modal --}}
@@ -211,157 +429,6 @@
                 </div>
             </div>
         </div>
-
-        {{-- Independent 4-Engine Compare OCR Modal --}}
-        <div x-show="activeCompareModal" x-cloak class="payment-receipt-modal" @click.self="activeCompareModal = false" role="dialog" aria-modal="true">
-            <div class="bg-white rounded-2xl max-w-6xl w-full p-6 shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col my-auto mx-4">
-                {{-- Header --}}
-                <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
-                    <div>
-                        <span class="text-[10px] font-bold text-sky-600 uppercase tracking-wider block">Independent 4-Engine OCR Benchmark</span>
-                        <h2 class="text-lg font-black text-slate-900">Compare OCR Engines (No Fallback Chain)</h2>
-                        <p class="text-xs text-slate-500 mt-0.5">Sends receipt directly to EasyOCR, PaddleOCR PP-OCRv6, docTR, and Tesseract independently.</p>
-                    </div>
-                    <button type="button" @click="activeCompareModal = false" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
-                </div>
-
-                <div class="overflow-y-auto space-y-5 pr-1">
-                    {{-- Laravel Python Environment & Engine Diagnostic Panel --}}
-                    <div class="bg-slate-900 text-slate-100 rounded-xl p-4 text-xs font-mono border border-slate-800 space-y-2">
-                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-                            <div>
-                                <strong class="text-sky-400">Laravel Python Executable:</strong>
-                                <span class="text-amber-300 ml-1" x-text="envDiagnostics?.python_executable || '/usr/bin/python3'"></span>
-                            </div>
-                            <div>
-                                <strong class="text-slate-400">Environment Version:</strong>
-                                <span class="text-slate-200 ml-1" x-text="envDiagnostics?.python_version || 'Python 3'"></span>
-                            </div>
-                        </div>
-
-                        {{-- Engine Availability Badges --}}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-                            <template x-for="(status, name) in (envDiagnostics?.engines || {})" :key="name">
-                                <div class="p-2.5 rounded-lg border text-[11px]" :class="status.available ? 'bg-emerald-950/60 border-emerald-800/80 text-emerald-200' : 'bg-rose-950/40 border-rose-900/60 text-rose-300'">
-                                    <div class="flex items-center justify-between font-bold mb-1">
-                                        <span x-text="engineDisplayName(name)"></span>
-                                        <span class="px-1.5 py-0.5 text-[9px] rounded font-extrabold uppercase" :class="status.available ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'" x-text="status.available ? 'AVAILABLE' : 'NOT AVAILABLE'"></span>
-                                    </div>
-                                    <small class="block text-[10px] text-slate-400 font-sans leading-tight truncate" x-text="status.available ? `Version: ${status.version || 'installed'}` : (status.reason || 'Not installed')"></small>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-
-                    {{-- Ground Truth / Set Expected Values --}}
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Set Expected Values (Ground Truth Evaluation)</h4>
-                            <button type="button" @click="runEngineComparison(compareItem)" class="text-xs font-semibold text-sky-700 bg-sky-100 hover:bg-sky-200 px-3 py-1 rounded-lg border border-sky-200 transition">
-                                Re-evaluate Ground Truth
-                            </button>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 mb-1">Expected Provider</label>
-                                <input type="text" x-model="groundTruthInput.provider" placeholder="e.g. Enjaz / Bank Albilad" class="w-full text-xs rounded-lg border-slate-200 p-2">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 mb-1">Expected Reference</label>
-                                <input type="text" x-model="groundTruthInput.reference" placeholder="e.g. FT26222662202746" class="w-full text-xs rounded-lg border-slate-200 p-2">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 mb-1">Expected Date</label>
-                                <input type="text" x-model="groundTruthInput.date" placeholder="e.g. 2026-08-10" class="w-full text-xs rounded-lg border-slate-200 p-2">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 mb-1">Expected Amount</label>
-                                <input type="text" x-model="groundTruthInput.amount" placeholder="e.g. PHP 8200.00" class="w-full text-xs rounded-lg border-slate-200 p-2">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Loading Indicator --}}
-                    <div x-show="isComparingEngines" class="p-8 text-center bg-slate-50 rounded-xl border border-slate-200">
-                        <div class="inline-block animate-spin w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full mb-3"></div>
-                        <h4 class="text-slate-800 font-bold text-sm">Running 4 Independent OCR Engines...</h4>
-                        <p class="text-slate-500 text-xs mt-1">Executing EasyOCR, PaddleOCR PP-OCRv6, docTR, and Tesseract directly on the receipt image.</p>
-                    </div>
-
-                    {{-- 4 Engine Comparison Side-by-Side Grid --}}
-                    <div x-show="!isComparingEngines && compareResult" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <template x-for="engineKey in ['easyocr', 'paddleocr', 'doctr', 'tesseract']" :key="engineKey">
-                            <div class="bg-white rounded-xl border p-4 shadow-sm flex flex-col justify-between" :class="compareResult?.engines?.[engineKey]?.status === 'SUCCESS' ? 'border-emerald-300 ring-1 ring-emerald-100' : 'border-slate-200'">
-                                <div>
-                                    {{-- Engine Header --}}
-                                    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
-                                        <div>
-                                            <h3 class="font-extrabold text-sm text-slate-900" x-text="compareResult?.engines?.[engineKey]?.engine"></h3>
-                                            <span class="text-[10px] text-slate-400 block" x-text="compareResult?.engines?.[engineKey]?.attempted ? `Duration: ${compareResult?.engines?.[engineKey]?.duration_ms} ms` : 'Attempted: NO'"></span>
-                                        </div>
-                                        <div>
-                                            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase" :class="badgeClassForStatus(compareResult?.engines?.[engineKey]?.status)" x-text="compareResult?.engines?.[engineKey]?.status || 'NOT AVAILABLE'"></span>
-                                        </div>
-                                    </div>
-
-                                    {{-- Ground Truth Score --}}
-                                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100 mb-3 flex items-center justify-between">
-                                        <small class="text-[10px] font-semibold text-slate-500 uppercase">Field Accuracy</small>
-                                        <strong class="text-xs font-black" :class="compareResult?.engines?.[engineKey]?.ground_truth?.has_expected ? (compareResult?.engines?.[engineKey]?.ground_truth?.correct_count === compareResult?.engines?.[engineKey]?.ground_truth?.total_evaluated ? 'text-emerald-600' : 'text-amber-600') : 'text-slate-400'" x-text="compareResult?.engines?.[engineKey]?.ground_truth?.score_label || 'No Expected Set'"></strong>
-                                    </div>
-
-                                    {{-- Engine Metrics --}}
-                                    <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-50/60 p-2 rounded-lg border border-slate-100 mb-3">
-                                        <div>
-                                            <span class="text-slate-400 block text-[9px] uppercase font-bold">Regions</span>
-                                            <strong class="text-slate-800 font-bold" x-text="compareResult?.engines?.[engineKey]?.regions ?? '0'"></strong>
-                                        </div>
-                                        <div>
-                                            <span class="text-slate-400 block text-[9px] uppercase font-bold">Confidence</span>
-                                            <strong class="text-slate-800 font-bold" x-text="compareResult?.engines?.[engineKey]?.confidence !== null ? `${Math.round(compareResult?.engines?.[engineKey]?.confidence * (compareResult?.engines?.[engineKey]?.confidence <= 1 ? 100 : 1))}%` : 'N/A'"></strong>
-                                        </div>
-                                    </div>
-
-                                    {{-- Error / Not Available Reason --}}
-                                    <div x-show="compareResult?.engines?.[engineKey]?.error" class="bg-rose-50 border border-rose-200 text-rose-800 p-2.5 rounded-lg text-[10px] font-mono mb-3 whitespace-pre-wrap leading-tight" x-text="compareResult?.engines?.[engineKey]?.error"></div>
-
-                                    {{-- 4 Standardized AMIS Fields --}}
-                                    <div class="space-y-2 bg-slate-50/80 p-3 rounded-lg border border-slate-100">
-                                        <div>
-                                            <small class="text-[9px] font-bold text-slate-400 uppercase block">Provider / Mode</small>
-                                            <strong class="text-xs font-bold text-slate-800 block truncate" x-text="compareResult?.engines?.[engineKey]?.parsed?.provider || 'Other / Unknown'"></strong>
-                                        </div>
-                                        <div>
-                                            <small class="text-[9px] font-bold text-slate-400 uppercase block">Reference No.</small>
-                                            <strong class="text-xs font-bold text-slate-800 block truncate" x-text="compareResult?.engines?.[engineKey]?.parsed?.reference_number || 'Not detected'"></strong>
-                                        </div>
-                                        <div>
-                                            <small class="text-[9px] font-bold text-slate-400 uppercase block">Date & Time</small>
-                                            <strong class="text-xs font-bold text-slate-800 block truncate" x-text="compareResult?.engines?.[engineKey]?.parsed?.transaction_date ? `${compareResult?.engines?.[engineKey]?.parsed?.transaction_date} ${compareResult?.engines?.[engineKey]?.parsed?.transaction_time || ''}` : 'Not detected'"></strong>
-                                        </div>
-                                        <div>
-                                            <small class="text-[9px] font-bold text-slate-400 uppercase block">Amount</small>
-                                            <strong class="text-xs font-bold text-slate-800 block truncate" x-text="compareResult?.engines?.[engineKey]?.parsed?.amount !== null ? `${compareResult?.engines?.[engineKey]?.parsed?.currency || 'PHP'} ${numberFormat(compareResult?.engines?.[engineKey]?.parsed?.amount)}` : 'Not detected'"></strong>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {{-- Toggle Raw Text --}}
-                                <div class="mt-3 pt-3 border-t border-slate-100">
-                                    <button type="button" @click="compareResult.engines[engineKey].showRaw = !compareResult.engines[engineKey].showRaw" class="text-[11px] font-semibold text-slate-600 hover:text-slate-900 flex items-center justify-between w-full">
-                                        <span>Raw OCR Text</span>
-                                        <span x-text="compareResult?.engines?.[engineKey]?.showRaw ? 'Hide' : 'View'"></span>
-                                    </button>
-                                    <div x-show="compareResult?.engines?.[engineKey]?.showRaw" class="mt-2 bg-slate-950 text-emerald-400 p-2.5 rounded text-[10px] font-mono whitespace-pre-wrap max-h-48 overflow-y-auto" x-text="compareResult?.engines?.[engineKey]?.raw_text || 'No raw text'"></div>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -369,19 +436,12 @@
             return {
                 testItems: [],
                 isProcessingAll: false,
+                isComparingAll: false,
                 activeScannerModal: false,
-                activeCompareModal: false,
                 modalItem: null,
-                compareItem: null,
-                compareResult: null,
-                isComparingEngines: false,
+                viewMode: 'summary',
                 envDiagnostics: null,
-                groundTruthInput: {
-                    provider: '',
-                    reference: '',
-                    date: '',
-                    amount: ''
-                },
+                toastMessage: null,
 
                 async fetchEnvDiagnostics() {
                     try {
@@ -405,7 +465,7 @@
                             previewUrl: URL.createObjectURL(file),
                             status: 'pending',
                             label: 'PENDING',
-                            message: 'Ready for processing.',
+                            message: 'Ready for test.',
                             provider: null,
                             reference_number: null,
                             transaction_date: null,
@@ -415,7 +475,16 @@
                             isProcessing: false,
                             isComparing: false,
                             result: null,
-                            showTech: false,
+                            comparison: null,
+                            expected: {
+                                provider: '',
+                                reference: '',
+                                date: '',
+                                amount: ''
+                            },
+                            showRaw: { easyocr: false, paddleocr: false, doctr: false, tesseract: false },
+                            showJson: { easyocr: false, paddleocr: false, doctr: false, tesseract: false },
+                            showFinalJson: false,
                         });
                     });
                 },
@@ -461,16 +530,9 @@
                     }
                 },
 
-                async openCompareModal(item) {
-                    this.compareItem = item;
-                    this.activeCompareModal = true;
-                    await this.runEngineComparison(item);
-                },
-
                 async runEngineComparison(item) {
                     if (!item) return;
 
-                    this.isComparingEngines = true;
                     item.isComparing = true;
 
                     const formData = new FormData();
@@ -480,10 +542,10 @@
                     if (item.file) {
                         formData.append('image', item.file);
                     }
-                    formData.append('expected_provider', this.groundTruthInput.provider || '');
-                    formData.append('expected_reference', this.groundTruthInput.reference || '');
-                    formData.append('expected_date', this.groundTruthInput.date || '');
-                    formData.append('expected_amount', this.groundTruthInput.amount || '');
+                    formData.append('expected_provider', item.expected?.provider || '');
+                    formData.append('expected_reference', item.expected?.reference || '');
+                    formData.append('expected_date', item.expected?.date || '');
+                    formData.append('expected_amount', item.expected?.amount || '');
 
                     try {
                         const response = await fetch("{{ route('admin.receipt_test.compare') }}", {
@@ -496,7 +558,7 @@
 
                         if (response.ok) {
                             const data = await response.json();
-                            this.compareResult = data.comparison;
+                            item.comparison = data.comparison;
                             if (data.comparison?.environment) {
                                 this.envDiagnostics = data.comparison.environment;
                             }
@@ -506,7 +568,6 @@
                     } catch (e) {
                         console.error('Error running OCR comparison:', e);
                     } finally {
-                        this.isComparingEngines = false;
                         item.isComparing = false;
                     }
                 },
@@ -519,8 +580,167 @@
                     this.isProcessingAll = false;
                 },
 
-                countByStatus(status) {
-                    return this.testItems.filter(item => item.status === status).length;
+                async runAllCompareTests() {
+                    this.isComparingAll = true;
+                    for (let i = 0; i < this.testItems.length; i++) {
+                        await this.runEngineComparison(this.testItems[i]);
+                    }
+                    this.isComparingAll = false;
+                },
+
+                countComparedReceipts() {
+                    return this.testItems.filter(item => item.comparison !== null).length;
+                },
+
+                engineStats(engineKey) {
+                    const comparedItems = this.testItems.filter(item => item.comparison?.engines?.[engineKey]?.attempted === true);
+                    const testedCount = comparedItems.length;
+
+                    if (testedCount === 0) {
+                        return { testedCount: 0, avgFieldsDetected: '0.0', avgConfidence: null, avgDurationMs: 0, hasGroundTruth: false, avgCorrect: '0.0' };
+                    }
+
+                    let totalFields = 0;
+                    let totalConfidence = 0;
+                    let confCount = 0;
+                    let totalDuration = 0;
+                    let totalCorrect = 0;
+                    let groundTruthItems = 0;
+
+                    comparedItems.forEach(item => {
+                        const eng = item.comparison.engines[engineKey];
+                        const parsed = eng.parsed || {};
+                        let fields = 0;
+                        if (parsed.provider && parsed.provider !== 'Other / Unknown') fields++;
+                        if (parsed.reference_number) fields++;
+                        if (parsed.transaction_date) fields++;
+                        if (parsed.amount !== null && parsed.amount !== undefined) fields++;
+
+                        totalFields += fields;
+                        totalDuration += (eng.duration_ms || 0);
+
+                        if (eng.confidence !== null && eng.confidence !== undefined) {
+                            let conf = eng.confidence;
+                            if (conf <= 1) conf = conf * 100;
+                            totalConfidence += conf;
+                            confCount++;
+                        }
+
+                        if (eng.ground_truth?.has_expected) {
+                            groundTruthItems++;
+                            totalCorrect += eng.ground_truth.correct_count;
+                        }
+                    });
+
+                    return {
+                        testedCount: testedCount,
+                        avgFieldsDetected: (totalFields / testedCount).toFixed(1),
+                        avgConfidence: confCount > 0 ? Math.round(totalConfidence / confCount) : null,
+                        avgDurationMs: Math.round(totalDuration / testedCount),
+                        hasGroundTruth: groundTruthItems > 0,
+                        avgCorrect: groundTruthItems > 0 ? (totalCorrect / groundTruthItems).toFixed(1) : '0.0'
+                    };
+                },
+
+                itemEngineScore(item, engineKey) {
+                    const eng = item.comparison?.engines?.[engineKey];
+                    if (!eng) return 'Not run';
+
+                    if (eng.status === 'NOT_AVAILABLE') return 'Not Available';
+                    if (eng.status === 'FAILED') return 'Failed';
+
+                    if (eng.ground_truth?.has_expected) {
+                        return `${eng.ground_truth.correct_count}/4 Correct`;
+                    }
+
+                    const parsed = eng.parsed || {};
+                    let fields = 0;
+                    if (parsed.provider && parsed.provider !== 'Other / Unknown') fields++;
+                    if (parsed.reference_number) fields++;
+                    if (parsed.transaction_date) fields++;
+                    if (parsed.amount !== null && parsed.amount !== undefined) fields++;
+
+                    return `${fields}/4 Fields`;
+                },
+
+                itemEngineScoreClass(item, engineKey) {
+                    const eng = item.comparison?.engines?.[engineKey];
+                    if (!eng) return 'bg-slate-100 text-slate-500';
+                    if (eng.status === 'NOT_AVAILABLE') return 'bg-amber-100 text-amber-800';
+                    if (eng.status === 'FAILED') return 'bg-rose-100 text-rose-800';
+
+                    if (eng.ground_truth?.has_expected) {
+                        return eng.ground_truth.correct_count === 4 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800';
+                    }
+
+                    return 'bg-emerald-50 text-emerald-800 border border-emerald-200';
+                },
+
+                expandAllRawText() {
+                    this.testItems.forEach(item => {
+                        item.showRaw = { easyocr: true, paddleocr: true, doctr: true, tesseract: true };
+                    });
+                    this.toast('Expanded all raw OCR text containers.');
+                },
+
+                expandAllJson() {
+                    this.testItems.forEach(item => {
+                        item.showJson = { easyocr: true, paddleocr: true, doctr: true, tesseract: true };
+                        item.showFinalJson = true;
+                    });
+                    this.toast('Expanded all JSON containers.');
+                },
+
+                collapseAll() {
+                    this.testItems.forEach(item => {
+                        item.showRaw = { easyocr: false, paddleocr: false, doctr: false, tesseract: false };
+                        item.showJson = { easyocr: false, paddleocr: false, doctr: false, tesseract: false };
+                        item.showFinalJson = false;
+                        item.showTech = false;
+                    });
+                    this.toast('Collapsed all raw text and JSON containers.');
+                },
+
+                copyAllResultsJson() {
+                    const exportData = {
+                        timestamp: new Date().toISOString(),
+                        environment: this.envDiagnostics,
+                        total_receipts: this.testItems.length,
+                        receipts: this.testItems.map(item => ({
+                            filename: item.filename,
+                            status: item.status,
+                            label: item.label,
+                            final_amis_result: {
+                                provider: item.provider,
+                                reference_number: item.reference_number,
+                                transaction_date: item.transaction_date,
+                                transaction_time: item.transaction_time,
+                                amount: item.amount,
+                                currency: item.currency,
+                                extraction_method: item.result?.technical_details?.extraction_method,
+                                parsed_fields: item.result?.technical_details?.parsed_fields,
+                            },
+                            ocr_comparison: item.comparison,
+                        }))
+                    };
+
+                    this.copyToClipboard(JSON.stringify(exportData, null, 2), 'All Batch Results JSON');
+                },
+
+                copyToClipboard(text, label) {
+                    if (!text) return;
+                    navigator.clipboard.writeText(text).then(() => {
+                        this.toast(`Copied ${label} to clipboard!`);
+                    }).catch(err => {
+                        console.error('Copy failed:', err);
+                    });
+                },
+
+                toast(msg) {
+                    this.toastMessage = msg;
+                    setTimeout(() => {
+                        if (this.toastMessage === msg) this.toastMessage = null;
+                    }, 2500);
                 },
 
                 statusBadgeClass(status) {
