@@ -1827,12 +1827,11 @@ class PaymentController extends Controller
             return false;
         }
 
-        $expression = DB::connection()->getDriverName() === 'mysql'
-            ? "LOWER(REGEXP_REPLACE(reference_number, '[^A-Za-z0-9]', ''))"
-            : "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(reference_number, '-', ''), ' ', ''), '_', ''), '/', ''), '.', ''))";
+        $cleanRef = Str::lower(preg_replace('/[^A-Za-z0-9]/', '', $normalizedReference));
 
         return DB::table('finance_transactions')
-            ->whereRaw("{$expression} = ?", [Str::lower($normalizedReference)])
+            ->whereNotNull('reference_number')
+            ->whereRaw("LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(reference_number, '-', ''), ' ', ''), '_', ''), '/', ''), '.', '')) = ?", [$cleanRef])
             ->exists();
     }
 
