@@ -86,10 +86,90 @@ class ReceiptOcrComparatorService
             ];
         }
 
+        // Build Field-Level Multi-Engine Consensus
+        $consensus = $this->buildFieldConsensus($results);
+
         return [
             'environment' => $this->checkEnvironmentDiagnostics(),
             'expected_values' => $expectedValues,
             'engines' => $results,
+            'consensus' => $consensus,
+        ];
+    }
+
+    /**
+     * Build Field-Level Multi-Engine Consensus Across docTR, Tesseract, and Paperless-ngx
+     */
+    public function buildFieldConsensus(array $engineResults): array
+    {
+        $fields = ['provider', 'reference_number', 'amount', 'currency', 'transaction_date', 'transaction_time'];
+        $consensusFields = [];
+
+        foreach ($fields as $field) {
+            $candidates = [];
+            foreach ($engineResults as $engineKey => $res) {
+                $parsed = $res['parsed'] ?? [];
+                $val = $parsed[$field] ?? null;
+                if ($val !== null && $val !== '' && $val !== 'Other / Unknown') {
+                    $candidates[] = [
+                        'engine' => $res['engine'] ?? $engineKey,
+                        'engine_key' => $engineKey,
+                        'value' => $val,
+                        'normalized' => ($field === 'reference_number') ? $this->normalizer->normalizeReference($val) : (is_string($val) ? mb_strtolower((string) $val) : $val),
+                        'field_meta' => $parsed['fields'][$field] ?? [],
+                    ];
+                }
+            }
+
+            if (empty($candidates)) {
+                $consensusFields[$field] = [
+                    'value' => null,
+                    'source_engine' => 'None',
+                    'confidence' => 'none',
+                    'agreement_count' => 0,
+                    'matched_label' => null,
+                ];
+                continue;
+            }
+
+            // Find Majority Agreement
+            $grouped = [];
+            foreach ($candidates as $cand) {
+                $normKey = (string) $cand['normalized'];
+                if (! isset($grouped[$normKey])) {
+                    $grouped[$normKey] = [
+                        'count' => 0,
+                        'candidate' => $cand,
+                    ];
+                }
+                $grouped[$normKey]['count']++;
+            }
+
+            // Sort by agreement count descending
+            usort($grouped, fn ($a, $b) => $b['count'] <=> $a['count']);
+            $topGroup = $grouped[0];
+            $bestCandidate = $topGroup['candidate'];
+            $agreementCount = $topGroup['count'];
+
+            $consensusFields[$field] = [
+                'value' => $bestCandidate['value'],
+                'source_engine' => $bestCandidate['engine'],
+                'confidence' => $agreementCount >= 2 ? 'high' : 'medium',
+                'agreement_count' => $agreementCount,
+                'matched_label' => $bestCandidate['field_meta']['matched_label'] ?? null,
+                'raw_candidate' => $bestCandidate['field_meta']['raw_candidate'] ?? (string) $bestCandidate['value'],
+            ];
+        }
+
+        return [
+            'provider' => $consensusFields['provider']['value'] ?? 'Other / Unknown',
+            'reference_number' => $consensusFields['reference_number']['value'] ?? null,
+            'normalized_reference' => $this->normalizer->normalizeReference($consensusFields['reference_number']['value'] ?? null),
+            'amount' => $consensusFields['amount']['value'] ?? null,
+            'currency' => $consensusFields['currency']['value'] ?? 'PHP',
+            'transaction_date' => $consensusFields['transaction_date']['value'] ?? null,
+            'transaction_time' => $consensusFields['transaction_time']['value'] ?? null,
+            'field_consensus_metadata' => $consensusFields,
         ];
     }
 
