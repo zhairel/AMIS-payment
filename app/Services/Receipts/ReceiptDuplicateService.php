@@ -7,19 +7,27 @@ use App\Models\ReceiptSubmission;
 
 class ReceiptDuplicateService
 {
-    public function check(ReceiptSubmission $receipt): array
+    public function check(ReceiptSubmission $receipt, ?int $ignorePaymentSubmissionId = null): array
     {
         $matches = [];
         $status = 'UNIQUE';
         $linkedPaymentId = $receipt->paymentSubmission()->value('id');
+        $excludedPaymentIds = array_values(array_unique(array_filter([
+            $linkedPaymentId,
+            $ignorePaymentSubmissionId,
+        ])));
 
         $exactReceipt = ReceiptSubmission::query()
             ->whereHas('paymentSubmission')
             ->where('id', '!=', $receipt->id)
+            ->when($excludedPaymentIds, fn ($query) => $query->whereDoesntHave(
+                'paymentSubmission',
+                fn ($paymentQuery) => $paymentQuery->whereIn('id', $excludedPaymentIds)
+            ))
             ->where('receipt_hash', $receipt->receipt_hash)
             ->first();
         $legacyReceipt = PaymentSubmission::query()
-            ->when($linkedPaymentId, fn ($query) => $query->whereKeyNot($linkedPaymentId))
+            ->when($excludedPaymentIds, fn ($query) => $query->whereNotIn('id', $excludedPaymentIds))
             ->where('receipt_hash', $receipt->receipt_hash)
             ->first();
         if ($exactReceipt || $legacyReceipt) {
@@ -31,11 +39,15 @@ class ReceiptDuplicateService
             $referenceMatch = ReceiptSubmission::query()
                 ->whereHas('paymentSubmission')
                 ->where('id', '!=', $receipt->id)
+                ->when($excludedPaymentIds, fn ($query) => $query->whereDoesntHave(
+                    'paymentSubmission',
+                    fn ($paymentQuery) => $paymentQuery->whereIn('id', $excludedPaymentIds)
+                ))
                 ->where('normalized_reference', $receipt->normalized_reference)
                 ->when($receipt->provider, fn ($q) => $q->where('provider', $receipt->provider))
                 ->first();
             $legacyReference = PaymentSubmission::query()
-                ->when($linkedPaymentId, fn ($query) => $query->whereKeyNot($linkedPaymentId))
+                ->when($excludedPaymentIds, fn ($query) => $query->whereNotIn('id', $excludedPaymentIds))
                 ->where('reference_normalized', strtolower($receipt->normalized_reference))
                 ->first();
             if ($referenceMatch || $legacyReference) {
@@ -48,6 +60,10 @@ class ReceiptDuplicateService
             $possible = ReceiptSubmission::query()
                 ->whereHas('paymentSubmission')
                 ->where('id', '!=', $receipt->id)
+                ->when($excludedPaymentIds, fn ($query) => $query->whereDoesntHave(
+                    'paymentSubmission',
+                    fn ($paymentQuery) => $paymentQuery->whereIn('id', $excludedPaymentIds)
+                ))
                 ->where('amount', $receipt->amount)
                 ->whereDate('transaction_date', $receipt->transaction_date)
                 ->when($receipt->currency, fn ($q) => $q->where('currency', $receipt->currency))

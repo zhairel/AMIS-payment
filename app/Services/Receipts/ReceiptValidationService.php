@@ -33,9 +33,12 @@ class ReceiptValidationService
             $add($errors, 'transaction_date', 'DATE_MISSING', 'Transaction date could not be determined.');
         } else {
             try {
-                $date = Carbon::parse($fields['transaction_date']);
-                if ($date->isFuture()) {
-                    $add($errors, 'transaction_date', 'DATE_IN_FUTURE', 'Transaction date cannot be in the future.');
+                $date = Carbon::parse($fields['transaction_date'], 'Asia/Manila');
+                $today = Carbon::now('Asia/Manila');
+                if ($date->year > $today->year) {
+                    $add($errors, 'transaction_date', 'DATE_YEAR_IN_FUTURE', "Transaction year cannot be later than {$today->year}.");
+                } elseif ($date->gt($today)) {
+                    $add($warnings, 'transaction_date', 'DATE_LATER_CURRENT_YEAR', 'Transaction date is later in the current year and requires Finance confirmation.');
                 }
                 if ($date->lt(now()->subYears(3))) {
                     $add($warnings, 'transaction_date', 'DATE_OLD', 'Transaction date is unusually old.');
@@ -56,14 +59,73 @@ class ReceiptValidationService
         ];
     }
 
-    public function needsFallback(array $fields, ?float $confidence, array $validation): bool
+    public function needsFallback(array $fields, ?float $confidence, array $validation, array $context = []): bool
     {
-        return empty($fields['normalized_reference'])
+        $provider = (string) ($fields['provider'] ?? '');
+        $reference = (string) ($fields['reference_number'] ?? '');
+        $rawText = trim((string) ($context['raw_text'] ?? ''));
+        $threshold = function_exists('app') && app()->bound('config')
+            ? (float) config('services.receipt_ocr.confidence_threshold', .72)
+            : .72;
+
+        return $provider === ''
+            || $provider === 'Other / Unknown'
+            || empty($fields['normalized_reference'])
+            || $this->referenceLooksSuspicious($reference)
             || empty($fields['amount'])
             || empty($fields['transaction_date'])
+            || empty($fields['transaction_status'])
             || $confidence === null
-            || $confidence < .72
+            || $confidence < $threshold
             || ! ($validation['valid'] ?? false)
-            || preg_match('/\b[A-Z0-9]*[OISB][A-Z0-9]*\b/', (string) ($fields['reference_number'] ?? ''));
+            || $this->amountLooksSuspicious($fields, $rawText)
+            || $this->textLooksNoisy($rawText)
+            || in_array($context['blur_status'] ?? null, ['BLURRY', 'SEVERELY_BLURRY'], true)
+            // Bright white receipt screenshots can look like glare to the
+            // image heuristic. Only camera photos should trigger the slower
+            // docTR fallback for glare; screenshots with complete, reliable
+            // Tesseract fields stay on the fast path.
+            || ((string) ($context['image_type'] ?? '') === 'CAMERA_PHOTO'
+                && (bool) ($context['glare_detected'] ?? false));
+    }
+
+    private function referenceLooksSuspicious(string $reference): bool
+    {
+        $normalized = strtoupper(preg_replace('/[^A-Z0-9]+/i', '', $reference));
+        if (strlen($normalized) < 6 || strlen($normalized) > 36 || ! preg_match('/\d/', $normalized)) {
+            return true;
+        }
+
+        return in_array($normalized, ReceiptFieldNormalizer::EXCLUDED_WORDS, true)
+            || in_array($normalized, ['REQUESTED', 'FOLLOWING', 'OFFICIAL', 'RECEIPT', 'PAYMENT'], true);
+    }
+
+    private function amountLooksSuspicious(array $fields, string $rawText): bool
+    {
+        $label = strtolower((string) data_get($fields, 'fields.amount.matched_label', ''));
+        if (preg_match('/fee|vat|tax|discount|balance|service charge|exchange rate/', $label)) {
+            return true;
+        }
+
+        return in_array($label, ['currency pattern match', 'pre-extracted amount'], true)
+            && preg_match('/\b(?:fee|vat|service\s+charge|exchange\s+rate)\b/i', $rawText);
+    }
+
+    private function textLooksNoisy(string $text): bool
+    {
+        if ($text === '') {
+            return true;
+        }
+        if (mb_strlen($text) < 24) {
+            return true;
+        }
+
+        $compact = preg_replace('/\s+/u', '', $text);
+        if ($compact === '') {
+            return true;
+        }
+        $semanticCharacters = preg_match_all('/[\pL\pN.,:₱$\-]/u', $compact);
+
+        return ($semanticCharacters / max(1, mb_strlen($compact))) < .55;
     }
 }

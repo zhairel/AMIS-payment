@@ -12,10 +12,11 @@ class ReceiptOcrComparatorService
 {
     public function __construct(
         private readonly ReceiptFieldNormalizer $normalizer,
-        private readonly DocTrAdapter $docTr = new DocTrAdapter(),
-        private readonly TesseractAdapter $tesseract = new TesseractAdapter(),
-        private readonly PaperlessNgxAdapter $paperless = new PaperlessNgxAdapter(),
-        private readonly ReceiptImagePreprocessorService $preprocessor = new ReceiptImagePreprocessorService(),
+        private readonly DocTrAdapter $docTr = new DocTrAdapter,
+        private readonly TesseractAdapter $tesseract = new TesseractAdapter,
+        private readonly PaperlessNgxAdapter $paperless = new PaperlessNgxAdapter,
+        private readonly ReceiptImagePreprocessorService $preprocessor = new ReceiptImagePreprocessorService,
+        private ?ReceiptFieldConsensusService $fieldConsensus = null,
     ) {}
 
     public function checkEnvironmentDiagnostics(): array
@@ -28,8 +29,8 @@ class ReceiptOcrComparatorService
         } catch (Throwable) {
         }
 
-        $python = $basePath . '/.venv-ocr/bin/python';
-        $script = $basePath . '/scripts/ocr_engine_runner.py';
+        $python = $basePath.'/.venv-ocr/bin/python';
+        $script = $basePath.'/scripts/ocr_engine_runner.py';
         $process = new Process([$python, $script, 'check_env']);
         $process->run();
 
@@ -66,7 +67,7 @@ class ReceiptOcrComparatorService
                 'status' => 'SUCCESS',
                 'image_type' => 'UNKNOWN',
                 'temp_enhanced_path' => null,
-                'error' => 'Non-blocking preprocessor exception: ' . $e->getMessage(),
+                'error' => 'Non-blocking preprocessor exception: '.$e->getMessage(),
             ];
         }
 
@@ -96,7 +97,7 @@ class ReceiptOcrComparatorService
                     'regions' => 0,
                     'confidence' => null,
                     'duration_ms' => 0,
-                    'error' => "Adapter exception [{$engineName}]: " . $e->getMessage(),
+                    'error' => "Adapter exception [{$engineName}]: ".$e->getMessage(),
                 ];
             }
 
@@ -106,7 +107,7 @@ class ReceiptOcrComparatorService
             $attempted = ($statusOrig !== 'NOT_AVAILABLE');
 
             if (! empty($rawResultOrig['error'])) {
-                $debugErrors[] = "{$engineName}: " . $rawResultOrig['error'];
+                $debugErrors[] = "{$engineName}: ".$rawResultOrig['error'];
             }
 
             $parsedOrig = $this->normalizer->fromOcr(['raw_text' => $rawTextOrig]);
@@ -228,75 +229,24 @@ class ReceiptOcrComparatorService
      */
     public function buildFieldConsensus(array $engineResults): array
     {
-        $fields = ['provider', 'reference_number', 'amount', 'currency', 'transaction_date', 'transaction_time'];
-        $consensusFields = [];
+        $this->fieldConsensus ??= new ReceiptFieldConsensusService($this->normalizer);
+        $candidates = collect($engineResults)->map(function (array $result, string|int $key): array {
+            $status = $result['status'] ?? 'SUCCESS';
 
-        foreach ($fields as $field) {
-            $candidates = [];
-            foreach ($engineResults as $engineKey => $res) {
-                $parsed = $res['parsed'] ?? [];
-                $val = $parsed[$field] ?? null;
-                if ($val !== null && $val !== '' && $val !== 'Other / Unknown') {
-                    $candidates[] = [
-                        'engine' => $res['engine'] ?? $engineKey,
-                        'engine_key' => $engineKey,
-                        'value' => $val,
-                        'variant_used' => $res['variant_used'] ?? 'Original Image',
-                        'normalized' => ($field === 'reference_number') ? $this->normalizer->normalizeReference($val) : (is_string($val) ? mb_strtolower((string) $val) : $val),
-                        'field_meta' => $parsed['fields'][$field] ?? [],
-                    ];
-                }
-            }
-
-            if (empty($candidates)) {
-                $consensusFields[$field] = [
-                    'value' => null,
-                    'source_engine' => 'None',
-                    'confidence' => 'none',
-                    'agreement_count' => 0,
-                    'matched_label' => null,
-                ];
-                continue;
-            }
-
-            // Find Majority Agreement
-            $grouped = [];
-            foreach ($candidates as $cand) {
-                $normKey = (string) $cand['normalized'];
-                if (! isset($grouped[$normKey])) {
-                    $grouped[$normKey] = [
-                        'count' => 0,
-                        'candidate' => $cand,
-                    ];
-                }
-                $grouped[$normKey]['count']++;
-            }
-
-            usort($grouped, fn ($a, $b) => $b['count'] <=> $a['count']);
-            $topGroup = $grouped[0];
-            $bestCandidate = $topGroup['candidate'];
-            $agreementCount = $topGroup['count'];
-
-            $consensusFields[$field] = [
-                'value' => $bestCandidate['value'],
-                'source_engine' => $bestCandidate['engine'] . ' (' . $bestCandidate['variant_used'] . ')',
-                'confidence' => $agreementCount >= 2 ? 'high' : 'medium',
-                'agreement_count' => $agreementCount,
-                'matched_label' => $bestCandidate['field_meta']['matched_label'] ?? null,
-                'raw_candidate' => $bestCandidate['field_meta']['raw_candidate'] ?? (string) $bestCandidate['value'],
+            return [
+                'engine' => $result['engine'] ?? (string) $key,
+                'engine_key' => (string) $key,
+                'variant' => $result['variant_used'] ?? 'Original Image',
+                'status' => $status,
+                'success' => strtoupper((string) $status) === 'SUCCESS',
+                'confidence' => $result['confidence'] ?? null,
+                'raw_text' => $result['raw_text'] ?? '',
+                'parsed' => $result['parsed'] ?? [],
             ];
-        }
+        })->all();
+        $merged = $this->fieldConsensus->merge($candidates);
 
-        return [
-            'provider' => $consensusFields['provider']['value'] ?? 'Other / Unknown',
-            'reference_number' => $consensusFields['reference_number']['value'] ?? null,
-            'normalized_reference' => $this->normalizer->normalizeReference($consensusFields['reference_number']['value'] ?? null),
-            'amount' => $consensusFields['amount']['value'] ?? null,
-            'currency' => $consensusFields['currency']['value'] ?? 'PHP',
-            'transaction_date' => $consensusFields['transaction_date']['value'] ?? null,
-            'transaction_time' => $consensusFields['transaction_time']['value'] ?? null,
-            'field_consensus_metadata' => $consensusFields,
-        ];
+        return $merged['fields'];
     }
 
     private function evaluateGroundTruth(array $parsed, array $expected): array

@@ -3,8 +3,6 @@
 namespace App\Services\Receipts;
 
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ReceiptFieldNormalizer
@@ -50,37 +48,6 @@ class ReceiptFieldNormalizer
         $sender = $ocr['detected_sender'] ?? $this->extractName($rawText, 'sender|sent\s+by|from|remitter|account\s+holder|debit\s+from');
         $receiver = $ocr['detected_receiver'] ?? $this->extractName($rawText, 'receiver|recipient|beneficiary|paid\s+to|to|account\s+name|merchant');
         $status = $this->extractStatus($rawText);
-
-        // 6. AI Extraction Fallback if required fields are missing
-        if (! empty($rawText) && (empty($reference) || $amount === null || empty($provider) || $provider === 'Other / Unknown')) {
-            $aiResult = $this->attemptAiFallback($rawText);
-            if ($aiResult['success'] ?? false) {
-                $extractionMethod = 'AI Fallback';
-                if (empty($provider) || $provider === 'Other / Unknown') {
-                    $provider = $aiResult['provider'] ?? $provider;
-                    $mode = $this->extractMode($rawText, $provider);
-                }
-                if (empty($reference)) {
-                    $reference = $aiResult['reference_number'] ?? $reference;
-                    $matchedRefLabel = 'AI Extracted Reference';
-                    $rawRefCandidate = $reference;
-                }
-                if ($amount === null && isset($aiResult['amount']) && is_numeric($aiResult['amount'])) {
-                    $amount = round((float) $aiResult['amount'], 2);
-                    $currency = ! empty($aiResult['currency']) ? strtoupper($aiResult['currency']) : $currency;
-                    $matchedAmountLabel = 'AI Extracted Amount';
-                    $rawAmountCandidate = (string) $amount;
-                }
-                if (empty($date) && ! empty($aiResult['transaction_date'])) {
-                    $date = $aiResult['transaction_date'];
-                    $matchedDateLabel = 'AI Extracted Date';
-                    $rawDateCandidate = $date;
-                }
-                if (empty($time) && ! empty($aiResult['transaction_time'])) {
-                    $time = $aiResult['transaction_time'];
-                }
-            }
-        }
 
         // Structured Per-Field Metadata
         $fieldsMetadata = [
@@ -176,6 +143,8 @@ class ReceiptFieldNormalizer
         // Disambiguate sending provider vs receiving bank
         if (preg_match('/\b(?:sent\s+via|via|from)\s+gcash\b/i', $text) || preg_match('/\bgcash\b/i', $text)) {
             $provider = 'GCash';
+        } elseif (preg_match('/\benjaz(?:\s+easy\s+transfer)?\b/i', $text)) {
+            $provider = 'Enjaz Easy Transfer';
         } elseif (str_contains($textLower, 'anb') || str_contains($textLower, 'anb.com.sa') || str_contains($textLower, 'telemoney')) {
             $provider = 'ANB / TeleMoney Transfer';
         } elseif (str_contains($textLower, 'd360')) {
@@ -231,17 +200,22 @@ class ReceiptFieldNormalizer
     public function extractProvider(string $text): string
     {
         [$provider] = $this->extractProviderAndBank($text);
+
         return $provider;
     }
 
     private function extractMode(string $text, string $provider): ?string
     {
+        if (str_contains($provider, 'Enjaz')) {
+            return 'Remittance / transfer service';
+        }
         if (str_contains($provider, 'TeleMoney')) {
             return 'TeleMoney Transfer';
         }
         if (preg_match('/(?:transfer\s+type|payment\s+mode|mode\s+of\s+payment|method)\s*[:\-]?\s*([A-Za-z0-9\s]{3,30})/i', $text, $m)) {
             return trim($m[1]);
         }
+
         return null;
     }
 
@@ -360,8 +334,11 @@ class ReceiptFieldNormalizer
             return false;
         }
 
-        // Must contain at least one digit or standard transaction pattern
-        if (! preg_match('/\d/', $candidate) && ! preg_match('/^[A-Z0-9-]{8,}$/i', $candidate)) {
+        // OCR labels and provider names are often returned as the detected reference
+        // (for example, "TRANSACTION" or the OCR typo "TRANSACION"). Real payment
+        // references handled by this flow contain at least one digit. Keep uncertain
+        // all-letter values blank so the parent can enter the identifier manually.
+        if (! preg_match('/\d/', $candidate)) {
             return false;
         }
 
@@ -659,64 +636,5 @@ class ReceiptFieldNormalizer
         }
 
         return null;
-    }
-
-    /**
-     * AI Extraction Fallback Layer via Gemini API or Google Vision Annotations
-     */
-    private function attemptAiFallback(string $rawText): array
-    {
-        $apiKey = null;
-        if (function_exists('config')) {
-            try {
-                $apiKey = config('services.google_vision.key') ?: config('services.gemini.key');
-            } catch (\Throwable) {
-            }
-        }
-
-        if (empty($apiKey)) {
-            return ['success' => false];
-        }
-
-        try {
-            $prompt = "You are an expert financial receipt parser. Extract payment fields from this receipt OCR text:\n\n"
-                . $rawText . "\n\n"
-                . "Return ONLY valid JSON matching this exact schema:\n"
-                . "{\n"
-                . '  "provider": string or null,' . "\n"
-                . '  "reference_number": string or null,' . "\n"
-                . '  "amount": float or null,' . "\n"
-                . '  "currency": string or null,' . "\n"
-                . '  "transaction_date": "YYYY-MM-DD" or null,' . "\n"
-                . '  "transaction_time": "HH:MM:SS" or null' . "\n"
-                . "}\n"
-                . "Rules:\n"
-                . "1. Do NOT invent missing values.\n"
-                . "2. reference_number MUST NOT be an account number, mobile number, or fee.\n"
-                . "3. If time is missing from text, set transaction_time to null.\n";
-
-            $response = Http::timeout(15)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}", [
-                'contents' => [
-                    ['parts' => [['text' => $prompt]]],
-                ],
-                'generationConfig' => [
-                    'temperature' => 0.1,
-                    'responseMimeType' => 'application/json',
-                ],
-            ]);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                $jsonText = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                $parsed = json_decode($jsonText, true);
-                if (is_array($parsed)) {
-                    return array_merge(['success' => true], $parsed);
-                }
-            }
-        } catch (\Throwable $e) {
-            Log::warning('Receipt AI Fallback exception: ' . $e->getMessage());
-        }
-
-        return ['success' => false];
     }
 }

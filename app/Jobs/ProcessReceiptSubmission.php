@@ -13,11 +13,14 @@ class ProcessReceiptSubmission implements ShouldQueue
 
     public int $tries = 2;
 
-    public int $timeout = 180;
+    public int $timeout = 240;
 
     public bool $failOnTimeout = true;
 
-    public function __construct(public readonly int $receiptSubmissionId)
+    public function __construct(
+        public readonly int $receiptSubmissionId,
+        public readonly ?int $ignorePaymentSubmissionId = null,
+    )
     {
         $this->onQueue('receipts');
     }
@@ -31,7 +34,7 @@ class ProcessReceiptSubmission implements ShouldQueue
         ], true)) {
             return;
         }
-        $pipeline->process($receipt);
+        $pipeline->process($receipt, $this->ignorePaymentSubmissionId);
     }
 
     public function failed(?\Throwable $exception): void

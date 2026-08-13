@@ -14,11 +14,13 @@ class ReceiptImagePreprocessorService
             if (function_exists('base_path')) {
                 $basePath = base_path();
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
         }
 
-        $python = $basePath . '/.venv-ocr/bin/python';
-        $script = $basePath . '/scripts/receipt_preprocessor.py';
+        $python = function_exists('app') && app()->bound('config')
+            ? (string) config('services.receipt_ocr.python', $basePath.'/.venv-ocr/bin/python')
+            : $basePath.'/.venv-ocr/bin/python';
+        $script = $basePath.'/scripts/receipt_preprocessor.py';
 
         try {
             $process = new Process([$python, $script, $imagePath]);
@@ -47,7 +49,7 @@ class ReceiptImagePreprocessorService
                 'preprocessing_status' => 'FALLBACK',
                 'reupload_required' => false,
                 'user_message' => null,
-                'error' => 'Preprocessor script error: ' . $process->getErrorOutput(),
+                'error' => 'Preprocessor script error: '.$process->getErrorOutput(),
             ];
         } catch (Throwable $e) {
             return [
@@ -66,7 +68,7 @@ class ReceiptImagePreprocessorService
                 'preprocessing_status' => 'FALLBACK',
                 'reupload_required' => false,
                 'user_message' => null,
-                'error' => 'Preprocessor exception: ' . $e->getMessage(),
+                'error' => 'Preprocessor exception: '.$e->getMessage(),
             ];
         }
     }
