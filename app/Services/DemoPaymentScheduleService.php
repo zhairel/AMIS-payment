@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DemoPaymentScheduleService
 {
-    public function build(Collection $children): array
+    public function build(Collection $children, ?User $user = null): array
     {
         if ($children->isEmpty()) {
             return [];
@@ -42,6 +45,19 @@ class DemoPaymentScheduleService
             $groups[0]['paid_count']++;
         }
 
+        // Fetch cumulative approved payments for this user from shared payment_submissions
+        $userId = $user?->id ?? ($children->first()->user_id ?? 2);
+        $approvedPaymentsTotal = 0.0;
+
+        if ($userId && Schema::hasTable('payment_submissions')) {
+            $approvedPaymentsTotal = (float) DB::table('payment_submissions')
+                ->where('user_id', $userId)
+                ->whereIn('status', ['approved', 'verified'])
+                ->sum('total_amount');
+        }
+
+        $remainingPaymentPool = $approvedPaymentsTotal;
+
         for ($installment = 1; $installment <= $installmentCount; $installment++) {
             $dueDate = $monthlyStart->copy()->addMonthsNoOverflow($installment - 1);
             $groups[$installment] = $this->group($installment, $dueDate->format('F'), $dueDate, false);
@@ -52,21 +68,36 @@ class DemoPaymentScheduleService
                     continue;
                 }
 
-                $amount = $this->installmentAmount($child, $installment, $childInstallments);
+                $originalAmount = $this->installmentAmount($child, $installment, $childInstallments);
+
+                $verifiedPaid = 0.0;
+                if ($remainingPaymentPool > 0) {
+                    $verifiedPaid = min($remainingPaymentPool, $originalAmount);
+                    $remainingPaymentPool = max(0.0, round($remainingPaymentPool - $verifiedPaid, 2));
+                }
+
+                $remainingAmount = max(0.0, round($originalAmount - $verifiedPaid, 2));
+                $isPaid = $remainingAmount <= 0;
 
                 $groups[$installment]['children'][] = $this->childRow(
                     $child,
                     null,
-                    $amount,
-                    0,
-                    $amount,
-                    false,
+                    $originalAmount,
+                    $verifiedPaid,
+                    $remainingAmount,
+                    $isPaid,
                     strtoupper($dueDate->format('F Y')),
                 );
-                $groups[$installment]['total_due'] += $amount;
-                $groups[$installment]['total_remaining'] += $amount;
-                $groups[$installment]['unpaid_count']++;
-                $groups[$installment]['is_overdue'] = $groups[$installment]['is_overdue'] || $dueDate->isPast();
+                $groups[$installment]['total_due'] += $originalAmount;
+                $groups[$installment]['total_paid'] += $verifiedPaid;
+                $groups[$installment]['total_remaining'] += $remainingAmount;
+
+                if ($isPaid) {
+                    $groups[$installment]['paid_count']++;
+                } else {
+                    $groups[$installment]['unpaid_count']++;
+                    $groups[$installment]['is_overdue'] = $groups[$installment]['is_overdue'] || $dueDate->isPast();
+                }
             }
         }
 
@@ -94,20 +125,39 @@ class DemoPaymentScheduleService
         $installmentCount = max(1, (int) $child->installment_months);
         $monthlyStart = Carbon::create($startYear, 7, 15)->startOfDay();
 
+        $userId = $child->user_id ?? 2;
+        $approvedPaymentsTotal = 0.0;
+        if ($userId && Schema::hasTable('payment_submissions')) {
+            $approvedPaymentsTotal = (float) DB::table('payment_submissions')
+                ->where('user_id', $userId)
+                ->whereIn('status', ['approved', 'verified'])
+                ->sum('total_amount');
+        }
+
+        $remainingPaymentPool = $approvedPaymentsTotal;
+
         return collect(range(1, $installmentCount))
-            ->map(function (int $installment) use ($child, $installmentCount, $monthlyStart) {
+            ->map(function (int $installment) use ($child, $installmentCount, $monthlyStart, &$remainingPaymentPool) {
                 $dueDate = $monthlyStart->copy()->addMonthsNoOverflow($installment - 1);
-                $amount = $this->installmentAmount($child, $installment, $installmentCount);
-                $status = $dueDate->isCurrentMonth()
-                    ? 'Current'
-                    : ($dueDate->isPast() ? 'Overdue' : 'Upcoming');
+                $originalAmount = $this->installmentAmount($child, $installment, $installmentCount);
+
+                $verifiedPaid = 0.0;
+                if ($remainingPaymentPool > 0) {
+                    $verifiedPaid = min($remainingPaymentPool, $originalAmount);
+                    $remainingPaymentPool = max(0.0, round($remainingPaymentPool - $verifiedPaid, 2));
+                }
+
+                $remainingAmount = max(0.0, round($originalAmount - $verifiedPaid, 2));
+                $status = $remainingAmount <= 0
+                    ? 'Paid'
+                    : ($dueDate->isCurrentMonth() ? 'Current' : ($dueDate->isPast() ? 'Overdue' : 'Upcoming'));
 
                 return [
                     'month' => strtoupper($dueDate->format('F Y')),
                     'due_date' => strtoupper($dueDate->format('M d, Y')),
-                    'original' => $amount,
-                    'verified' => 0.0,
-                    'remaining' => $amount,
+                    'original' => $originalAmount,
+                    'verified' => $verifiedPaid,
+                    'remaining' => $remainingAmount,
                     'status' => $status,
                 ];
             })
@@ -165,7 +215,7 @@ class DemoPaymentScheduleService
             'remaining_amount' => $remainingAmount,
             'status' => $isPaid ? 'paid' : 'unpaid',
             'is_paid' => $isPaid,
-            'is_overdue' => false,
+            'is_overdue' => ! $isPaid,
             'paid_at' => null,
             'payment_allowed' => false,
             'lock_reason' => 'Demo schedule only. No official billing record is linked.',

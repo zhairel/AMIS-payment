@@ -168,7 +168,7 @@ class PaymentController extends Controller
         }
 
         if ($students->isEmpty() && $demoChildren->isNotEmpty()) {
-            $monthlyGroups = app(DemoPaymentScheduleService::class)->build($demoChildren);
+            $monthlyGroups = app(DemoPaymentScheduleService::class)->build($demoChildren, $user);
         }
 
         ksort($monthlyGroups);
