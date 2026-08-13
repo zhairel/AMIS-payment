@@ -3,7 +3,6 @@
 namespace App\Services\Receipts;
 
 use App\Services\Receipts\Adapters\DocTrAdapter;
-use App\Services\Receipts\Adapters\GoogleVisionAdapter;
 use App\Services\Receipts\Adapters\OcrEngineAdapterInterface;
 use App\Services\Receipts\Adapters\TesseractAdapter;
 
@@ -13,15 +12,15 @@ class ReceiptProductionOcrService
         private readonly ReceiptImagePreprocessorService $preprocessor,
         private readonly TesseractAdapter $tesseract,
         private readonly DocTrAdapter $docTr,
-        private readonly GoogleVisionAdapter $googleVision,
         private readonly ReceiptFieldNormalizer $normalizer,
         private readonly ReceiptValidationService $validator,
         private readonly ReceiptFieldConsensusService $consensus,
     ) {}
 
     /**
-     * Production OCR policy: Google Vision API first (if API key is configured),
-     * otherwise Tesseract/docTR local engine pipeline.
+     * Production OCR policy: Tesseract first, then docTR only when the complete
+     * Tesseract result is unreliable. Paperless and all other engines are
+     * intentionally excluded.
      *
      * @return array<string, mixed>
      */
@@ -38,23 +37,6 @@ class ReceiptProductionOcrService
         $tesseractAttempts = [];
 
         try {
-            if ($this->googleVision->checkAvailability()['available']) {
-                $gvAttempt = $this->run($this->googleVision, 'google_vision', $preferredPath, $preferredVariant);
-                $attempts[] = $gvAttempt;
-                if ($gvAttempt['success'] && filled($gvAttempt['raw_text'])) {
-                    $gvResult = $this->mergeAttempts([$gvAttempt]);
-
-                    return [
-                        'fields' => $gvResult['fields'],
-                        'uncertain_fields' => $gvResult['uncertain_fields'],
-                        'attempts' => $attempts,
-                        'confidence' => $gvResult['confidence'],
-                        'fallback_used' => false,
-                        'preprocessing' => $preprocessing,
-                        'ocr_status' => $this->ocrStatus($attempts, $gvResult['fields'], $gvResult['uncertain_fields']),
-                    ];
-                }
-            }
             $tesseractAttempts[] = $this->run($this->tesseract, 'tesseract', $preferredPath, $preferredVariant);
             $attempts = $tesseractAttempts;
             $tesseractResult = $this->mergeAttempts($tesseractAttempts);

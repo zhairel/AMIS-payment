@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use App\Services\Receipts\Adapters\DocTrAdapter;
-use App\Services\Receipts\Adapters\GoogleVisionAdapter;
 use App\Services\Receipts\Adapters\TesseractAdapter;
 use App\Services\Receipts\ReceiptFieldConsensusService;
 use App\Services\Receipts\ReceiptFieldNormalizer;
@@ -108,8 +107,6 @@ class ReceiptProductionOcrServiceTest extends TestCase
 
         $tesseract = Mockery::mock(TesseractAdapter::class);
         $docTr = Mockery::mock(DocTrAdapter::class);
-        $googleVision = Mockery::mock(GoogleVisionAdapter::class);
-        $googleVision->shouldReceive('checkAvailability')->andReturn(['available' => false, 'reason' => 'Unit test fallback']);
         $normalizer = new ReceiptFieldNormalizer;
         $validator = new ReceiptValidationService;
 
@@ -118,7 +115,6 @@ class ReceiptProductionOcrServiceTest extends TestCase
                 $preprocessor,
                 $tesseract,
                 $docTr,
-                $googleVision,
                 $normalizer,
                 $validator,
                 new ReceiptFieldConsensusService($normalizer),
