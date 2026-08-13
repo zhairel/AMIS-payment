@@ -41,7 +41,8 @@ class ReceiptImagePreprocessorTest extends TestCase
     {
         $result = $this->preprocessor->preprocess('/non/existent/image.png');
 
-        $this->assertEquals('FAILED', $result['status']);
+        $this->assertEquals('UNKNOWN', $result['image_type']);
+        $this->assertEquals('FALLBACK', $result['preprocessing_status']);
         $this->assertFalse($result['document_detected']);
     }
 }

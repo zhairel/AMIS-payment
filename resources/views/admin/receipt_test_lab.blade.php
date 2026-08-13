@@ -598,6 +598,8 @@
                     if (!item || item.isComparing) return;
 
                     item.isComparing = true;
+                    item.status = 'PROCESSING';
+                    item.label = 'RUNNING OCR...';
                     item.message = 'Comparing docTR, Tesseract, and Paperless-ngx...';
 
                     const formData = new FormData();
@@ -622,25 +624,32 @@
                         });
 
                         const data = await response.json();
+                        const comp = data.comparison || data;
 
-                        if (data.engines) {
-                            item.comparison = data;
-                            item.status = 'SUCCESS';
-                            item.label = 'COMPARISON DONE';
-                            item.message = '3-Pipeline OCR Comparison complete';
+                        if (comp && comp.engines) {
+                            item.comparison = comp;
+                            const compStatus = comp.comparison_status || data.comparison_status || 'SUCCESS';
+                            item.status = compStatus;
+                            item.label = compStatus === 'PARTIAL_SUCCESS' ? 'PARTIAL SUCCESS' : (compStatus === 'SUCCESS' ? 'SUCCESS' : 'FAILED');
+                            item.message = compStatus === 'PARTIAL_SUCCESS' ? 'Comparison completed with partial engine results' : '3-Pipeline OCR Comparison complete';
 
-                            if (data.consensus) {
-                                item.provider = data.consensus.provider;
-                                item.reference_number = data.consensus.reference_number;
-                                item.transaction_date = data.consensus.transaction_date;
-                                item.amount = data.consensus.amount;
-                                item.currency = data.consensus.currency || 'PHP';
+                            const consensus = comp.consensus || data.consensus;
+                            if (consensus) {
+                                item.provider = consensus.provider;
+                                item.reference_number = consensus.reference_number;
+                                item.transaction_date = consensus.transaction_date;
+                                item.amount = consensus.amount;
+                                item.currency = consensus.currency || 'PHP';
                             }
                         } else {
-                            item.message = data.message || 'Comparison failed';
+                            item.status = 'FAILED';
+                            item.label = 'FAILED';
+                            item.message = data.message || data.debug_message || 'Comparison failed';
                         }
                     } catch (e) {
-                        item.message = 'Error comparing OCR engines';
+                        item.status = 'FAILED';
+                        item.label = 'FAILED';
+                        item.message = 'Error comparing OCR engines: ' + e.message;
                     } finally {
                         item.isComparing = false;
                     }
@@ -878,7 +887,8 @@
                 statusBadgeClass(status) {
                     switch (status) {
                         case 'SUCCESS': return 'bg-emerald-100 text-emerald-800';
-                        case 'PROCESSING': return 'bg-amber-100 text-amber-800 animate-pulse';
+                        case 'PARTIAL_SUCCESS': return 'bg-amber-100 text-amber-900 border border-amber-300 font-black';
+                        case 'PROCESSING': return 'bg-sky-100 text-sky-800 animate-pulse';
                         case 'FAILED': return 'bg-rose-100 text-rose-800';
                         default: return 'bg-slate-100 text-slate-600';
                     }

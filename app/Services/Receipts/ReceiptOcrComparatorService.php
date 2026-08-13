@@ -6,6 +6,7 @@ use App\Services\Receipts\Adapters\DocTrAdapter;
 use App\Services\Receipts\Adapters\PaperlessNgxAdapter;
 use App\Services\Receipts\Adapters\TesseractAdapter;
 use Symfony\Component\Process\Process;
+use Throwable;
 
 class ReceiptOcrComparatorService
 {
@@ -24,7 +25,7 @@ class ReceiptOcrComparatorService
             if (function_exists('base_path')) {
                 $basePath = base_path();
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
         }
 
         $python = $basePath . '/.venv-ocr/bin/python';
@@ -56,8 +57,19 @@ class ReceiptOcrComparatorService
 
     public function compareAllEngines(string $filePath, array $expectedValues = []): array
     {
-        // 1. Run Preprocessing Layer
-        $preprocData = $this->preprocessor->preprocess($filePath);
+        // 1. Run Non-Blocking Preprocessing Layer
+        $preprocData = [];
+        try {
+            $preprocData = $this->preprocessor->preprocess($filePath);
+        } catch (Throwable $e) {
+            $preprocData = [
+                'status' => 'SUCCESS',
+                'image_type' => 'UNKNOWN',
+                'temp_enhanced_path' => null,
+                'error' => 'Non-blocking preprocessor exception: ' . $e->getMessage(),
+            ];
+        }
+
         $enhancedPath = $preprocData['temp_enhanced_path'] ?? null;
 
         $adapters = [
@@ -67,23 +79,49 @@ class ReceiptOcrComparatorService
         ];
 
         $results = [];
+        $debugErrors = [];
 
         foreach ($adapters as $key => $adapter) {
             $engineName = $adapter->getEngineName();
 
-            // Run OCR on Original Image
-            $rawResultOrig = $adapter->scan($filePath);
+            // Run OCR on Original Image (wrapped in independent try/catch)
+            $rawResultOrig = null;
+            try {
+                $rawResultOrig = $adapter->scan($filePath);
+            } catch (Throwable $e) {
+                $rawResultOrig = [
+                    'engine' => $engineName,
+                    'status' => 'FAILED',
+                    'raw_text' => '',
+                    'regions' => 0,
+                    'confidence' => null,
+                    'duration_ms' => 0,
+                    'error' => "Adapter exception [{$engineName}]: " . $e->getMessage(),
+                ];
+            }
+
             $statusOrig = $rawResultOrig['status'] ?? 'FAILED';
             $rawTextOrig = (string) ($rawResultOrig['raw_text'] ?? '');
+            $rawLength = mb_strlen($rawTextOrig);
+            $attempted = ($statusOrig !== 'NOT_AVAILABLE');
+
+            if (! empty($rawResultOrig['error'])) {
+                $debugErrors[] = "{$engineName}: " . $rawResultOrig['error'];
+            }
+
             $parsedOrig = $this->normalizer->fromOcr(['raw_text' => $rawTextOrig]);
 
             // If Camera Photo and Enhanced Copy exists, run OCR on Enhanced Image as well
             $parsedEnhanced = null;
             $rawResultEnh = null;
             if ($enhancedPath && file_exists($enhancedPath) && ($preprocData['image_type'] ?? '') === 'CAMERA_PHOTO') {
-                $rawResultEnh = $adapter->scan($enhancedPath);
-                if (($rawResultEnh['status'] ?? '') === 'SUCCESS') {
-                    $parsedEnhanced = $this->normalizer->fromOcr(['raw_text' => $rawResultEnh['raw_text'] ?? '']);
+                try {
+                    $rawResultEnh = $adapter->scan($enhancedPath);
+                    if (($rawResultEnh['status'] ?? '') === 'SUCCESS') {
+                        $parsedEnhanced = $this->normalizer->fromOcr(['raw_text' => $rawResultEnh['raw_text'] ?? '']);
+                    }
+                } catch (Throwable $e) {
+                    // Suppress enhanced variant exception safely
                 }
             }
 
@@ -94,7 +132,6 @@ class ReceiptOcrComparatorService
             $durationMs = $rawResultOrig['duration_ms'] ?? 0;
 
             if ($parsedEnhanced) {
-                // If Enhanced Image yielded more detected fields or a valid reference, prefer it
                 $origFieldsCount = $this->countDetectedFields($parsedOrig);
                 $enhFieldsCount = $this->countDetectedFields($parsedEnhanced);
 
@@ -112,7 +149,7 @@ class ReceiptOcrComparatorService
                 'key' => $key,
                 'engine' => $engineName,
                 'status' => $statusOrig,
-                'attempted' => ($statusOrig !== 'NOT_AVAILABLE'),
+                'attempted' => $attempted,
                 'variant_used' => $usedVariant,
                 'raw_text' => $rawText,
                 'raw_text_length' => mb_strlen($rawText),
@@ -127,15 +164,38 @@ class ReceiptOcrComparatorService
             ];
         }
 
-        // 2. Build Field-Level Multi-Engine Consensus
+        // 2. Determine Overall Comparison Status (Partial Success Support)
+        $successfulEngines = 0;
+        foreach ($results as $res) {
+            if (($res['status'] ?? '') === 'SUCCESS') {
+                $successfulEngines++;
+            }
+        }
+
+        if ($successfulEngines === count($results)) {
+            $comparisonStatus = 'SUCCESS';
+        } elseif ($successfulEngines > 0) {
+            $comparisonStatus = 'PARTIAL_SUCCESS';
+        } else {
+            $comparisonStatus = 'FAILED';
+        }
+
+        $debugMessage = ! empty($debugErrors) ? implode(' | ', $debugErrors) : null;
+
+        // 3. Build Field-Level Multi-Engine Consensus
         $consensus = $this->buildFieldConsensus($results);
 
-        // 3. Clean up temporary enhanced file
+        // 4. Clean up temporary enhanced file safely
         if ($enhancedPath) {
-            $this->preprocessor->cleanupTempFile($enhancedPath);
+            try {
+                $this->preprocessor->cleanupTempFile($enhancedPath);
+            } catch (Throwable) {
+            }
         }
 
         return [
+            'comparison_status' => $comparisonStatus,
+            'debug_message' => $debugMessage,
             'environment' => $this->checkEnvironmentDiagnostics(),
             'preprocessing' => $preprocData,
             'expected_values' => $expectedValues,
@@ -156,7 +216,7 @@ class ReceiptOcrComparatorService
         if (! empty($parsed['transaction_date'])) {
             $count++;
         }
-        if ($parsed['amount'] !== null && $parsed['amount'] !== undefined) {
+        if (isset($parsed['amount']) && $parsed['amount'] !== null) {
             $count++;
         }
 
@@ -212,7 +272,6 @@ class ReceiptOcrComparatorService
                 $grouped[$normKey]['count']++;
             }
 
-            // Sort by agreement count descending
             usort($grouped, fn ($a, $b) => $b['count'] <=> $a['count']);
             $topGroup = $grouped[0];
             $bestCandidate = $topGroup['candidate'];
@@ -256,7 +315,6 @@ class ReceiptOcrComparatorService
         $total = 0;
         $details = [];
 
-        // 1. Provider
         if (! empty($expected['provider'])) {
             $total++;
             $exp = mb_strtolower(trim($expected['provider']));
@@ -268,7 +326,6 @@ class ReceiptOcrComparatorService
             $details['provider'] = ['expected' => $expected['provider'], 'actual' => $parsed['provider'], 'match' => $match];
         }
 
-        // 2. Reference
         if (! empty($expected['reference'])) {
             $total++;
             $exp = $this->normalizer->normalizeReference($expected['reference']);
@@ -280,7 +337,6 @@ class ReceiptOcrComparatorService
             $details['reference'] = ['expected' => $expected['reference'], 'actual' => $parsed['reference_number'], 'match' => $match];
         }
 
-        // 3. Date
         if (! empty($expected['date'])) {
             $total++;
             $exp = trim($expected['date']);
@@ -292,7 +348,6 @@ class ReceiptOcrComparatorService
             $details['date'] = ['expected' => $expected['date'], 'actual' => $parsed['transaction_date'], 'match' => $match];
         }
 
-        // 4. Amount
         if (! empty($expected['amount'])) {
             $total++;
             $exp = (float) preg_replace('/[^0-9.]/', '', $expected['amount']);

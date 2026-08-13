@@ -2,9 +2,10 @@
 """
 AMIS AI Receipt Scanner - Camera Photo & Document Preprocessor Script.
 Runs inside dedicated .venv-ocr environment (Python 3.12).
-Executes OpenCV 4-point contour detection, perspective correction,
-auto-rotation, deskew, illumination shadow reduction, blur score calculation,
-specular glare detection, and screenshot vs camera photo classification.
+Executes weighted image-type classification, OpenCV 4-point contour detection,
+perspective correction, auto-rotation, deskew, illumination shadow reduction,
+blur score calculation, and specular glare detection.
+NON-BLOCKING: Wrapped in top-level fallback handling so it never halts OCR execution.
 """
 
 import json
@@ -53,11 +54,15 @@ def four_point_transform(image, pts):
     return warped
 
 
-def classify_image_type(image_path, img):
+def classify_image_type_weighted(image_path, img):
     h, w = img.shape[:2]
-    aspect_ratio = h / float(w) if w > 0 else 1.0
+    if h == 0 or w == 0:
+        return 'UNKNOWN', 0.0, {}
+
+    aspect_ratio = h / float(w)
 
     # 1. EXIF Metadata Check
+    exif_camera = False
     try:
         pil_img = Image.open(image_path)
         exif = pil_img._getexif()
@@ -65,24 +70,89 @@ def classify_image_type(image_path, img):
             for tag_id, value in exif.items():
                 tag_name = ExifTags.TAGS.get(tag_id, tag_id)
                 if tag_name in ['Make', 'Model', 'LensModel', 'FNumber', 'ExposureTime', 'ISOSpeedRatings']:
-                    return 'CAMERA_PHOTO'
+                    exif_camera = True
+                    break
     except Exception:
         pass
 
-    # 2. Border Color Uniformity Check (Screenshots usually have solid top/bottom status bars)
-    top_strip = img[0:int(h * 0.05), :]
-    bottom_strip = img[int(h * 0.95):h, :]
-    top_std = np.std(top_strip)
-    bottom_std = np.std(bottom_strip)
+    # 2. Border Uniformity & Background Variance
+    top_strip = img[0:max(1, int(h * 0.05)), :]
+    bottom_strip = img[min(h - 1, int(h * 0.95)):h, :]
+    left_strip = img[:, 0:max(1, int(w * 0.05))]
+    right_strip = img[:, min(w - 1, int(w * 0.95)):w]
 
-    if (top_std < 15.0 or bottom_std < 15.0) and (1.5 <= aspect_ratio <= 2.4):
-        return 'SCREENSHOT'
+    top_std = float(np.std(top_strip))
+    bottom_std = float(np.std(bottom_strip))
+    left_std = float(np.std(left_strip))
+    right_std = float(np.std(right_strip))
+    avg_border_std = (top_std + bottom_std + left_std + right_std) / 4.0
 
-    # Aspect ratio & border check
-    if aspect_ratio >= 1.6 or aspect_ratio <= 0.6:
-        return 'SCREENSHOT'
+    # 3. Contour Detection (Document paper vs background)
+    small_h = 500
+    ratio = h / float(small_h) if h > 500 else 1.0
+    small_w = int(w / ratio)
+    small_img = cv2.resize(img, (small_w, small_h))
+    small_gray = cv2.cvtColor(small_img, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(small_gray, (5, 5), 0)
+    edged = cv2.Canny(blurred, 50, 150)
 
-    return 'CAMERA_PHOTO'
+    contours, _ = cv2.findContours(edged, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
+
+    doc_contour_found = False
+    doc_area_ratio = 0.0
+    perspective_distortion = False
+
+    for c in contours:
+        peri = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+        area = cv2.contourArea(approx)
+        total_area = small_h * small_w
+        if len(approx) == 4 and area > (total_area * 0.15):
+            doc_contour_found = True
+            doc_area_ratio = area / float(total_area)
+            perspective_distortion = True
+            break
+
+    # Calculate Weighted Scores
+    camera_score = 0.0
+    screenshot_score = 0.0
+    scanned_score = 0.0
+
+    if exif_camera:
+        camera_score += 0.45
+
+    if doc_contour_found:
+        if doc_area_ratio < 0.85:
+            camera_score += 0.40
+        else:
+            scanned_score += 0.35
+
+    if avg_border_std > 25.0:
+        camera_score += 0.25
+    elif avg_border_std < 10.0:
+        screenshot_score += 0.35
+        scanned_score += 0.20
+
+    if 1.6 <= aspect_ratio <= 2.4 and avg_border_std < 15.0 and not doc_contour_found:
+        screenshot_score += 0.40
+
+    signals = {
+        "exif_camera": exif_camera,
+        "doc_contour_found": doc_contour_found,
+        "doc_area_ratio": round(doc_area_ratio, 2),
+        "avg_border_std": round(avg_border_std, 2),
+        "perspective_distortion": perspective_distortion
+    }
+
+    if camera_score >= 0.40 and camera_score >= screenshot_score:
+        return 'CAMERA_PHOTO', min(round(camera_score, 2), 0.98), signals
+    elif screenshot_score >= 0.40 and screenshot_score > camera_score:
+        return 'SCREENSHOT', min(round(screenshot_score, 2), 0.98), signals
+    elif scanned_score >= 0.35:
+        return 'SCANNED_DOCUMENT', min(round(scanned_score, 2), 0.95), signals
+    else:
+        return 'UNKNOWN', 0.50, signals
 
 
 def detect_blur(gray):
@@ -101,7 +171,7 @@ def detect_blur(gray):
 def detect_glare(gray):
     total_pixels = gray.size
     glare_pixels = np.sum(gray >= 252)
-    glare_ratio = float(glare_pixels) / float(total_pixels)
+    glare_ratio = float(glare_pixels) / float(total_pixels) if total_pixels > 0 else 0.0
     glare_detected = glare_ratio > 0.035
     return glare_detected, round(glare_ratio * 100, 2)
 
@@ -111,144 +181,185 @@ def process_image(image_path):
 
     if not os.path.isfile(image_path):
         print(json.dumps({
-            "status": "FAILED",
-            "error": f"Image file not found: {image_path}"
+            "status": "SUCCESS",
+            "image_type": "UNKNOWN",
+            "image_type_confidence": 0.0,
+            "temp_enhanced_path": None,
+            "document_detected": False,
+            "crop_applied": False,
+            "perspective_corrected": False,
+            "rotation_applied": 0,
+            "deskew_angle": 0.0,
+            "blur_score": 100.0,
+            "blur_status": "ACCEPTABLE",
+            "glare_detected": False,
+            "glare_percent": 0.0,
+            "quality_score": 100,
+            "preprocessing_status": "FALLBACK",
+            "reupload_required": False,
+            "user_message": None,
+            "error": f"Image file not found at path {image_path}",
+            "duration_ms": 0
         }))
         return
 
-    img = cv2.imread(image_path)
-    if img is None:
-        print(json.dumps({
-            "status": "FAILED",
-            "error": "Failed to read image with OpenCV"
-        }))
-        return
+    try:
+        img = cv2.imread(image_path)
+        if img is None:
+            raise ValueError("Failed to read image with OpenCV")
 
-    orig_h, orig_w = img.shape[:2]
-    image_type = classify_image_type(image_path, img)
+        orig_h, orig_w = img.shape[:2]
+        image_type, confidence, signals = classify_image_type_weighted(image_path, img)
 
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    blur_score, blur_status = detect_blur(gray)
-    glare_detected, glare_percent = detect_glare(gray)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        blur_score, blur_status = detect_blur(gray)
+        glare_detected, glare_percent = detect_glare(gray)
 
-    document_detected = False
-    crop_applied = False
-    perspective_corrected = False
-    rotation_applied = 0
-    deskew_angle = 0.0
+        document_detected = False
+        crop_applied = False
+        perspective_corrected = False
+        rotation_applied = 0
+        deskew_angle = 0.0
 
-    processed = img.copy()
+        processed = img.copy()
 
-    # Document Scanner Edge Detection & 4-Point Perspective Transform for CAMERA_PHOTO
-    if image_type == 'CAMERA_PHOTO':
-        # Scale down for fast contour detection
-        ratio = orig_h / 500.0 if orig_h > 500 else 1.0
-        small_h = int(orig_h / ratio)
-        small_w = int(orig_w / ratio)
-        small_img = cv2.resize(img, (small_w, small_h))
+        # Document Scanner Edge Detection & 4-Point Perspective Transform for CAMERA_PHOTO
+        if image_type == 'CAMERA_PHOTO':
+            ratio = orig_h / 500.0 if orig_h > 500 else 1.0
+            small_h = int(orig_h / ratio)
+            small_w = int(orig_w / ratio)
+            small_img = cv2.resize(img, (small_w, small_h))
 
-        small_gray = cv2.cvtColor(small_img, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(small_gray, (5, 5), 0)
-        edged = cv2.Canny(blurred, 50, 150)
+            small_gray = cv2.cvtColor(small_img, cv2.COLOR_BGR2GRAY)
+            blurred = cv2.GaussianBlur(small_gray, (5, 5), 0)
+            edged = cv2.Canny(blurred, 50, 150)
 
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        edged = cv2.dilate(edged, kernel, iterations=1)
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+            edged = cv2.dilate(edged, kernel, iterations=1)
 
-        contours, _ = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        contours = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
+            contours, _ = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+            contours = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
 
-        doc_contour = None
-        for c in contours:
-            peri = cv2.arcLength(c, True)
-            approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-            if len(approx) == 4:
-                area = cv2.contourArea(approx)
-                if area > (small_h * small_w * 0.15):
-                    doc_contour = approx
-                    break
+            doc_contour = None
+            for c in contours:
+                peri = cv2.arcLength(c, True)
+                approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+                if len(approx) == 4:
+                    area = cv2.contourArea(approx)
+                    if area > (small_h * small_w * 0.15):
+                        doc_contour = approx
+                        break
 
-        if doc_contour is not None:
-            document_detected = True
-            pts = doc_contour.reshape(4, 2) * ratio
-            try:
-                processed = four_point_transform(img, pts)
-                crop_applied = True
-                perspective_corrected = True
-            except Exception:
-                processed = img.copy()
+            if doc_contour is not None:
+                document_detected = True
+                pts = doc_contour.reshape(4, 2) * ratio
+                try:
+                    processed = four_point_transform(img, pts)
+                    crop_applied = True
+                    perspective_corrected = True
+                except Exception:
+                    processed = img.copy()
 
-    # Safe Illumination Shadow Reduction & Enhancement
-    proc_gray = cv2.cvtColor(processed, cv2.COLOR_BGR2GRAY)
+        # Safe Illumination Shadow Reduction & Enhancement
+        proc_gray = cv2.cvtColor(processed, cv2.COLOR_BGR2GRAY)
 
-    # Illumination Normalization via Morphological Dilate Background Subtraction
-    kernel_size = max(15, int(min(proc_gray.shape) / 30))
-    if kernel_size % 2 == 0:
-        kernel_size += 1
+        kernel_size = max(15, int(min(proc_gray.shape) / 30))
+        if kernel_size % 2 == 0:
+            kernel_size += 1
 
-    bg_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size, kernel_size))
-    bg = cv2.morphologyEx(proc_gray, cv2.MORPH_DILATE, bg_kernel)
-    diff = cv2.absdiff(proc_gray, bg)
-    norm_gray = cv2.normalize(255 - diff, None, 0, 255, cv2.NORM_MINMAX)
+        bg_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size, kernel_size))
+        bg = cv2.morphologyEx(proc_gray, cv2.MORPH_DILATE, bg_kernel)
+        diff = cv2.absdiff(proc_gray, bg)
+        norm_gray = cv2.normalize(255 - diff, None, 0, 255, cv2.NORM_MINMAX)
 
-    # CLAHE Contrast Adjustment
-    clahe = cv2.createCLAHE(clipLimit=1.8, tileGridSize=(8, 8))
-    enhanced_gray = clahe.apply(norm_gray)
+        clahe = cv2.createCLAHE(clipLimit=1.8, tileGridSize=(8, 8))
+        enhanced_gray = clahe.apply(norm_gray)
 
-    # Convert enhanced grayscale back to BGR for OCR compatibility
-    enhanced_bgr = cv2.cvtColor(enhanced_gray, cv2.COLOR_GRAY2BGR)
+        enhanced_bgr = cv2.cvtColor(enhanced_gray, cv2.COLOR_GRAY2BGR)
 
-    # Save Temporary Preprocessed Image File
-    tmp_filename = f"amis_ocr_prep_{uuid.uuid4().hex[:12]}.jpg"
-    tmp_filepath = os.path.join(tempfile.gettempdir(), tmp_filename)
-    cv2.imwrite(tmp_filepath, enhanced_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
+        tmp_filename = f"amis_ocr_prep_{uuid.uuid4().hex[:12]}.jpg"
+        tmp_filepath = os.path.join(tempfile.gettempdir(), tmp_filename)
+        cv2.imwrite(tmp_filepath, enhanced_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
 
-    # Quality Score Calculation
-    quality_score = 100
-    if blur_status == 'SEVERELY_BLURRY':
-        quality_score -= 50
-    elif blur_status == 'BLURRY':
-        quality_score -= 25
+        quality_score = 100
+        if blur_status == 'SEVERELY_BLURRY':
+            quality_score -= 50
+        elif blur_status == 'BLURRY':
+            quality_score -= 25
 
-    if glare_detected:
-        quality_score -= 20
-
-    if quality_score < 0:
-        quality_score = 0
-
-    reupload_required = (blur_status == 'SEVERELY_BLURRY' and quality_score < 40)
-    user_message = None
-    if reupload_required:
         if glare_detected:
-            user_message = "Part of the receipt is obscured by glare. Please retake the photo under even lighting."
-        else:
-            user_message = "The uploaded photo is too blurry to read clearly. Please retake a clearer photo of the receipt."
+            quality_score -= 20
 
-    duration_ms = int((time.time() - start) * 1000)
+        if quality_score < 0:
+            quality_score = 0
 
-    print(json.dumps({
-        "status": "SUCCESS",
-        "image_type": image_type,
-        "temp_enhanced_path": tmp_filepath,
-        "document_detected": document_detected,
-        "crop_applied": crop_applied,
-        "perspective_corrected": perspective_corrected,
-        "rotation_applied": rotation_applied,
-        "deskew_angle": deskew_angle,
-        "blur_score": blur_score,
-        "blur_status": blur_status,
-        "glare_detected": glare_detected,
-        "glare_percent": glare_percent,
-        "quality_score": quality_score,
-        "preprocessing_status": "SUCCESS",
-        "reupload_required": reupload_required,
-        "user_message": user_message,
-        "duration_ms": duration_ms
-    }))
+        reupload_required = (blur_status == 'SEVERELY_BLURRY' and quality_score < 40)
+        user_message = None
+        if reupload_required:
+            if glare_detected:
+                user_message = "Part of the receipt is obscured by glare. Please retake the photo under even lighting."
+            else:
+                user_message = "The uploaded photo is too blurry to read clearly. Please retake a clearer photo of the receipt."
+
+        duration_ms = int((time.time() - start) * 1000)
+
+        print(json.dumps({
+            "status": "SUCCESS",
+            "image_type": image_type,
+            "image_type_confidence": confidence,
+            "signals": signals,
+            "temp_enhanced_path": tmp_filepath,
+            "document_detected": document_detected,
+            "crop_applied": crop_applied,
+            "perspective_corrected": perspective_corrected,
+            "rotation_applied": rotation_applied,
+            "deskew_angle": deskew_angle,
+            "blur_score": blur_score,
+            "blur_status": blur_status,
+            "glare_detected": glare_detected,
+            "glare_percent": glare_percent,
+            "quality_score": quality_score,
+            "preprocessing_status": "SUCCESS",
+            "reupload_required": reupload_required,
+            "user_message": user_message,
+            "duration_ms": duration_ms
+        }))
+
+    except Exception as e:
+        duration_ms = int((time.time() - start) * 1000)
+        print(json.dumps({
+            "status": "SUCCESS",
+            "image_type": "UNKNOWN",
+            "image_type_confidence": 0.0,
+            "signals": {},
+            "temp_enhanced_path": None,
+            "document_detected": False,
+            "crop_applied": False,
+            "perspective_corrected": False,
+            "rotation_applied": 0,
+            "deskew_angle": 0.0,
+            "blur_score": 100.0,
+            "blur_status": "ACCEPTABLE",
+            "glare_detected": False,
+            "glare_percent": 0.0,
+            "quality_score": 100,
+            "preprocessing_status": "FALLBACK",
+            "reupload_required": False,
+            "user_message": None,
+            "error": f"Non-blocking preprocessor exception [{type(e).__name__}]: {str(e)}",
+            "duration_ms": duration_ms
+        }))
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print(json.dumps({"status": "FAILED", "error": "No image path provided"}))
-        sys.exit(1)
+        print(json.dumps({
+            "status": "SUCCESS",
+            "image_type": "UNKNOWN",
+            "temp_enhanced_path": None,
+            "preprocessing_status": "FALLBACK",
+            "error": "No image path provided"
+        }))
+        sys.exit(0)
 
     process_image(sys.argv[1])
