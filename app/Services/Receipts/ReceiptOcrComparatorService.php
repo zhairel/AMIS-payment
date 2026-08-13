@@ -3,8 +3,7 @@
 namespace App\Services\Receipts;
 
 use App\Services\Receipts\Adapters\DocTrAdapter;
-use App\Services\Receipts\Adapters\EasyOcrAdapter;
-use App\Services\Receipts\Adapters\PaddleOcrAdapter;
+use App\Services\Receipts\Adapters\OcrMyPdfAdapter;
 use App\Services\Receipts\Adapters\TesseractAdapter;
 use Symfony\Component\Process\Process;
 
@@ -12,15 +11,14 @@ class ReceiptOcrComparatorService
 {
     public function __construct(
         private readonly ReceiptFieldNormalizer $normalizer,
-        private readonly EasyOcrAdapter $easyOcr = new EasyOcrAdapter(),
-        private readonly PaddleOcrAdapter $paddleOcr = new PaddleOcrAdapter(),
         private readonly DocTrAdapter $docTr = new DocTrAdapter(),
         private readonly TesseractAdapter $tesseract = new TesseractAdapter(),
+        private readonly OcrMyPdfAdapter $ocrMyPdf = new OcrMyPdfAdapter(),
     ) {}
 
     public function checkEnvironmentDiagnostics(): array
     {
-        $python = config('services.paddle_ocr.python', 'python3');
+        $python = config('services.paddle_ocr.python', base_path('.venv-ocr/bin/python'));
         $script = base_path('scripts/ocr_engine_runner.py');
         $process = new Process([$python, $script, 'check_env']);
         $process->run();
@@ -36,10 +34,9 @@ class ReceiptOcrComparatorService
             'python_executable' => $python,
             'python_version' => 'Unknown',
             'engines' => [
-                'easyocr' => ['available' => false, 'reason' => 'Diagnostic check script failed: ' . $process->getErrorOutput()],
-                'paddleocr' => ['available' => false, 'reason' => 'Diagnostic check script failed'],
-                'doctr' => ['available' => false, 'reason' => 'Diagnostic check script failed'],
+                'doctr' => ['available' => false, 'reason' => 'Diagnostic check script failed: ' . $process->getErrorOutput()],
                 'tesseract' => ['available' => false, 'reason' => 'Diagnostic check script failed'],
+                'ocrmypdf' => ['available' => false, 'reason' => 'Diagnostic check script failed'],
             ],
         ];
     }
@@ -47,10 +44,9 @@ class ReceiptOcrComparatorService
     public function compareAllEngines(string $filePath, array $expectedValues = []): array
     {
         $adapters = [
-            'easyocr' => $this->easyOcr,
-            'paddleocr' => $this->paddleOcr,
             'doctr' => $this->docTr,
             'tesseract' => $this->tesseract,
+            'ocrmypdf' => $this->ocrMyPdf,
         ];
 
         $results = [];

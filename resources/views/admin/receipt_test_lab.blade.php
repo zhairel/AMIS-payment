@@ -2,8 +2,8 @@
     <x-slot name="header">
         <div class="amis-test-header">
             <div>
-                <h1 class="text-xl font-bold text-slate-900">AMIS AI Receipt Scanner Test Lab & Benchmark</h1>
-                <p class="text-xs text-slate-500 mt-0.5">Batch benchmark receipts, run 4-engine OCR comparison side-by-side, inspect raw text and JSON without opening individual modals.</p>
+                <h1 class="text-xl font-bold text-slate-900">Independent 3-Engine OCR Benchmark</h1>
+                <p class="text-xs text-slate-500 mt-0.5">Compare docTR, Tesseract, and OCRmyPDF independently.</p>
             </div>
             <span class="amis-badge-isolated">Isolated Testing Environment</span>
         </div>
@@ -35,7 +35,7 @@
 
                         <button type="button" @click="runAllCompareTests()" :disabled="testItems.length === 0 || isComparingAll" class="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl font-semibold text-xs transition shadow-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                            <span x-text="isComparingAll ? 'Running 4-Engine Benchmark...' : 'Run All OCR Comparisons'"></span>
+                            <span x-text="isComparingAll ? 'Running 3-Pipeline Benchmark...' : 'Run All OCR Comparisons'"></span>
                         </button>
                     </div>
 
@@ -95,7 +95,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                     <template x-for="(status, name) in (envDiagnostics?.engines || {})" :key="name">
                         <div class="p-3 rounded-xl border text-[11px]" :class="status.available ? 'bg-emerald-950/60 border-emerald-800/80 text-emerald-200' : 'bg-rose-950/40 border-rose-900/60 text-rose-300'">
                             <div class="flex items-center justify-between font-bold mb-1">
@@ -112,16 +112,19 @@
             <div x-show="testItems.length > 0" class="space-y-4">
                 <div class="flex items-center justify-between">
                     <h2 class="text-base font-black text-slate-900 uppercase tracking-wider">Batch Engine Performance Summary</h2>
-                    <span class="text-xs text-slate-500 font-medium" x-text="`${countComparedReceipts()} of ${testItems.length} receipts compared across 4 engines`"></span>
+                    <span class="text-xs text-slate-500 font-medium" x-text="`${countComparedReceipts()} of ${testItems.length} receipts compared across 3 pipelines`"></span>
                 </div>
 
-                {{-- 4 Engine Summary Metric Cards --}}
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <template x-for="engineKey in ['easyocr', 'paddleocr', 'doctr', 'tesseract']" :key="engineKey">
+                {{-- 3 Engine Summary Metric Cards --}}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <template x-for="engineKey in ['doctr', 'tesseract', 'ocrmypdf']" :key="engineKey">
                         <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
                             <div>
                                 <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
-                                    <h3 class="font-extrabold text-sm text-slate-900" x-text="engineDisplayName(engineKey)"></h3>
+                                    <div>
+                                        <h3 class="font-extrabold text-sm text-slate-900" x-text="engineDisplayName(engineKey)"></h3>
+                                        <small class="text-[9px] text-slate-400 block font-medium" x-text="engineSubtitle(engineKey)"></small>
+                                    </div>
                                     <span class="px-2 py-0.5 text-[10px] font-black rounded uppercase" :class="envDiagnostics?.engines?.[engineKey]?.available ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'" x-text="envDiagnostics?.engines?.[engineKey]?.available ? 'ONLINE' : 'OFFLINE'"></span>
                                 </div>
 
@@ -155,10 +158,9 @@
                         <thead>
                             <tr class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200">
                                 <th class="p-3">Receipt Filename</th>
-                                <th class="p-3 text-center">EasyOCR</th>
-                                <th class="p-3 text-center">PaddleOCR PP-OCRv6</th>
                                 <th class="p-3 text-center">docTR</th>
                                 <th class="p-3 text-center">Tesseract</th>
+                                <th class="p-3 text-center">OCRmyPDF Pipeline</th>
                                 <th class="p-3 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -170,16 +172,13 @@
                                         <span x-text="item.filename"></span>
                                     </td>
                                     <td class="p-3 text-center font-bold">
-                                        <span class="px-2.5 py-1 rounded-lg text-xs" :class="itemEngineScoreClass(item, 'easyocr')" x-text="itemEngineScore(item, 'easyocr')"></span>
-                                    </td>
-                                    <td class="p-3 text-center font-bold">
-                                        <span class="px-2.5 py-1 rounded-lg text-xs" :class="itemEngineScoreClass(item, 'paddleocr')" x-text="itemEngineScore(item, 'paddleocr')"></span>
-                                    </td>
-                                    <td class="p-3 text-center font-bold">
                                         <span class="px-2.5 py-1 rounded-lg text-xs" :class="itemEngineScoreClass(item, 'doctr')" x-text="itemEngineScore(item, 'doctr')"></span>
                                     </td>
                                     <td class="p-3 text-center font-bold">
                                         <span class="px-2.5 py-1 rounded-lg text-xs" :class="itemEngineScoreClass(item, 'tesseract')" x-text="itemEngineScore(item, 'tesseract')"></span>
+                                    </td>
+                                    <td class="p-3 text-center font-bold">
+                                        <span class="px-2.5 py-1 rounded-lg text-xs" :class="itemEngineScoreClass(item, 'ocrmypdf')" x-text="itemEngineScore(item, 'ocrmypdf')"></span>
                                     </td>
                                     <td class="p-3 text-right">
                                         <button type="button" @click="runEngineComparison(item)" :disabled="item.isComparing" class="px-2.5 py-1 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg border border-sky-200 transition">
@@ -194,12 +193,12 @@
             </div>
 
             {{-- Empty Placeholder --}}
-            <div x-show="testItems.length === 0" class="bg-white rounded-2xl p-12 text-center border border-slate-200">
+            <div x-show="testItems.length > 0 === false" class="bg-white rounded-2xl p-12 text-center border border-slate-200">
                 <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4 border border-emerald-100">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 </div>
                 <h3 class="text-slate-900 font-bold text-base mb-1">No test receipts uploaded yet</h3>
-                <p class="text-slate-500 text-xs max-w-sm mx-auto mb-5">Upload multiple receipt images to benchmark EasyOCR, PaddleOCR PP-OCRv6, docTR, and Tesseract side-by-side.</p>
+                <p class="text-slate-500 text-xs max-w-sm mx-auto mb-5">Upload multiple receipt images to benchmark docTR, Tesseract, and OCRmyPDF Pipeline side-by-side.</p>
             </div>
 
             {{-- Main Receipt Cards Display List --}}
@@ -236,7 +235,7 @@
                                     <span x-text="item.isProcessing ? 'Processing...' : 'Run Test (Single)'"></span>
                                 </button>
                                 <button type="button" @click="runEngineComparison(item)" :disabled="item.isComparing" class="px-3.5 py-2 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl border border-sky-200 transition">
-                                    <span x-text="item.isComparing ? 'Comparing 4 Engines...' : 'Run Compare OCR'"></span>
+                                    <span x-text="item.isComparing ? 'Comparing 3 Pipelines...' : 'Run Compare OCR'"></span>
                                 </button>
                                 <button type="button" @click="openScannerModal(item)" :disabled="!item.result" class="px-3.5 py-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 transition disabled:opacity-40">
                                     View Scanner
@@ -273,12 +272,12 @@
                         {{-- Loading Indicator for Comparison --}}
                         <div x-show="item.isComparing" class="p-8 text-center bg-slate-50 rounded-xl border border-slate-200">
                             <div class="inline-block animate-spin w-7 h-7 border-3 border-sky-600 border-t-transparent rounded-full mb-2"></div>
-                            <h4 class="text-slate-800 font-bold text-xs">Running EasyOCR, PaddleOCR PP-OCRv6, docTR, and Tesseract independently...</h4>
+                            <h4 class="text-slate-800 font-bold text-xs">Running docTR, Tesseract, and OCRmyPDF Pipeline independently...</h4>
                         </div>
 
-                        {{-- 4 Engine Results Responsive Side-by-Side Grid --}}
-                        <div x-show="item.comparison" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <template x-for="engineKey in ['easyocr', 'paddleocr', 'doctr', 'tesseract']" :key="engineKey">
+                        {{-- 3 Engine Results Responsive Side-by-Side Grid --}}
+                        <div x-show="item.comparison" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <template x-for="engineKey in ['doctr', 'tesseract', 'ocrmypdf']" :key="engineKey">
                                 <div class="bg-white rounded-xl border p-4 shadow-sm flex flex-col justify-between" :class="item.comparison?.engines?.[engineKey]?.status === 'SUCCESS' ? 'border-emerald-200' : 'border-slate-200'">
                                     <div>
                                         {{-- Engine Card Header --}}
@@ -482,8 +481,8 @@
                                 date: '',
                                 amount: ''
                             },
-                            showRaw: { easyocr: false, paddleocr: false, doctr: false, tesseract: false },
-                            showJson: { easyocr: false, paddleocr: false, doctr: false, tesseract: false },
+                            showRaw: { doctr: false, tesseract: false, ocrmypdf: false },
+                            showJson: { doctr: false, tesseract: false, ocrmypdf: false },
                             showFinalJson: false,
                         });
                     });
@@ -678,14 +677,14 @@
 
                 expandAllRawText() {
                     this.testItems.forEach(item => {
-                        item.showRaw = { easyocr: true, paddleocr: true, doctr: true, tesseract: true };
+                        item.showRaw = { doctr: true, tesseract: true, ocrmypdf: true };
                     });
                     this.toast('Expanded all raw OCR text containers.');
                 },
 
                 expandAllJson() {
                     this.testItems.forEach(item => {
-                        item.showJson = { easyocr: true, paddleocr: true, doctr: true, tesseract: true };
+                        item.showJson = { doctr: true, tesseract: true, ocrmypdf: true };
                         item.showFinalJson = true;
                     });
                     this.toast('Expanded all JSON containers.');
@@ -693,8 +692,8 @@
 
                 collapseAll() {
                     this.testItems.forEach(item => {
-                        item.showRaw = { easyocr: false, paddleocr: false, doctr: false, tesseract: false };
-                        item.showJson = { easyocr: false, paddleocr: false, doctr: false, tesseract: false };
+                        item.showRaw = { doctr: false, tesseract: false, ocrmypdf: false };
+                        item.showJson = { doctr: false, tesseract: false, ocrmypdf: false };
                         item.showFinalJson = false;
                         item.showTech = false;
                     });
@@ -765,11 +764,19 @@
 
                 engineDisplayName(name) {
                     switch (name) {
-                        case 'easyocr': return 'EasyOCR';
-                        case 'paddleocr': return 'PaddleOCR PP-OCRv6';
                         case 'doctr': return 'docTR';
                         case 'tesseract': return 'Tesseract';
+                        case 'ocrmypdf': return 'OCRmyPDF Pipeline';
                         default: return name;
+                    }
+                },
+
+                engineSubtitle(name) {
+                    switch (name) {
+                        case 'doctr': return 'Deep Learning OCR';
+                        case 'tesseract': return 'Native Tesseract 5.5';
+                        case 'ocrmypdf': return 'Paperless-style document OCR';
+                        default: return '';
                     }
                 },
 
