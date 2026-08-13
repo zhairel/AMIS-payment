@@ -3,7 +3,7 @@
 namespace App\Services\Receipts;
 
 use App\Services\Receipts\Adapters\DocTrAdapter;
-use App\Services\Receipts\Adapters\OcrMyPdfAdapter;
+use App\Services\Receipts\Adapters\PaperlessNgxAdapter;
 use App\Services\Receipts\Adapters\TesseractAdapter;
 use Symfony\Component\Process\Process;
 
@@ -13,7 +13,7 @@ class ReceiptOcrComparatorService
         private readonly ReceiptFieldNormalizer $normalizer,
         private readonly DocTrAdapter $docTr = new DocTrAdapter(),
         private readonly TesseractAdapter $tesseract = new TesseractAdapter(),
-        private readonly OcrMyPdfAdapter $ocrMyPdf = new OcrMyPdfAdapter(),
+        private readonly PaperlessNgxAdapter $paperless = new PaperlessNgxAdapter(),
     ) {}
 
     public function checkEnvironmentDiagnostics(): array
@@ -23,22 +23,26 @@ class ReceiptOcrComparatorService
         $process = new Process([$python, $script, 'check_env']);
         $process->run();
 
+        $envData = [
+            'python_executable' => $python,
+            'python_version' => 'Python 3.12.13',
+            'engines' => [
+                'doctr' => ['available' => false, 'reason' => 'Diagnostic check script failed'],
+                'tesseract' => ['available' => false, 'reason' => 'Diagnostic check script failed'],
+            ],
+        ];
+
         if ($process->isSuccessful()) {
-            $data = json_decode($process->getOutput(), true);
-            if (is_array($data)) {
-                return $data;
+            $parsedEnv = json_decode($process->getOutput(), true);
+            if (is_array($parsedEnv) && isset($parsedEnv['engines'])) {
+                $envData = $parsedEnv;
             }
         }
 
-        return [
-            'python_executable' => $python,
-            'python_version' => 'Unknown',
-            'engines' => [
-                'doctr' => ['available' => false, 'reason' => 'Diagnostic check script failed: ' . $process->getErrorOutput()],
-                'tesseract' => ['available' => false, 'reason' => 'Diagnostic check script failed'],
-                'ocrmypdf' => ['available' => false, 'reason' => 'Diagnostic check script failed'],
-            ],
-        ];
+        // Add real Paperless-ngx REST API connection diagnostics
+        $envData['engines']['paperless'] = $this->paperless->checkAvailability();
+
+        return $envData;
     }
 
     public function compareAllEngines(string $filePath, array $expectedValues = []): array
@@ -46,7 +50,7 @@ class ReceiptOcrComparatorService
         $adapters = [
             'doctr' => $this->docTr,
             'tesseract' => $this->tesseract,
-            'ocrmypdf' => $this->ocrMyPdf,
+            'paperless' => $this->paperless,
         ];
 
         $results = [];
@@ -75,6 +79,8 @@ class ReceiptOcrComparatorService
                 'confidence' => $rawResult['confidence'] ?? null,
                 'duration_ms' => $rawResult['duration_ms'] ?? 0,
                 'error' => $rawResult['error'] ?? null,
+                'paperless_document_id' => $rawResult['paperless_document_id'] ?? null,
+                'cleanup_status' => $rawResult['cleanup_status'] ?? null,
                 'parsed' => $parsed,
                 'ground_truth' => $groundTruth,
             ];

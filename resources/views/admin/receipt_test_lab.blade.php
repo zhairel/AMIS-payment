@@ -3,7 +3,7 @@
         <div class="amis-test-header">
             <div>
                 <h1 class="text-xl font-bold text-slate-900">Independent 3-Engine OCR Benchmark</h1>
-                <p class="text-xs text-slate-500 mt-0.5">Compare docTR, Tesseract, and OCRmyPDF independently.</p>
+                <p class="text-xs text-slate-500 mt-0.5">Compare docTR, Tesseract, and Paperless-ngx independently.</p>
             </div>
             <span class="amis-badge-isolated">Isolated Testing Environment</span>
         </div>
@@ -82,7 +82,7 @@
                 </div>
             </div>
 
-            {{-- Python Environment Diagnostic Header Banner --}}
+            {{-- Python Environment & Service Diagnostic Header Banner --}}
             <div class="bg-slate-900 text-slate-100 rounded-2xl p-5 text-xs font-mono border border-slate-800 space-y-3 shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
                     <div>
@@ -117,7 +117,7 @@
 
                 {{-- 3 Engine Summary Metric Cards --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <template x-for="engineKey in ['doctr', 'tesseract', 'ocrmypdf']" :key="engineKey">
+                    <template x-for="engineKey in ['doctr', 'tesseract', 'paperless']" :key="engineKey">
                         <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
                             <div>
                                 <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
@@ -160,7 +160,7 @@
                                 <th class="p-3">Receipt Filename</th>
                                 <th class="p-3 text-center">docTR</th>
                                 <th class="p-3 text-center">Tesseract</th>
-                                <th class="p-3 text-center">OCRmyPDF Pipeline</th>
+                                <th class="p-3 text-center">Paperless-ngx</th>
                                 <th class="p-3 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -178,7 +178,7 @@
                                         <span class="px-2.5 py-1 rounded-lg text-xs" :class="itemEngineScoreClass(item, 'tesseract')" x-text="itemEngineScore(item, 'tesseract')"></span>
                                     </td>
                                     <td class="p-3 text-center font-bold">
-                                        <span class="px-2.5 py-1 rounded-lg text-xs" :class="itemEngineScoreClass(item, 'ocrmypdf')" x-text="itemEngineScore(item, 'ocrmypdf')"></span>
+                                        <span class="px-2.5 py-1 rounded-lg text-xs" :class="itemEngineScoreClass(item, 'paperless')" x-text="itemEngineScore(item, 'paperless')"></span>
                                     </td>
                                     <td class="p-3 text-right">
                                         <button type="button" @click="runEngineComparison(item)" :disabled="item.isComparing" class="px-2.5 py-1 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg border border-sky-200 transition">
@@ -193,12 +193,12 @@
             </div>
 
             {{-- Empty Placeholder --}}
-            <div x-show="testItems.length > 0 === false" class="bg-white rounded-2xl p-12 text-center border border-slate-200">
+            <div x-show="testItems.length === 0" class="bg-white rounded-2xl p-12 text-center border border-slate-200">
                 <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4 border border-emerald-100">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 </div>
                 <h3 class="text-slate-900 font-bold text-base mb-1">No test receipts uploaded yet</h3>
-                <p class="text-slate-500 text-xs max-w-sm mx-auto mb-5">Upload multiple receipt images to benchmark docTR, Tesseract, and OCRmyPDF Pipeline side-by-side.</p>
+                <p class="text-slate-500 text-xs max-w-sm mx-auto mb-5">Upload multiple receipt images to benchmark docTR, Tesseract, and Paperless-ngx side-by-side.</p>
             </div>
 
             {{-- Main Receipt Cards Display List --}}
@@ -272,12 +272,12 @@
                         {{-- Loading Indicator for Comparison --}}
                         <div x-show="item.isComparing" class="p-8 text-center bg-slate-50 rounded-xl border border-slate-200">
                             <div class="inline-block animate-spin w-7 h-7 border-3 border-sky-600 border-t-transparent rounded-full mb-2"></div>
-                            <h4 class="text-slate-800 font-bold text-xs">Running docTR, Tesseract, and OCRmyPDF Pipeline independently...</h4>
+                            <h4 class="text-slate-800 font-bold text-xs">Running docTR, Tesseract, and Paperless-ngx independently...</h4>
                         </div>
 
                         {{-- 3 Engine Results Responsive Side-by-Side Grid --}}
                         <div x-show="item.comparison" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <template x-for="engineKey in ['doctr', 'tesseract', 'ocrmypdf']" :key="engineKey">
+                            <template x-for="engineKey in ['doctr', 'tesseract', 'paperless']" :key="engineKey">
                                 <div class="bg-white rounded-xl border p-4 shadow-sm flex flex-col justify-between" :class="item.comparison?.engines?.[engineKey]?.status === 'SUCCESS' ? 'border-emerald-200' : 'border-slate-200'">
                                     <div>
                                         {{-- Engine Card Header --}}
@@ -298,7 +298,7 @@
                                         {{-- Engine Metrics --}}
                                         <div class="grid grid-cols-2 gap-2 text-[10px] bg-slate-50 p-2 rounded-lg border border-slate-100 mb-3">
                                             <div>
-                                                <span class="text-slate-400 font-bold block text-[8px] uppercase">Regions</span>
+                                                <span class="text-slate-400 font-bold block text-[8px] uppercase">Regions / Lines</span>
                                                 <strong class="text-slate-800" x-text="item.comparison?.engines?.[engineKey]?.regions ?? '0'"></strong>
                                             </div>
                                             <div>
@@ -306,6 +306,20 @@
                                                 <strong class="text-slate-800" x-text="item.comparison?.engines?.[engineKey]?.confidence !== null ? `${Math.round(item.comparison?.engines?.[engineKey]?.confidence * (item.comparison?.engines?.[engineKey]?.confidence <= 1 ? 100 : 1))}%` : 'N/A'"></strong>
                                             </div>
                                         </div>
+
+                                        {{-- Paperless-ngx Specific Technical Details --}}
+                                        <template x-if="engineKey === 'paperless' && item.comparison?.engines?.[engineKey]?.paperless_document_id">
+                                            <div class="bg-sky-50 border border-sky-200 text-sky-900 p-2 rounded-lg text-[10px] mb-3 font-mono space-y-1">
+                                                <div class="flex justify-between">
+                                                    <span>Paperless Document ID:</span>
+                                                    <strong x-text="`#${item.comparison?.engines?.[engineKey]?.paperless_document_id}`"></strong>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span>Cleanup Status:</span>
+                                                    <strong class="text-emerald-700 font-bold" x-text="item.comparison?.engines?.[engineKey]?.cleanup_status"></strong>
+                                                </div>
+                                            </div>
+                                        </template>
 
                                         {{-- Engine Error Reason Box --}}
                                         <div x-show="item.comparison?.engines?.[engineKey]?.error" class="bg-rose-50 border border-rose-200 text-rose-800 p-2 rounded-lg text-[9px] font-mono mb-3 whitespace-pre-wrap leading-tight" x-text="item.comparison?.engines?.[engineKey]?.error"></div>
@@ -481,8 +495,8 @@
                                 date: '',
                                 amount: ''
                             },
-                            showRaw: { doctr: false, tesseract: false, ocrmypdf: false },
-                            showJson: { doctr: false, tesseract: false, ocrmypdf: false },
+                            showRaw: { doctr: false, tesseract: false, paperless: false },
+                            showJson: { doctr: false, tesseract: false, paperless: false },
                             showFinalJson: false,
                         });
                     });
@@ -677,14 +691,14 @@
 
                 expandAllRawText() {
                     this.testItems.forEach(item => {
-                        item.showRaw = { doctr: true, tesseract: true, ocrmypdf: true };
+                        item.showRaw = { doctr: true, tesseract: true, paperless: true };
                     });
                     this.toast('Expanded all raw OCR text containers.');
                 },
 
                 expandAllJson() {
                     this.testItems.forEach(item => {
-                        item.showJson = { doctr: true, tesseract: true, ocrmypdf: true };
+                        item.showJson = { doctr: true, tesseract: true, paperless: true };
                         item.showFinalJson = true;
                     });
                     this.toast('Expanded all JSON containers.');
@@ -692,8 +706,8 @@
 
                 collapseAll() {
                     this.testItems.forEach(item => {
-                        item.showRaw = { doctr: false, tesseract: false, ocrmypdf: false };
-                        item.showJson = { doctr: false, tesseract: false, ocrmypdf: false };
+                        item.showRaw = { doctr: false, tesseract: false, paperless: false };
+                        item.showJson = { doctr: false, tesseract: false, paperless: false };
                         item.showFinalJson = false;
                         item.showTech = false;
                     });
@@ -766,7 +780,7 @@
                     switch (name) {
                         case 'doctr': return 'docTR';
                         case 'tesseract': return 'Tesseract';
-                        case 'ocrmypdf': return 'OCRmyPDF Pipeline';
+                        case 'paperless': return 'Paperless-ngx';
                         default: return name;
                     }
                 },
@@ -775,7 +789,7 @@
                     switch (name) {
                         case 'doctr': return 'Deep Learning OCR';
                         case 'tesseract': return 'Native Tesseract 5.5';
-                        case 'ocrmypdf': return 'Paperless-style document OCR';
+                        case 'paperless': return 'Full document-processing pipeline';
                         default: return '';
                     }
                 },

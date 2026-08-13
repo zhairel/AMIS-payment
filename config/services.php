@@ -51,6 +51,13 @@ return [
         'timeout' => env('PADDLE_OCR_TIMEOUT', 75),
     ],
 
+    'paperless' => [
+        'enabled' => env('PAPERLESS_ENABLED', true),
+        'url' => rtrim(env('PAPERLESS_URL', 'http://127.0.0.1:8000'), '/'),
+        'token' => env('PAPERLESS_API_TOKEN', ''),
+        'timeout' => (int) env('PAPERLESS_TIMEOUT', 90),
+    ],
+
     'tesseract' => [
         'timeout' => env('TESSERACT_OCR_TIMEOUT', 60),
     ],
