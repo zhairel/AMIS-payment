@@ -155,13 +155,20 @@ class PaperlessNgxAdapter implements OcrEngineAdapterInterface
                 ])->get("{$url}/api/tasks/?task_id={$taskId}");
 
                 if ($taskCheck->successful()) {
-                    $tasks = $taskCheck->json();
-                    $taskInfo = is_array($tasks) && isset($tasks[0]) ? $tasks[0] : (is_array($tasks) ? $tasks : []);
+                    $json = $taskCheck->json();
+                    $taskList = is_array($json) ? ($json['results'] ?? (isset($json[0]) ? $json : [$json])) : [];
+                    $taskInfo = $taskList[0] ?? [];
                     $status = strtoupper($taskInfo['status'] ?? '');
 
                     if ($status === 'SUCCESS') {
-                        $documentId = $taskInfo['related_document'] ?? null;
-                        break;
+                        $documentId = $taskInfo['related_document']
+                            ?? ($taskInfo['related_document_ids'][0] ?? null)
+                            ?? ($taskInfo['result_data']['document_id'] ?? null)
+                            ?? (is_numeric($taskInfo['result'] ?? null) ? (int) $taskInfo['result'] : null);
+
+                        if ($documentId) {
+                            break;
+                        }
                     } elseif ($status === 'FAILURE') {
                         $durationMs = (int) round((microtime(true) - $start) * 1000);
                         return [
