@@ -240,8 +240,22 @@
                                 <button type="button" @click="openScannerModal(item)" :disabled="!item.result" class="px-3.5 py-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 transition disabled:opacity-40">
                                     View Scanner
                                 </button>
-                            </div>
                         </div>
+
+                        {{-- Preprocessing Quality Diagnostic Pill --}}
+                        <template x-if="item.comparison?.preprocessing">
+                            <div class="bg-slate-900 text-slate-200 border border-slate-800 p-3 rounded-xl text-xs font-mono flex flex-wrap items-center justify-between gap-3">
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <span class="px-2.5 py-0.5 rounded font-black text-[10px] uppercase tracking-wider" :class="item.comparison?.preprocessing?.image_type === 'CAMERA_PHOTO' ? 'bg-amber-400 text-slate-950' : 'bg-sky-400 text-slate-950'" x-text="`Type: ${item.comparison?.preprocessing?.image_type || 'CAMERA_PHOTO'}`"></span>
+                                    <span x-show="item.comparison?.preprocessing?.crop_applied" class="text-emerald-400 font-semibold">✓ Auto-crop: Applied</span>
+                                    <span x-show="item.comparison?.preprocessing?.perspective_corrected" class="text-emerald-400 font-semibold">✓ Perspective: Corrected</span>
+                                    <span class="text-slate-400" x-text="`Quality: Score ${item.comparison?.preprocessing?.quality_score}/100 (Blur: ${item.comparison?.preprocessing?.blur_status || 'ACCEPTABLE'}, Glare: ${item.comparison?.preprocessing?.glare_detected ? 'Detected' : 'Clear'})`"></span>
+                                </div>
+                                <div x-show="item.comparison?.preprocessing?.user_message" class="text-rose-300 text-[11px] font-sans font-semibold">
+                                    <span x-text="item.comparison?.preprocessing?.user_message"></span>
+                                </div>
+                            </div>
+                        </template>
 
                         {{-- Per-Receipt Ground Truth Input Section --}}
                         <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs">

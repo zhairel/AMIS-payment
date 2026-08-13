@@ -14,12 +14,21 @@ class ReceiptOcrComparatorService
         private readonly DocTrAdapter $docTr = new DocTrAdapter(),
         private readonly TesseractAdapter $tesseract = new TesseractAdapter(),
         private readonly PaperlessNgxAdapter $paperless = new PaperlessNgxAdapter(),
+        private readonly ReceiptImagePreprocessorService $preprocessor = new ReceiptImagePreprocessorService(),
     ) {}
 
     public function checkEnvironmentDiagnostics(): array
     {
-        $python = config('services.paddle_ocr.python', base_path('.venv-ocr/bin/python'));
-        $script = base_path('scripts/ocr_engine_runner.py');
+        $basePath = dirname(__DIR__, 3);
+        try {
+            if (function_exists('base_path')) {
+                $basePath = base_path();
+            }
+        } catch (\Throwable) {
+        }
+
+        $python = $basePath . '/.venv-ocr/bin/python';
+        $script = $basePath . '/scripts/ocr_engine_runner.py';
         $process = new Process([$python, $script, 'check_env']);
         $process->run();
 
@@ -47,6 +56,10 @@ class ReceiptOcrComparatorService
 
     public function compareAllEngines(string $filePath, array $expectedValues = []): array
     {
+        // 1. Run Preprocessing Layer
+        $preprocData = $this->preprocessor->preprocess($filePath);
+        $enhancedPath = $preprocData['temp_enhanced_path'] ?? null;
+
         $adapters = [
             'doctr' => $this->docTr,
             'tesseract' => $this->tesseract,
@@ -57,44 +70,97 @@ class ReceiptOcrComparatorService
 
         foreach ($adapters as $key => $adapter) {
             $engineName = $adapter->getEngineName();
-            $rawResult = $adapter->scan($filePath);
 
-            $status = $rawResult['status'] ?? 'FAILED';
-            $rawText = (string) ($rawResult['raw_text'] ?? '');
-            $rawLength = mb_strlen($rawText);
-            $attempted = ($status !== 'NOT_AVAILABLE');
+            // Run OCR on Original Image
+            $rawResultOrig = $adapter->scan($filePath);
+            $statusOrig = $rawResultOrig['status'] ?? 'FAILED';
+            $rawTextOrig = (string) ($rawResultOrig['raw_text'] ?? '');
+            $parsedOrig = $this->normalizer->fromOcr(['raw_text' => $rawTextOrig]);
 
-            $parsed = $this->normalizer->fromOcr(['raw_text' => $rawText]);
+            // If Camera Photo and Enhanced Copy exists, run OCR on Enhanced Image as well
+            $parsedEnhanced = null;
+            $rawResultEnh = null;
+            if ($enhancedPath && file_exists($enhancedPath) && ($preprocData['image_type'] ?? '') === 'CAMERA_PHOTO') {
+                $rawResultEnh = $adapter->scan($enhancedPath);
+                if (($rawResultEnh['status'] ?? '') === 'SUCCESS') {
+                    $parsedEnhanced = $this->normalizer->fromOcr(['raw_text' => $rawResultEnh['raw_text'] ?? '']);
+                }
+            }
 
-            $groundTruth = $this->evaluateGroundTruth($parsed, $expectedValues);
+            // Choose best candidate between Original and Enhanced for this engine
+            $finalParsed = $parsedOrig;
+            $usedVariant = 'Original Image';
+            $rawText = $rawTextOrig;
+            $durationMs = $rawResultOrig['duration_ms'] ?? 0;
+
+            if ($parsedEnhanced) {
+                // If Enhanced Image yielded more detected fields or a valid reference, prefer it
+                $origFieldsCount = $this->countDetectedFields($parsedOrig);
+                $enhFieldsCount = $this->countDetectedFields($parsedEnhanced);
+
+                if ($enhFieldsCount > $origFieldsCount || (empty($parsedOrig['reference_number']) && ! empty($parsedEnhanced['reference_number']))) {
+                    $finalParsed = $parsedEnhanced;
+                    $usedVariant = 'Enhanced Image';
+                    $rawText = $rawResultEnh['raw_text'] ?? $rawTextOrig;
+                    $durationMs += ($rawResultEnh['duration_ms'] ?? 0);
+                }
+            }
+
+            $groundTruth = $this->evaluateGroundTruth($finalParsed, $expectedValues);
 
             $results[$key] = [
                 'key' => $key,
                 'engine' => $engineName,
-                'status' => $status,
-                'attempted' => $attempted,
+                'status' => $statusOrig,
+                'attempted' => ($statusOrig !== 'NOT_AVAILABLE'),
+                'variant_used' => $usedVariant,
                 'raw_text' => $rawText,
-                'raw_text_length' => $rawLength,
-                'regions' => $rawResult['regions'] ?? 0,
-                'confidence' => $rawResult['confidence'] ?? null,
-                'duration_ms' => $rawResult['duration_ms'] ?? 0,
-                'error' => $rawResult['error'] ?? null,
-                'paperless_document_id' => $rawResult['paperless_document_id'] ?? null,
-                'cleanup_status' => $rawResult['cleanup_status'] ?? null,
-                'parsed' => $parsed,
+                'raw_text_length' => mb_strlen($rawText),
+                'regions' => $rawResultOrig['regions'] ?? 0,
+                'confidence' => $rawResultOrig['confidence'] ?? null,
+                'duration_ms' => $durationMs,
+                'error' => $rawResultOrig['error'] ?? null,
+                'paperless_document_id' => $rawResultOrig['paperless_document_id'] ?? null,
+                'cleanup_status' => $rawResultOrig['cleanup_status'] ?? null,
+                'parsed' => $finalParsed,
                 'ground_truth' => $groundTruth,
             ];
         }
 
-        // Build Field-Level Multi-Engine Consensus
+        // 2. Build Field-Level Multi-Engine Consensus
         $consensus = $this->buildFieldConsensus($results);
+
+        // 3. Clean up temporary enhanced file
+        if ($enhancedPath) {
+            $this->preprocessor->cleanupTempFile($enhancedPath);
+        }
 
         return [
             'environment' => $this->checkEnvironmentDiagnostics(),
+            'preprocessing' => $preprocData,
             'expected_values' => $expectedValues,
             'engines' => $results,
             'consensus' => $consensus,
         ];
+    }
+
+    private function countDetectedFields(array $parsed): int
+    {
+        $count = 0;
+        if (! empty($parsed['provider']) && $parsed['provider'] !== 'Other / Unknown') {
+            $count++;
+        }
+        if (! empty($parsed['reference_number'])) {
+            $count++;
+        }
+        if (! empty($parsed['transaction_date'])) {
+            $count++;
+        }
+        if ($parsed['amount'] !== null && $parsed['amount'] !== undefined) {
+            $count++;
+        }
+
+        return $count;
     }
 
     /**
@@ -115,6 +181,7 @@ class ReceiptOcrComparatorService
                         'engine' => $res['engine'] ?? $engineKey,
                         'engine_key' => $engineKey,
                         'value' => $val,
+                        'variant_used' => $res['variant_used'] ?? 'Original Image',
                         'normalized' => ($field === 'reference_number') ? $this->normalizer->normalizeReference($val) : (is_string($val) ? mb_strtolower((string) $val) : $val),
                         'field_meta' => $parsed['fields'][$field] ?? [],
                     ];
@@ -153,7 +220,7 @@ class ReceiptOcrComparatorService
 
             $consensusFields[$field] = [
                 'value' => $bestCandidate['value'],
-                'source_engine' => $bestCandidate['engine'],
+                'source_engine' => $bestCandidate['engine'] . ' (' . $bestCandidate['variant_used'] . ')',
                 'confidence' => $agreementCount >= 2 ? 'high' : 'medium',
                 'agreement_count' => $agreementCount,
                 'matched_label' => $bestCandidate['field_meta']['matched_label'] ?? null,
