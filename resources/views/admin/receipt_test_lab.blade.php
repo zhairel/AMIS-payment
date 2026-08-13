@@ -3,13 +3,13 @@
         <div class="amis-test-header">
             <div>
                 <h1 class="text-xl font-bold text-slate-900">Independent 3-Engine OCR Benchmark</h1>
-                <p class="text-xs text-slate-500 mt-0.5">Compare docTR, Tesseract, and Paperless-ngx independently.</p>
+                <p class="text-xs text-slate-500 mt-0.5">Compare docTR, Tesseract, and Paperless-ngx independently with automated multi-upload queue.</p>
             </div>
             <span class="amis-badge-isolated">Isolated Testing Environment</span>
         </div>
     </x-slot>
 
-    <div class="py-6" x-data="receiptTestLab()" x-init="fetchEnvDiagnostics()">
+    <div class="py-6" x-data="receiptTestLab()" x-init="init()">
         <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             {{-- Copy Success Toast Notification --}}
@@ -30,12 +30,12 @@
 
                         <button type="button" @click="runAllTests()" :disabled="testItems.length === 0 || isProcessingAll" class="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl font-semibold text-xs transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
-                            <span x-text="isProcessingAll ? 'Running Tests...' : 'Run All Tests (Normal)'"></span>
+                            <span x-text="isProcessingAll ? 'Running Tests...' : 'Run All Tests (Single)'"></span>
                         </button>
 
                         <button type="button" @click="runAllCompareTests()" :disabled="testItems.length === 0 || isComparingAll" class="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl font-semibold text-xs transition shadow-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                            <span x-text="isComparingAll ? 'Running 3-Pipeline Benchmark...' : 'Run All OCR Comparisons'"></span>
+                            <span x-text="isComparingAll ? 'Running 3-Pipeline Benchmark...' : 'Re-run All OCR Comparisons'"></span>
                         </button>
                     </div>
 
@@ -79,6 +79,28 @@
                             <span>Copy All Results (Batch JSON)</span>
                         </button>
                     </div>
+                </div>
+            </div>
+
+            {{-- Live Batch Processing Progress Header --}}
+            <div x-show="testItems.length > 0" class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h3 class="font-extrabold text-sm text-slate-900 uppercase tracking-wider">Batch Queue Processing</h3>
+                        <p class="text-xs text-slate-500 mt-0.5" x-text="`${batchCounts().completed + batchCounts().partial} of ${testItems.length} receipts completed (${batchCounts().processing} processing, ${batchCounts().queued} queued)`"></p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-bold flex-wrap">
+                        <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg" x-text="`Completed: ${batchCounts().completed}`"></span>
+                        <span class="px-2.5 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-lg" x-text="`Partial: ${batchCounts().partial}`"></span>
+                        <span class="px-2.5 py-1 bg-sky-100 text-sky-800 rounded-lg" x-text="`Processing: ${batchCounts().processing}`"></span>
+                        <span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg" x-text="`Queued: ${batchCounts().queued}`"></span>
+                        <span class="px-2.5 py-1 bg-rose-100 text-rose-800 rounded-lg" x-text="`Failed: ${batchCounts().failed}`"></span>
+                    </div>
+                </div>
+
+                {{-- Visual Batch Progress Bar --}}
+                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div class="bg-gradient-to-r from-sky-500 to-emerald-500 h-full transition-all duration-300 rounded-full" :style="`width: ${batchProgressPercent()}%`"></div>
                 </div>
             </div>
 
@@ -216,26 +238,26 @@
                                 <div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="font-extrabold text-slate-900 text-base sm:text-lg" x-text="item.filename"></h3>
-                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold" :class="statusBadgeClass(item.status)" x-text="item.label || 'PENDING'"></span>
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold" :class="statusBadgeClass(item.status)" x-text="item.label || 'QUEUED'"></span>
                                     </div>
-                                    <p class="text-xs text-slate-500 mt-0.5" x-text="item.message || 'Ready for test'"></p>
+                                    <p class="text-xs text-slate-500 mt-0.5" x-text="item.message || 'Awaiting OCR processing...'"></p>
 
-                                    {{-- Compact Field Summary Pill Row --}}
+                                    {{-- Compact Field Summary Pill Row (Shows '—' when QUEUED, 'Not detected' only after completed OCR) --}}
                                     <div class="flex flex-wrap gap-2 mt-2 text-xs">
-                                        <span class="px-2.5 py-0.5 bg-slate-100 rounded-lg text-slate-700 font-bold">Provider: <span class="text-amber-700 font-extrabold" x-text="item.provider || 'Other / Unknown'"></span></span>
-                                        <span class="px-2.5 py-0.5 bg-slate-100 rounded-lg text-slate-700 font-bold">Ref: <span class="text-sky-700 font-extrabold" x-text="item.reference_number || 'Not detected'"></span></span>
-                                        <span class="px-2.5 py-0.5 bg-slate-100 rounded-lg text-slate-700 font-bold">Date: <span class="text-purple-700 font-extrabold" x-text="item.transaction_date || 'Not detected'"></span></span>
-                                        <span class="px-2.5 py-0.5 bg-slate-100 rounded-lg text-slate-700 font-bold">Amount: <span class="text-emerald-700 font-extrabold" x-text="item.amount !== null ? `${item.currency} ${numberFormat(item.amount)}` : 'Not detected'"></span></span>
+                                        <span class="px-2.5 py-0.5 bg-slate-100 rounded-lg text-slate-700 font-bold">Provider: <span class="text-amber-700 font-extrabold" x-text="getFieldDisplay(item, 'provider')"></span></span>
+                                        <span class="px-2.5 py-0.5 bg-slate-100 rounded-lg text-slate-700 font-bold">Ref: <span class="text-sky-700 font-extrabold" x-text="getFieldDisplay(item, 'reference_number')"></span></span>
+                                        <span class="px-2.5 py-0.5 bg-slate-100 rounded-lg text-slate-700 font-bold">Date: <span class="text-purple-700 font-extrabold" x-text="getFieldDisplay(item, 'transaction_date')"></span></span>
+                                        <span class="px-2.5 py-0.5 bg-slate-100 rounded-lg text-slate-700 font-bold">Amount: <span class="text-emerald-700 font-extrabold" x-text="getFieldDisplay(item, 'amount')"></span></span>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="flex items-center gap-2 flex-wrap">
-                                <button type="button" @click="runSingleTest(index)" :disabled="item.isProcessing" class="px-3.5 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition">
+                                <button type="button" @click="runSingleTest(index)" :disabled="item.isProcessing || item.status === 'QUEUED'" class="px-3.5 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition disabled:opacity-40">
                                     <span x-text="item.isProcessing ? 'Processing...' : 'Run Test (Single)'"></span>
                                 </button>
-                                <button type="button" @click="runEngineComparison(item)" :disabled="item.isComparing" class="px-3.5 py-2 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl border border-sky-200 transition">
-                                    <span x-text="item.isComparing ? 'Comparing 3 Pipelines...' : 'Run Compare OCR'"></span>
+                                <button type="button" @click="runEngineComparison(item)" :disabled="item.isComparing || item.status === 'QUEUED'" class="px-3.5 py-2 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl border border-sky-200 transition disabled:opacity-40">
+                                    <span x-text="item.isComparing ? 'Running OCR...' : (item.comparison ? 'Re-run Compare OCR' : 'Run Compare OCR')"></span>
                                 </button>
                                 <button type="button" @click="openScannerModal(item)" :disabled="!item.result" class="px-3.5 py-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 transition disabled:opacity-40">
                                     View Scanner
@@ -280,7 +302,7 @@
                             <div class="lg:col-span-8 bg-slate-50/80 border border-slate-200/80 rounded-xl p-4 text-xs">
                                 <div class="flex items-center justify-between mb-2 pb-1 border-b border-slate-200/60">
                                     <h4 class="font-bold text-slate-800 uppercase tracking-wider text-[11px]">Expected Ground Truth (Benchmark Evaluation)</h4>
-                                    <button type="button" @click="runEngineComparison(item)" class="text-sky-700 font-bold hover:underline">Re-evaluate Ground Truth</button>
+                                    <button type="button" @click="runEngineComparison(item)" class="text-sky-700 font-bold hover:underline" :disabled="item.isComparing">Re-evaluate Ground Truth</button>
                                 </div>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                                     <div>
@@ -307,16 +329,27 @@
                         <div class="space-y-3">
                             <div class="flex items-center justify-between border-b border-slate-100 pb-2">
                                 <h3 class="font-extrabold text-slate-900 text-sm uppercase tracking-wider">OCR Comparison</h3>
-                                <span x-show="item.comparison" class="text-xs text-slate-500 font-medium">Comparing docTR vs Tesseract vs Paperless-ngx</span>
+                                <span class="text-xs text-slate-500 font-medium" x-text="item.status === 'QUEUED' ? 'Queued — Waiting for OCR worker slot...' : 'Comparing docTR vs Tesseract vs Paperless-ngx'"></span>
                             </div>
 
-                            {{-- Loading Indicator --}}
-                            <div x-show="item.isComparing" class="p-8 text-center bg-slate-50 rounded-xl border border-slate-200">
-                                <div class="inline-block animate-spin w-7 h-7 border-3 border-sky-600 border-t-transparent rounded-full mb-2"></div>
+                            {{-- Loading Indicator for Active Comparison --}}
+                            <div x-show="item.isComparing" class="p-8 text-center bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                                <div class="inline-block animate-spin w-7 h-7 border-3 border-sky-600 border-t-transparent rounded-full mb-1"></div>
                                 <h4 class="text-slate-800 font-bold text-xs">Running docTR, Tesseract, and Paperless-ngx independently...</h4>
+                                <div class="flex justify-center gap-4 text-xs font-semibold pt-1">
+                                    <span class="px-2.5 py-1 bg-sky-100 text-sky-800 rounded-lg">docTR: Scanning...</span>
+                                    <span class="px-2.5 py-1 bg-sky-100 text-sky-800 rounded-lg">Tesseract: Scanning...</span>
+                                    <span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg">Paperless: Waiting...</span>
+                                </div>
                             </div>
 
-                            {{-- 3-Column Grid --}}
+                            {{-- Queued Placeholder Indicator --}}
+                            <div x-show="item.status === 'QUEUED' && !item.isComparing" class="p-6 text-center bg-slate-50/60 rounded-xl border border-dashed border-slate-300">
+                                <span class="px-3 py-1 bg-slate-200 text-slate-700 rounded-full font-bold text-xs">QUEUED FOR OCR</span>
+                                <p class="text-xs text-slate-500 mt-2">This receipt is queued. OCR will start automatically as soon as worker slots become available.</p>
+                            </div>
+
+                            {{-- 3-Column Results Grid --}}
                             <div x-show="item.comparison" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                                 <template x-for="engineKey in ['doctr', 'tesseract', 'paperless']" :key="engineKey">
                                     <div class="bg-white rounded-xl border p-4 shadow-sm flex flex-col justify-between min-w-0" :class="item.comparison?.engines?.[engineKey]?.status === 'SUCCESS' ? 'border-emerald-200' : 'border-slate-200'">
@@ -496,6 +529,59 @@
                 viewMode: 'summary',
                 toastMessage: '',
                 envDiagnostics: null,
+                maxConcurrent: 2,
+                activeWorkers: 0,
+
+                init() {
+                    this.fetchEnvDiagnostics();
+                    this.loadSessionState();
+                },
+
+                saveSessionState() {
+                    try {
+                        const serializable = this.testItems.map(item => ({
+                            id: item.id,
+                            filename: item.filename,
+                            size: item.size,
+                            status: item.status,
+                            label: item.label,
+                            message: item.message,
+                            provider: item.provider,
+                            reference_number: item.reference_number,
+                            transaction_date: item.transaction_date,
+                            amount: item.amount,
+                            currency: item.currency,
+                            comparison: item.comparison,
+                            result: item.result,
+                            expected: item.expected,
+                            showRaw: item.showRaw,
+                            showJson: item.showJson,
+                            showFinalJson: item.showFinalJson,
+                        }));
+                        sessionStorage.setItem('amis_ocr_test_items', JSON.stringify(serializable));
+                    } catch (e) {}
+                },
+
+                loadSessionState() {
+                    try {
+                        const saved = sessionStorage.getItem('amis_ocr_test_items');
+                        if (saved) {
+                            const parsed = JSON.parse(saved);
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                                this.testItems = parsed.map(item => ({
+                                    ...item,
+                                    file: null,
+                                    previewUrl: item.previewUrl || '/images/AMIS_Logo.png',
+                                    isProcessing: false,
+                                    isComparing: false,
+                                    showRaw: item.showRaw || { doctr: false, tesseract: false, paperless: false },
+                                    showJson: item.showJson || { doctr: false, tesseract: false, paperless: false },
+                                    showFinalJson: item.showFinalJson || false,
+                                }));
+                            }
+                        }
+                    } catch (e) {}
+                },
 
                 async fetchEnvDiagnostics() {
                     try {
@@ -517,9 +603,9 @@
                             filename: file.name,
                             size: (file.size / 1024).toFixed(1) + ' KB',
                             previewUrl: URL.createObjectURL(file),
-                            status: 'PENDING',
-                            label: 'PENDING',
-                            message: 'Ready for test',
+                            status: 'QUEUED',
+                            label: 'QUEUED',
+                            message: 'Awaiting OCR processing...',
                             provider: null,
                             reference_number: null,
                             transaction_date: null,
@@ -542,11 +628,39 @@
                         this.testItems.push(item);
                     });
                     event.target.value = '';
+                    this.saveSessionState();
+                    this.processQueue();
+                },
+
+                async processQueue() {
+                    if (this.activeWorkers >= this.maxConcurrent) return;
+
+                    const nextItem = this.testItems.find(item => item.status === 'QUEUED' && !item.isComparing);
+                    if (!nextItem || !nextItem.file) return;
+
+                    this.activeWorkers++;
+                    try {
+                        await this.runEngineComparison(nextItem);
+                    } finally {
+                        this.activeWorkers--;
+                        this.saveSessionState();
+                        this.processQueue();
+                    }
+                },
+
+                getFieldDisplay(item, field) {
+                    if (item.status === 'QUEUED' || (!item.comparison && !item.result && item.status !== 'FAILED')) {
+                        return '—';
+                    }
+                    if (field === 'amount') {
+                        return item.amount !== null ? `${item.currency || 'PHP'} ${this.numberFormat(item.amount)}` : 'Not detected';
+                    }
+                    return item[field] || 'Not detected';
                 },
 
                 async runSingleTest(index) {
                     const item = this.testItems[index];
-                    if (!item || item.isProcessing) return;
+                    if (!item || item.isProcessing || !item.file) return;
 
                     item.isProcessing = true;
                     item.status = 'PROCESSING';
@@ -591,14 +705,15 @@
                         item.message = 'Network error or server error';
                     } finally {
                         item.isProcessing = false;
+                        this.saveSessionState();
                     }
                 },
 
                 async runEngineComparison(item) {
-                    if (!item || item.isComparing) return;
+                    if (!item || item.isComparing || !item.file) return;
 
                     item.isComparing = true;
-                    item.status = 'PROCESSING';
+                    item.status = 'OCR_RUNNING';
                     item.label = 'RUNNING OCR...';
                     item.message = 'Comparing docTR, Tesseract, and Paperless-ngx...';
 
@@ -652,6 +767,7 @@
                         item.message = 'Error comparing OCR engines: ' + e.message;
                     } finally {
                         item.isComparing = false;
+                        this.saveSessionState();
                     }
                 },
 
@@ -660,7 +776,9 @@
                     this.isProcessingAll = true;
 
                     for (let i = 0; i < this.testItems.length; i++) {
-                        await this.runSingleTest(i);
+                        if (this.testItems[i].file) {
+                            await this.runSingleTest(i);
+                        }
                     }
 
                     this.isProcessingAll = false;
@@ -671,12 +789,20 @@
                     if (this.isComparingAll || this.testItems.length === 0) return;
                     this.isComparingAll = true;
 
-                    for (let i = 0; i < this.testItems.length; i++) {
-                        await this.runEngineComparison(this.testItems[i]);
-                    }
+                    // Re-enqueue all test items with files
+                    this.testItems.forEach(item => {
+                        if (item.file) {
+                            item.status = 'QUEUED';
+                            item.label = 'QUEUED';
+                            item.message = 'Re-enqueued for OCR processing...';
+                        }
+                    });
+
+                    this.saveSessionState();
+                    this.processQueue();
 
                     this.isComparingAll = false;
-                    this.showToast('All 3-Pipeline comparisons completed!');
+                    this.showToast('All comparisons re-enqueued into queue worker!');
                 },
 
                 openScannerModal(item) {
@@ -712,9 +838,9 @@
 
                 clearResults() {
                     this.testItems.forEach(item => {
-                        item.status = 'PENDING';
-                        item.label = 'PENDING';
-                        item.message = 'Ready for test';
+                        item.status = 'QUEUED';
+                        item.label = 'QUEUED';
+                        item.message = 'Awaiting OCR processing...';
                         item.result = null;
                         item.comparison = null;
                         item.provider = null;
@@ -722,11 +848,13 @@
                         item.transaction_date = null;
                         item.amount = null;
                     });
+                    this.saveSessionState();
                     this.showToast('Results cleared');
                 },
 
                 resetLab() {
                     this.testItems = [];
+                    sessionStorage.removeItem('amis_ocr_test_items');
                     this.showToast('Test Lab reset');
                 },
 
@@ -786,6 +914,24 @@
 
                 countComparedReceipts() {
                     return this.testItems.filter(item => item.comparison !== null).length;
+                },
+
+                batchCounts() {
+                    const counts = { completed: 0, partial: 0, processing: 0, queued: 0, failed: 0, total: this.testItems.length };
+                    this.testItems.forEach(item => {
+                        if (item.status === 'SUCCESS' || item.status === 'COMPLETED') counts.completed++;
+                        else if (item.status === 'PARTIAL_SUCCESS' || item.status === 'PARTIAL') counts.partial++;
+                        else if (item.status === 'OCR_RUNNING' || item.status === 'PROCESSING' || item.status === 'SCANNING' || item.isComparing) counts.processing++;
+                        else if (item.status === 'QUEUED') counts.queued++;
+                        else if (item.status === 'FAILED') counts.failed++;
+                    });
+                    return counts;
+                },
+
+                batchProgressPercent() {
+                    if (this.testItems.length === 0) return 0;
+                    const finished = this.batchCounts().completed + this.batchCounts().partial + this.batchCounts().failed;
+                    return Math.round((finished / this.testItems.length) * 100);
                 },
 
                 engineStats(engineKey) {
@@ -886,10 +1032,13 @@
 
                 statusBadgeClass(status) {
                     switch (status) {
-                        case 'SUCCESS': return 'bg-emerald-100 text-emerald-800';
+                        case 'SUCCESS': return 'bg-emerald-100 text-emerald-800 font-bold';
                         case 'PARTIAL_SUCCESS': return 'bg-amber-100 text-amber-900 border border-amber-300 font-black';
-                        case 'PROCESSING': return 'bg-sky-100 text-sky-800 animate-pulse';
-                        case 'FAILED': return 'bg-rose-100 text-rose-800';
+                        case 'OCR_RUNNING':
+                        case 'PROCESSING':
+                        case 'SCANNING': return 'bg-sky-100 text-sky-900 animate-pulse font-bold';
+                        case 'QUEUED': return 'bg-slate-100 text-slate-700 font-semibold';
+                        case 'FAILED': return 'bg-rose-100 text-rose-800 font-bold';
                         default: return 'bg-slate-100 text-slate-600';
                     }
                 },
