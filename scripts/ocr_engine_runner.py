@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """
-AMIS AI Receipt Scanner - Independent 3-Engine OCR Bridge Script.
+AMIS AI Receipt Scanner - Independent OCR Bridge Script.
 Runs inside dedicated .venv-ocr environment (Python 3.12).
-Evaluates docTR, Tesseract, and OCRmyPDF Pipeline INDEPENDENTLY.
+Evaluates docTR and Tesseract INDEPENDENTLY.
 """
 
 import json
 import logging
 import os
 import sys
-import tempfile
 import time
 import warnings
 from shutil import which
@@ -18,7 +17,6 @@ from PIL import Image
 warnings.filterwarnings("ignore")
 logging.getLogger("ppocr").setLevel(logging.ERROR)
 logging.getLogger("doctr").setLevel(logging.ERROR)
-logging.getLogger("ocrmypdf").setLevel(logging.ERROR)
 
 # Configure environment PATH and TESSDATA_PREFIX for isolated venv binaries
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -43,7 +41,6 @@ def check_env():
 
     doctr_avail, doctr_ver, doctr_reason = False, None, None
     tes_avail, tes_ver, tes_reason = False, None, None
-    ocrmypdf_avail, ocrmypdf_ver, ocrmypdf_reason = False, None, None
 
     # 1. docTR Check
     try:
@@ -52,7 +49,7 @@ def check_env():
         doctr_ver = getattr(doctr, "__version__", "1.0.1")
         _ = ocr_predictor(pretrained=True)
         doctr_avail = True
-    except ModuleNotFoundError as e:
+    except ModuleNotFoundError:
         doctr_reason = f"ModuleNotFoundError: python-doctr package is not installed in Python environment ({executable})."
     except Exception as e:
         doctr_reason = f"docTR Initialization Failure [{type(e).__name__}]: {str(e)}"
@@ -71,20 +68,6 @@ def check_env():
     else:
         tes_reason = f"TesseractNotFoundError: tesseract binary is not installed in system PATH for environment ({executable})"
 
-    # 3. OCRmyPDF Pipeline Check
-    try:
-        import ocrmypdf
-        import img2pdf
-        ocrmypdf_ver = getattr(ocrmypdf, "__version__", "17.10.0")
-        if tes_bin:
-            ocrmypdf_avail = True
-        else:
-            ocrmypdf_reason = "Tesseract binary missing for OCRmyPDF"
-    except ModuleNotFoundError as e:
-        ocrmypdf_reason = f"ModuleNotFoundError: ocrmypdf or img2pdf package is not installed in Python environment ({executable})."
-    except Exception as e:
-        ocrmypdf_reason = f"OCRmyPDF Check Failure [{type(e).__name__}]: {str(e)}"
-
     # Restore stdout and output clean JSON
     sys.stdout = old_stdout
 
@@ -94,7 +77,6 @@ def check_env():
         "engines": {
             "doctr": {"available": doctr_avail, "version": doctr_ver, "reason": doctr_reason},
             "tesseract": {"available": tes_avail, "version": tes_ver, "reason": tes_reason},
-            "ocrmypdf": {"available": ocrmypdf_avail, "version": ocrmypdf_ver, "reason": ocrmypdf_reason},
         }
     }))
 
@@ -126,7 +108,7 @@ def run_doctr(image_path):
             "duration_ms": duration,
             "error": None
         }
-    except ModuleNotFoundError as e:
+    except ModuleNotFoundError:
         duration = int((time.time() - start) * 1000)
         return {
             "engine": "docTR",
@@ -191,105 +173,6 @@ def run_tesseract(image_path):
         }
 
 
-def run_ocrmypdf(image_path):
-    start = time.time()
-    tes_bin = which("tesseract")
-    if not tes_bin:
-        duration = int((time.time() - start) * 1000)
-        return {
-            "engine": "OCRmyPDF Pipeline",
-            "status": "NOT_AVAILABLE",
-            "raw_text": "",
-            "regions": 0,
-            "confidence": None,
-            "duration_ms": duration,
-            "error": f"TesseractNotFoundError: tesseract binary is not installed in system PATH for environment ({sys.executable})."
-        }
-
-    try:
-        import img2pdf
-        import ocrmypdf
-    except ModuleNotFoundError as e:
-        duration = int((time.time() - start) * 1000)
-        return {
-            "engine": "OCRmyPDF Pipeline",
-            "status": "NOT_AVAILABLE",
-            "raw_text": "",
-            "regions": 0,
-            "confidence": None,
-            "duration_ms": duration,
-            "error": f"ModuleNotFoundError: ocrmypdf or img2pdf package is not installed in Python environment ({sys.executable})."
-        }
-
-    # Step 1: Image to temporary PDF conversion
-    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_in_pdf:
-        in_pdf_path = tmp_in_pdf.name
-        try:
-            pdf_bytes = img2pdf.convert(image_path)
-            tmp_in_pdf.write(pdf_bytes)
-        except Exception as e:
-            duration = int((time.time() - start) * 1000)
-            return {
-                "engine": "OCRmyPDF Pipeline",
-                "status": "FAILED",
-                "raw_text": "",
-                "regions": 0,
-                "confidence": None,
-                "duration_ms": duration,
-                "error": f"img2pdf conversion failed: {str(e)}"
-            }
-
-    out_pdf_path = in_pdf_path.replace(".pdf", "_ocr.pdf")
-    sidecar_path = in_pdf_path.replace(".pdf", "_sidecar.txt")
-
-    try:
-        ocrmypdf.ocr(
-            in_pdf_path,
-            out_pdf_path,
-            sidecar=sidecar_path,
-            force_ocr=True,
-            use_threads=True,
-            progress_bar=False,
-            language="eng",
-        )
-
-        raw_text = ""
-        if os.path.isfile(sidecar_path):
-            with open(sidecar_path, "r", encoding="utf-8", errors="ignore") as f:
-                raw_text = f.read()
-
-        lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
-        duration = int((time.time() - start) * 1000)
-
-        return {
-            "engine": "OCRmyPDF Pipeline",
-            "status": "SUCCESS",
-            "raw_text": "\n".join(lines),
-            "regions": len(lines),
-            "confidence": None,
-            "duration_ms": duration,
-            "error": None
-        }
-    except Exception as e:
-        duration = int((time.time() - start) * 1000)
-        return {
-            "engine": "OCRmyPDF Pipeline",
-            "status": "FAILED",
-            "raw_text": "",
-            "regions": 0,
-            "confidence": None,
-            "duration_ms": duration,
-            "error": f"ocrmypdf execution failed [{type(e).__name__}]: {str(e)}"
-        }
-    finally:
-        for p in [in_pdf_path, out_pdf_path, sidecar_path]:
-            if os.path.isfile(p):
-                try:
-                    os.remove(p)
-                except Exception:
-                    pass
-
-
 def main():
     if len(sys.argv) < 2:
         print(json.dumps({"error": "No command provided"}))
@@ -323,8 +206,6 @@ def main():
         print(json.dumps(run_doctr(image_path)))
     elif cmd == "tesseract":
         print(json.dumps(run_tesseract(image_path)))
-    elif cmd in ["ocrmypdf", "paperless"]:
-        print(json.dumps(run_ocrmypdf(image_path)))
     else:
         print(json.dumps({"error": f"Unknown OCR engine command '{cmd}'"}))
 
