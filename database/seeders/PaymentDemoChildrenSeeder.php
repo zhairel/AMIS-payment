@@ -7,32 +7,38 @@ use App\Models\PaymentDemoChild;
 use App\Models\SchoolFee;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use RuntimeException;
 
 class PaymentDemoChildrenSeeder extends Seeder
 {
     public function run(): void
     {
-        $user = User::query()
-            ->whereRaw('LOWER(TRIM(email)) = ?', ['zhairel.lingasa@gmail.com'])
-            ->first();
+        $users = User::query()
+            ->where(function ($q) {
+                $q->whereRaw('LOWER(TRIM(email)) LIKE ?', ['%lingasa%'])
+                  ->orWhereRaw('LOWER(TRIM(email)) = ?', ['zhairel.lingasa@gmail.com']);
+            })
+            ->get();
 
-        if (! $user) {
-            throw new RuntimeException('The AFPS demo parent account was not found.');
+        foreach ($users as $user) {
+            $this->seedForUser($user);
         }
+    }
 
+    public function seedForUser(User $user): void
+    {
         $children = [
-            ['display_name' => 'AHMAD Z. LINGASA', 'demo_student_number' => 'AFPS-DEMO-2026-001', 'grade_level' => 'Grade 1', 'gender' => 'Male'],
-            ['display_name' => 'MARYAM Z. LINGASA', 'demo_student_number' => 'AFPS-DEMO-2026-002', 'grade_level' => 'Grade 3', 'gender' => 'Female'],
-            ['display_name' => 'YUSUF Z. LINGASA', 'demo_student_number' => 'AFPS-DEMO-2026-003', 'grade_level' => 'Grade 5', 'gender' => 'Male'],
+            ['display_name' => 'AHMAD Z. LINGASA', 'demo_student_number' => 'AFPS-DEMO-2026-001-'.$user->id, 'grade_level' => 'Grade 1', 'gender' => 'Male'],
+            ['display_name' => 'MARYAM Z. LINGASA', 'demo_student_number' => 'AFPS-DEMO-2026-002-'.$user->id, 'grade_level' => 'Grade 3', 'gender' => 'Female'],
+            ['display_name' => 'YUSUF Z. LINGASA', 'demo_student_number' => 'AFPS-DEMO-2026-003-'.$user->id, 'grade_level' => 'Grade 5', 'gender' => 'Male'],
         ];
+
         $discountPercentage = DiscountSetting::current()
             ->siblingPercentageForFamilySize(count($children));
 
         foreach ($children as $child) {
             $fee = SchoolFee::forGrade($child['grade_level'], '2026-2027');
             if (! $fee) {
-                throw new RuntimeException("No official fee schedule was found for {$child['grade_level']} SY 2026-2027.");
+                continue;
             }
 
             $tuition = round((float) $fee->tuition_fee, 2);
@@ -62,10 +68,6 @@ class PaymentDemoChildrenSeeder extends Seeder
                 ])
             );
         }
-
-        PaymentDemoChild::query()
-            ->where('user_id', $user->id)
-            ->whereNotIn('demo_student_number', collect($children)->pluck('demo_student_number'))
-            ->delete();
     }
 }
+

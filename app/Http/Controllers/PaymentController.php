@@ -12,11 +12,13 @@ use App\Models\StudentAccountPayment;
 use App\Models\User;
 use App\Services\AmisReceiptRiskService;
 use App\Services\CurrentFamilyPaymentCoverageService;
-use App\Services\GoogleVisionService;
-use App\Services\PaddleOcrService;
+use App\Services\DemoPaymentScheduleService;
+use App\Services\Enrollment\SiblingDiscountService;
 use App\Services\PaymentEligibilityService;
 use App\Services\ReceiptClassificationService;
 use App\Services\ReceiptFingerprintService;
+use App\Services\Receipts\ReceiptDuplicateService;
+use App\Services\Receipts\ReceiptProductionOcrService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -35,9 +37,20 @@ class PaymentController extends Controller
     public function showDashboard(Request $request, PaymentEligibilityService $paymentEligibility)
     {
         $user = Auth::user();
+        $demoChildren = $user->paymentDemoChildren()->orderBy('id')->get();
+
+        // ── AUTO-SEED DEMO CHILDREN IF PARENT HAS NO STUDENTS ────────────────
+        if ($user && $user->students()->count() === 0 && $demoChildren->isEmpty()) {
+            try {
+                app(\Database\Seeders\PaymentDemoChildrenSeeder::class)->seedForUser($user);
+                $demoChildren = $user->paymentDemoChildren()->orderBy('id')->get();
+            } catch (\Throwable $e) {
+                Log::error('Auto-seeding demo children error: '.$e->getMessage());
+            }
+        }
 
         // ── AUTO-LINK STUDENTS BY PARENT EMAIL ──────────────────────────────
-        if ($user && $user->email) {
+        if ($user && $user->email && $demoChildren->isEmpty()) {
             try {
                 $userEmail = trim(strtolower($user->email));
                 $matchingApplicants = EnrollmentApplicant::whereRaw('LOWER(TRIM(parent_email)) = ?', [$userEmail])->get();
@@ -70,6 +83,11 @@ class PaymentController extends Controller
                 $familyTotalRemaining += (float) $account->remaining_balance;
                 $familyTotalBalance += (float) $account->total_balance;
             }
+        }
+
+        if ($students->isEmpty() && $demoChildren->isNotEmpty()) {
+            $familyTotalRemaining = round((float) $demoChildren->sum('remaining_balance'), 2);
+            $familyTotalBalance = round((float) $demoChildren->sum('total_balance'), 2);
         }
 
         foreach ($students as $student) {
@@ -149,6 +167,10 @@ class PaymentController extends Controller
             }
         }
 
+        if ($students->isEmpty() && $demoChildren->isNotEmpty()) {
+            $monthlyGroups = app(DemoPaymentScheduleService::class)->build($demoChildren);
+        }
+
         ksort($monthlyGroups);
 
         foreach ($monthlyGroups as &$group) {
@@ -216,8 +238,8 @@ class PaymentController extends Controller
         ];
         $activePendingSubmissions = $paymentSubmissions->filter(
             fn ($submission) => $submission->status === 'pending'
-                && $submission->receiptSubmission
-                && in_array($submission->receiptSubmission->status, $activeReceiptStatuses, true)
+                && (! $submission->receiptSubmission
+                    || in_array($submission->receiptSubmission->status, $activeReceiptStatuses, true))
         );
         $previousOpenGroups = collect($monthlyGroups)
             ->where('is_previous', true)
@@ -230,7 +252,7 @@ class PaymentController extends Controller
             ->map(fn ($group) => [
                 'month_label' => $group['month_number'] === 0
                     ? 'Enrollment / Initial Payment'
-                    : $group['due_date']->format('F Y'),
+                    : strtoupper($group['due_date']->format('F Y')),
                 'original_amount' => round((float) $group['total_due'], 2),
                 'verified_amount' => round((float) $group['total_paid'], 2),
                 'remaining_amount' => round((float) $group['total_remaining'], 2),
@@ -296,7 +318,9 @@ class PaymentController extends Controller
                     ->whereIn('id', $financeBillingIds)
                     ->get(['id', 'month_name', 'due_date'])
                     ->mapWithKeys(fn (SoaMonthlyBilling $billing) => [
-                        (int) $billing->id => $billing->due_date?->format('F Y') ?: (string) $billing->month_name,
+                        (int) $billing->id => $billing->due_date
+                            ? strtoupper($billing->due_date->format('F Y'))
+                            : strtoupper((string) $billing->month_name),
                     ]);
 
             $familyFinanceTransactions = $approvedFinanceTransactions
@@ -365,8 +389,8 @@ class PaymentController extends Controller
                             'number' => $transaction->official_receipt_number ?: $transaction->transaction_number,
                             'official_receipt_number' => $transaction->official_receipt_number,
                             'submission_number' => $transaction->submission_number,
-                            'date' => $transactionAt?->format('F j, Y · h:i A'),
-                            'receipt_date' => $transactionAt?->format('F j, Y'),
+                            'date' => $transactionAt ? strtoupper($transactionAt->format('F j, Y · h:i A')) : null,
+                            'receipt_date' => $transactionAt ? strtoupper($transactionAt->format('F j, Y')) : null,
                             'payer' => $user->name,
                             'source' => $source === 'ONLINE' ? 'Online Payment' : 'Onsite Payment',
                             'method' => $methodLabel,
@@ -431,7 +455,7 @@ class PaymentController extends Controller
                     $groupKey = $monthKey.'|'.$group['due_date']->format('Y-m-d');
                     $monthLabel = $group['month_number'] === 0
                         ? 'Enrollment / Initial Payment'
-                        : $group['due_date']->format('F Y');
+                        : strtoupper($group['due_date']->format('F Y'));
 
                     return collect($group['children'])->map(fn ($child) => [
                         'group_key' => $groupKey,
@@ -526,7 +550,7 @@ class PaymentController extends Controller
                     return [
                         'receipt_title' => $receiptTitle,
                         'official_receipt_number' => $record['official_receipt_number'],
-                        'date' => $record['transaction_at']?->format('M d, Y'),
+                        'date' => $record['transaction_at'] ? strtoupper($record['transaction_at']->format('M d, Y')) : null,
                         'time' => $record['transaction_at']?->format('h:i A'),
                         'source' => $record['source_label'],
                         'method' => $record['method_label'],
@@ -552,11 +576,11 @@ class PaymentController extends Controller
             $receiptPeriodStart = $receiptMonthsThroughCurrent->first();
             if ($receiptPeriodStart) {
                 $periodStart = Carbon::createFromFormat('Y-m', $receiptPeriodStart)->startOfMonth();
-                $receiptPeriodLabel = $periodStart->isSameMonth($currentReceiptMonth)
+                $receiptPeriodLabel = strtoupper($periodStart->isSameMonth($currentReceiptMonth)
                     ? $currentReceiptMonth->format('F Y')
-                    : $periodStart->format('F').' – '.$currentReceiptMonth->format('F Y');
+                    : $periodStart->format('F').' – '.$currentReceiptMonth->format('F Y'));
             } else {
-                $receiptPeriodLabel = $currentReceiptMonth->format('F Y');
+                $receiptPeriodLabel = strtoupper($currentReceiptMonth->format('F Y'));
             }
             $hasFutureAllocation = $consolidatedAllocations
                 ->contains(fn ($allocation) => $allocation['month_sort'] > $currentReceiptMonth->format('Y-m'));
@@ -571,8 +595,8 @@ class PaymentController extends Controller
                 'receipt_count' => $familyFinanceTransactions->count(),
                 'period_label' => $receiptPeriodLabel,
                 'submission_number' => null,
-                'date' => $latestReceiptDate?->format('F j, Y'),
-                'receipt_date' => $latestReceiptDate?->format('F j, Y'),
+                'date' => $latestReceiptDate ? strtoupper($latestReceiptDate->format('F j, Y')) : null,
+                'receipt_date' => $latestReceiptDate ? strtoupper($latestReceiptDate->format('F j, Y')) : null,
                 'payer' => $user->name,
                 'source' => $sourceLabels->count() > 1 ? 'Online and Onsite Payments' : ($sourceLabels->first() ?: 'Verified Payments'),
                 'method' => $methodLabels->join(', '),
@@ -624,7 +648,7 @@ class PaymentController extends Controller
                             : 'Recorded by AMIS Finance',
                         'amount' => round($appliedAmount, 2),
                         'date' => $transaction->transaction_at
-                            ? Carbon::parse($transaction->transaction_at)->format('M d, Y')
+                            ? strtoupper(Carbon::parse($transaction->transaction_at)->format('M d, Y'))
                             : null,
                     ];
                 })
@@ -672,7 +696,7 @@ class PaymentController extends Controller
                             : 'Recorded by AMIS Finance',
                         'amount' => round($appliedAmount, 2),
                         'date' => $transaction->transaction_at
-                            ? Carbon::parse($transaction->transaction_at)->format('M d, Y')
+                            ? strtoupper(Carbon::parse($transaction->transaction_at)->format('M d, Y'))
                             : null,
                     ];
                 })
@@ -786,7 +810,7 @@ class PaymentController extends Controller
                         'month_key' => $monthKey,
                         'month_label' => $group['month_number'] === 0
                             ? 'Enrollment / Initial Payment'
-                            : ucwords(mb_strtolower($group['month_label'])),
+                            : mb_strtoupper($group['month_label']),
                         'amount' => $child['amount_due'],
                     ];
                 }
@@ -799,7 +823,7 @@ class PaymentController extends Controller
             if ($group['is_overdue'] && $group['unpaid_count'] > 0) {
                 $paymentNotifications->push([
                     'type' => 'overdue',
-                    'title' => $group['month_name'].' '.$group['year'].' balance is overdue',
+                    'title' => mb_strtoupper($group['month_name']).' '.$group['year'].' balance is overdue',
                     'message' => 'The remaining balance has been carried into your current family total.',
                     'amount' => $group['total_remaining'],
                     'date' => $group['due_date'],
@@ -827,7 +851,7 @@ class PaymentController extends Controller
             $officialReceiptNumber = $officialReceiptNumbersBySubmission->get($submission->id);
             $paymentNotifications->push([
                 'type' => 'success',
-                'title' => 'Payment verified',
+                'title' => 'PAYMENT VERIFIED',
                 'message' => ($officialReceiptNumber ? 'Official Receipt No. '.$officialReceiptNumber : 'Submission '.$submission->submission_number).' was successfully posted to '.$submission->payments->count().' '.str('student account')->plural($submission->payments->count()).'.',
                 'amount' => (float) $submission->total_amount,
                 'date' => $submission->submitted_at,
@@ -857,9 +881,11 @@ class PaymentController extends Controller
         );
 
         if ($upcomingGroup) {
-            $paymentNotifications->push([
+            // Keep the next payable month above historical receipt updates so
+            // parents see the current payment reminder first.
+            $paymentNotifications->prepend([
                 'type' => 'upcoming',
-                'title' => $upcomingGroup['month_name'].' '.$upcomingGroup['year'].' payment is coming up',
+                'title' => mb_strtoupper($upcomingGroup['month_name']).' '.$upcomingGroup['year'].' payment is coming up',
                 'message' => $upcomingGroup['unpaid_count'].' '.str('student')->plural($upcomingGroup['unpaid_count']).' included in this monthly payment.',
                 'amount' => $upcomingGroup['total_remaining'],
                 'date' => $upcomingGroup['due_date'],
@@ -870,7 +896,7 @@ class PaymentController extends Controller
         }
 
         return view('payment.dashboard', compact(
-            'user', 'students',
+            'user', 'students', 'demoChildren',
             'monthlyGroups', 'familyTotalRemaining', 'familyTotalBalance',
             'firstUnpaidMonthKey', 'payments', 'legacyPayments', 'paymentSubmissions',
             'paymentNotifications', 'nextPayableByStudent', 'familyAdvanceCredit', 'currentPaymentSummary',
@@ -885,6 +911,7 @@ class PaymentController extends Controller
     public function showCheckout(Request $request, PaymentEligibilityService $paymentEligibility)
     {
         $user = Auth::user();
+        $demoChildren = $user->paymentDemoChildren()->orderBy('id')->get();
         $students = $user->students()
             ->with(['applicant', 'account.monthlyBillings.payments'])
             ->get();
@@ -905,8 +932,19 @@ class PaymentController extends Controller
         }
         $oldestOutstanding = $outstanding->first();
         $oldestOutstandingMonth = $oldestOutstanding
-            ? $oldestOutstanding['billing']->due_date?->format('F Y')
+            ? ($oldestOutstanding['billing']->due_date
+                ? strtoupper($oldestOutstanding['billing']->due_date->format('F Y'))
+                : null)
             : null;
+        if (! $oldestOutstandingMonth && $students->isEmpty() && $demoChildren->isNotEmpty()) {
+            $currentMonthEnd = now(config('finance.timezone', 'Asia/Manila'))->endOfMonth();
+            $oldestOutstandingMonth = collect(app(DemoPaymentScheduleService::class)->build($demoChildren))
+                ->filter(fn ($group) => $group['month_number'] > 0
+                    && $group['due_date']->lte($currentMonthEnd)
+                    && (float) $group['total_remaining'] > 0.01)
+                ->sortBy('due_date')
+                ->value('month_label');
+        }
         $familyAdvanceCredit = (float) $user->familyAdvanceCredits()
             ->where('status', 'active')
             ->sum('remaining_amount');
@@ -944,15 +982,21 @@ class PaymentController extends Controller
     /**
      * Link an existing student to the parent's user account.
      */
-    public function linkStudent(Request $request)
+    public function linkStudent(Request $request, SiblingDiscountService $discounts)
     {
+        $user = Auth::user();
+        if ($user->paymentDemoChildren()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This AFPS demo account is isolated from official AMIS student records. Official student linking is disabled.',
+            ], 403);
+        }
+
         $validated = $request->validate([
-            'student_number' => 'required|string',
-            'date_of_birth' => 'required|date',
+            'student_number' => 'required|string|max:50',
         ]);
 
         $studentNumber = trim($validated['student_number']);
-        $dob = $validated['date_of_birth'];
 
         // Find student by student number (handling optionally formatted numbers)
         $student = Student::where('student_number', $studentNumber)
@@ -974,33 +1018,68 @@ class PaymentController extends Controller
             ], 404);
         }
 
-        // Verify Date of Birth
-        $formattedDob = $applicant->date_of_birth ? $applicant->date_of_birth->format('Y-m-d') : null;
-        if ($formattedDob !== $dob) {
-            return response()->json([
-                'success' => false,
-                'message' => 'The provided date of birth does not match our records.',
-            ], 422);
-        }
-
-        $user = Auth::user();
-
-        // If already linked to this parent
         if ($applicant->user_id === $user->id) {
+            $changes = $discounts->syncFamily($user);
+            $percentage = (float) (collect($changes)->max('discount_percentage') ?? 0);
+
             return response()->json([
                 'success' => true,
-                'message' => 'This child is already linked to your account.',
+                'message' => $this->familyDiscountMessage('This child is already linked to your account.', $changes, $percentage),
+                'eligible_children' => count($changes),
+                'discount_percentage' => $percentage,
             ]);
         }
 
-        // Update applicant's user_id only (student.user_id belongs to the student's credentials account)
-        $applicant->user_id = $user->id;
-        $applicant->save();
+        // Never transfer a child between parent accounts from the parent UI.
+        if ($applicant->user_id !== null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This student is already connected to another family account. Please contact AMIS Admin for assistance.',
+            ], 409);
+        }
+
+        $parentEmail = mb_strtolower(trim((string) $user->email));
+        $recordedParentEmail = mb_strtolower(trim((string) $applicant->parent_email));
+        if ($recordedParentEmail === '' || ! hash_equals($recordedParentEmail, $parentEmail)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The student ID could not be matched to your parent account. Please contact AMIS Admin to verify the enrollment record.',
+            ], 422);
+        }
+
+        if (! $student->account) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This student payment account is not ready yet. Please contact AMIS Admin or Finance.',
+            ], 422);
+        }
+
+        $changes = DB::transaction(function () use ($applicant, $user, $discounts) {
+            // student.user_id belongs to the student's own credentials. The
+            // applicant user_id identifies the parent family account.
+            $applicant->forceFill(['user_id' => $user->id])->save();
+
+            return $discounts->syncFamily($user);
+        });
+        $percentage = (float) (collect($changes)->max('discount_percentage') ?? 0);
 
         return response()->json([
             'success' => true,
-            'message' => 'Child linked successfully!',
+            'message' => $this->familyDiscountMessage('Child linked successfully!', $changes, $percentage),
+            'eligible_children' => count($changes),
+            'discount_percentage' => $percentage,
         ]);
+    }
+
+    private function familyDiscountMessage(string $prefix, array $changes, float $percentage): string
+    {
+        $childCount = count($changes);
+        if ($childCount === 0 || $percentage <= 0) {
+            return $prefix.' Family balances were refreshed.';
+        }
+
+        return $prefix.' The '.number_format($percentage, 0).'% sibling discount was applied to all '
+            .$childCount.' eligible '.str('child')->plural($childCount).'.';
     }
 
     /**
@@ -1010,7 +1089,7 @@ class PaymentController extends Controller
     public function ocrScan(
         Request $request,
         ReceiptClassificationService $receiptClassifier,
-        PaddleOcrService $paddleOcrService,
+        ReceiptProductionOcrService $productionOcr,
         ReceiptFingerprintService $fingerprints
     ) {
         $request->validate([
@@ -1023,15 +1102,21 @@ class PaymentController extends Controller
             $tmpPath = $file->getRealPath();
             $perceptualHash = $fingerprints->differenceHash($tmpPath);
 
-            // Free local engine first. If it is missing or incomplete, try the
-            // configured server OCR; the browser then uses Tesseract as the
-            // final automatic fallback.
-            $ocr = $paddleOcrService->scanReceipt($tmpPath);
-            if (! ($ocr['success'] ?? false)) {
-                $visionService = new GoogleVisionService;
-                $ocr = $visionService->scanReceipt($tmpPath);
-                $ocr['engine'] = 'Google Vision';
-            }
+            $analysis = $productionOcr->analyze($tmpPath);
+            $fields = $analysis['fields'];
+            $rawText = collect($analysis['attempts'])->pluck('raw_text')->filter()->implode("\n");
+            $ocr = [
+                'success' => $analysis['ocr_status'] !== 'OCR_FAILED',
+                'status' => $analysis['ocr_status'] === 'OCR_FAILED' ? 'failed' : 'processed',
+                'raw_text' => $rawText,
+                'detected_ref' => $fields['reference_number'] ?? null,
+                'detected_amount' => $fields['amount'] ?? null,
+                'detected_datetime' => $fields['transaction_date'] ?? null,
+                'detected_sender' => $fields['sender_name'] ?? null,
+                'detected_receiver' => $fields['receiver_name'] ?? null,
+                'detected_method' => $fields['provider'] ?? null,
+                'detected_account' => $fields['receiving_bank'] ?? null,
+            ];
             $classification = $receiptClassifier->classify($ocr);
 
             $detectedDate = $ocr['detected_datetime'];
@@ -1051,19 +1136,17 @@ class PaymentController extends Controller
 
             return response()->json([
                 'success' => $ocr['success'],
-                'engine' => $ocr['engine'] ?? 'Server OCR',
                 'detected_ref' => $ocr['detected_ref'],
                 'detected_amount' => $ocr['detected_amount'],
                 'detected_date' => $detectedDate,
+                'detected_time' => $fields['transaction_time'] ?? null,
                 'detected_sender' => $ocr['detected_sender'] ?? null,
                 'detected_receiver' => $ocr['detected_receiver'] ?? null,
                 'detected_merchant' => $ocr['detected_merchant'] ?? null,
                 'detected_method' => $ocr['detected_method'] ?? null,
                 'detected_account' => $ocr['detected_account'] ?? null,
                 'has_qr' => $ocr['has_qr'] ?? false,
-                'confidence' => $ocr['confidence'] ?? null,
                 'perceptual_hash' => $perceptualHash,
-                'raw_text' => $ocr['raw_text'],
                 'document_type' => $classification['type'],
                 'document_message' => $classification['message'],
             ]);
@@ -1086,11 +1169,11 @@ class PaymentController extends Controller
             'billing_ids.*' => 'required|integer|distinct|exists:soa_monthly_billings,id',
             'receiving_channel' => 'nullable|string|in:gcash,maya,bdo',
             'receiving_account' => 'nullable|string|max:100',
-            'payment_mode' => 'nullable|string|in:gcash,maya,bdo_online,bdo_otc,bank_transfer,remittance',
-            'reference_no' => 'nullable|string|max:100',
-            'transaction_date' => 'nullable|date_format:Y-m-d',
+            'payment_mode' => 'required|string|in:gcash,maya,bdo_online,bdo_otc,bank_transfer,remittance',
+            'reference_no' => 'required|string|max:100',
+            'transaction_date' => 'required|date_format:Y-m-d',
             'transaction_time' => 'nullable|date_format:H:i',
-            'detected_amount' => 'nullable|numeric|min:0|max:999999',
+            'detected_amount' => 'required|numeric|min:1|max:999999',
             'expected_amount' => 'nullable|numeric|min:0|max:99999999.99',
             'ocr_engine' => 'nullable|string|max:100',
             'ocr_passes' => 'required|integer|min:0|max:20',
@@ -1226,7 +1309,8 @@ class PaymentController extends Controller
         Request $request,
         ReceiptClassificationService $receiptClassifier,
         ReceiptFingerprintService $fingerprints,
-        AmisReceiptRiskService $riskEngine
+        AmisReceiptRiskService $riskEngine,
+        ReceiptProductionOcrService $productionOcr,
     ) {
         $validated = $request->validate([
             'client_token' => 'required|uuid',
@@ -1261,9 +1345,6 @@ class PaymentController extends Controller
                 ->where('user_id', $user->id)
                 ->firstOrFail()
             : null;
-        if ($pipelineReceipt && in_array($pipelineReceipt->status, [ReceiptSubmission::UPLOADED, ReceiptSubmission::PROCESSING], true)) {
-            throw ValidationException::withMessages(['receipt' => 'Receipt processing is still in progress. Please wait for the verification result.']);
-        }
         if ($pipelineReceipt?->status === ReceiptSubmission::REUPLOAD_REQUIRED) {
             throw ValidationException::withMessages(['receipt' => $pipelineReceipt->review_reason ?: 'Please upload a clearer original receipt.']);
         }
@@ -1276,9 +1357,9 @@ class PaymentController extends Controller
         $transactionDate = $transactionAt->copy()->startOfDay();
         $today = now($financeTimezone);
 
-        if ($transactionAt->gt($today)) {
+        if ($transactionAt->year > $today->year) {
             throw ValidationException::withMessages([
-                'transaction_date' => 'The transaction date cannot be in the future. Please upload the correct receipt.',
+                'transaction_date' => "The transaction year cannot be later than {$today->year}. Please check the receipt date.",
             ]);
         }
 
@@ -1337,6 +1418,20 @@ class PaymentController extends Controller
 
         $file = $request->file('receipt');
         $receiptHash = hash_file('sha256', $file->getRealPath());
+        if (! $pipelineReceipt) {
+            // Recover the asynchronous upload when an older/cached checkout
+            // script omitted receipt_submission_id. The exact file hash and
+            // owner make this link deterministic without trusting the client.
+            $pipelineReceipt = ReceiptSubmission::query()
+                ->where('user_id', $user->id)
+                ->where('receipt_hash', $receiptHash)
+                ->whereDoesntHave('paymentSubmission')
+                ->latest('id')
+                ->first();
+        }
+        if ($pipelineReceipt?->status === ReceiptSubmission::REUPLOAD_REQUIRED) {
+            throw ValidationException::withMessages(['receipt' => $pipelineReceipt->review_reason ?: 'Please upload a clearer original receipt.']);
+        }
         if ($pipelineReceipt && ! hash_equals($pipelineReceipt->receipt_hash, $receiptHash)) {
             throw ValidationException::withMessages(['receipt' => 'The submitted file does not match the receipt that was verified. Please scan the receipt again.']);
         }
@@ -1389,9 +1484,26 @@ class PaymentController extends Controller
                     'confidence' => $pipelineReceipt->ocr_confidence !== null ? (float) $pipelineReceipt->ocr_confidence : null,
                 ];
                 $ocrStatus = strtolower($pipelineReceipt->status);
+            } elseif (! $pipelineReceipt) {
+                $analysis = $productionOcr->analyze($absolutePath);
+                $fields = $analysis['fields'];
+                $ocr = [
+                    'success' => $analysis['ocr_status'] !== 'OCR_FAILED',
+                    'status' => $analysis['ocr_status'] === 'OCR_FAILED' ? 'failed' : 'processed',
+                    'raw_text' => collect($analysis['attempts'])->pluck('raw_text')->filter()->implode("\n"),
+                    'detected_ref' => $fields['reference_number'] ?? null,
+                    'detected_amount' => $fields['amount'] ?? null,
+                    'detected_datetime' => $fields['transaction_date'] ?? null,
+                    'detected_method' => $fields['provider'] ?? null,
+                    'detected_account' => $fields['receiving_bank'] ?? null,
+                    'detected_receiver' => $fields['receiver_name'] ?? null,
+                    'confidence' => $analysis['confidence'],
+                ];
             } else {
-                $visionService = new GoogleVisionService;
-                $ocr = $visionService->scanReceipt($absolutePath);
+                // OCR is advisory and may still be running. Keep the original
+                // receipt linked and let Finance review it without blocking the
+                // parent's completed submission.
+                $ocr['status'] = 'processing';
             }
 
             $ocrStatus = $ocr['status'];
@@ -1583,6 +1695,17 @@ class PaymentController extends Controller
         }
 
         if ($pipelineReceipt) {
+            // A rejected submission may be replaced with the same proof. Once
+            // the replacement is linked to that same payment, recalculate the
+            // duplicate result so the rejected original cannot leave a stale
+            // EXACT_DUPLICATE badge on its own retry.
+            $duplicateAssessment = app(ReceiptDuplicateService::class)
+                ->check($pipelineReceipt->fresh());
+            $pipelineReceipt->forceFill([
+                'duplicate_status' => $duplicateAssessment['status'],
+                'duplicate_results' => $duplicateAssessment,
+            ])->save();
+
             if (filled($validated['local_ocr_text'] ?? null)) {
                 $pipelineReceipt->ocrResults()->create([
                     'engine' => 'Browser Tesseract',
@@ -1643,6 +1766,17 @@ class PaymentController extends Controller
         $currentMonthEnd = $currentMonthStart->copy()->endOfMonth();
         $studentIds = $user->students()->pluck('students.id');
 
+        if ($studentIds->isEmpty()) {
+            $demoChildren = $user->paymentDemoChildren()->orderBy('id')->get();
+            if ($demoChildren->isNotEmpty()) {
+                $outstandingThroughCurrentMonth = collect(app(DemoPaymentScheduleService::class)->build($demoChildren))
+                    ->filter(fn ($group) => $group['month_number'] > 0 && $group['due_date']->lte($currentMonthEnd))
+                    ->sum(fn ($group) => (float) $group['total_remaining']);
+
+                return $this->remainingAfterActivePendingPayments($user, (float) $outstandingThroughCurrentMonth);
+            }
+        }
+
         $hasCurrentBilling = SoaMonthlyBilling::query()
             ->whereIn('student_id', $studentIds)
             ->whereBetween('due_date', [$currentMonthStart, $currentMonthEnd])
@@ -1658,6 +1792,11 @@ class PaymentController extends Controller
             ->get()
             ->sum(fn ($billing) => $paymentEligibility->remainingBalance($billing));
 
+        return $this->remainingAfterActivePendingPayments($user, (float) $outstandingThroughCurrentMonth);
+    }
+
+    private function remainingAfterActivePendingPayments(User $user, float $outstandingThroughCurrentMonth): float
+    {
         $activeStatuses = [
             ReceiptSubmission::UPLOADED,
             ReceiptSubmission::PROCESSING,
@@ -1668,11 +1807,14 @@ class PaymentController extends Controller
         $activePending = PaymentSubmission::query()
             ->where('user_id', $user->id)
             ->where('status', 'pending')
-            ->whereHas('receiptSubmission', fn ($query) => $query->whereIn('status', $activeStatuses))
+            ->where(function ($query) use ($activeStatuses) {
+                $query->whereDoesntHave('receiptSubmission')
+                    ->orWhereHas('receiptSubmission', fn ($receiptQuery) => $receiptQuery->whereIn('status', $activeStatuses));
+            })
             ->sum('total_amount');
 
         return app(CurrentFamilyPaymentCoverageService::class)->calculate(
-            (float) $outstandingThroughCurrentMonth,
+            $outstandingThroughCurrentMonth,
             0,
             0,
             (float) $activePending
