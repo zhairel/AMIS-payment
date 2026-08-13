@@ -1,4 +1,7 @@
 <x-app-layout>
+    @php
+        $demoChildren = $demoChildren ?? collect();
+    @endphp
     <x-slot name="title">Family Payments</x-slot>
 
     <div
