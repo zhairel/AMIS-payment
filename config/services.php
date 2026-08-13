@@ -62,6 +62,12 @@ return [
         'timeout' => env('TESSERACT_OCR_TIMEOUT', 60),
     ],
 
+    'receipt_ocr' => [
+        'python' => env('OCR_PYTHON_BINARY', base_path('.venv-ocr/bin/python')),
+        'url' => env('OCR_SERVICE_URL', null),
+        'confidence_threshold' => (float) env('RECEIPT_OCR_CONFIDENCE_THRESHOLD', 0.72),
+    ],
+
     'microsoft' => [
         'client_id' => env('MICROSOFT_CLIENT_ID'),
         'client_secret' => env('MICROSOFT_CLIENT_SECRET'),

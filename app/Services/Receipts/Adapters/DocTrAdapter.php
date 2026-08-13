@@ -2,7 +2,9 @@
 
 namespace App\Services\Receipts\Adapters;
 
+use Illuminate\Support\Facades\Http;
 use Symfony\Component\Process\Process;
+use Throwable;
 
 class DocTrAdapter implements OcrEngineAdapterInterface
 {
@@ -13,22 +15,59 @@ class DocTrAdapter implements OcrEngineAdapterInterface
 
     public function checkAvailability(): array
     {
-        $python = config('services.paddle_ocr.python', 'python3');
+        $url = config('services.receipt_ocr.url');
+        if (! empty($url)) {
+            try {
+                $response = Http::timeout(3)->get(rtrim($url, '/').'/health');
+                if ($response->successful()) {
+                    return [
+                        'available' => true,
+                        'version' => 'docTR Microservice (Docker)',
+                        'reason' => null,
+                    ];
+                }
+            } catch (Throwable $e) {
+                // Fall back to CLI check below
+            }
+        }
+
+        $python = config('services.receipt_ocr.python', config('services.paddle_ocr.python', 'python3'));
         $script = base_path('scripts/ocr_engine_runner.py');
         $process = new Process([$python, $script, 'check_env']);
         $process->run();
 
         if ($process->isSuccessful()) {
             $data = json_decode($process->getOutput(), true);
+
             return $data['engines']['doctr'] ?? ['available' => false, 'reason' => 'Check failed'];
         }
 
-        return ['available' => false, 'reason' => 'Python script check failed: ' . $process->getErrorOutput()];
+        return ['available' => false, 'reason' => 'Python script check failed: '.$process->getErrorOutput()];
     }
 
     public function scan(string $filePath): array
     {
-        $python = config('services.paddle_ocr.python', 'python3');
+        $url = config('services.receipt_ocr.url');
+        if (! empty($url)) {
+            try {
+                $response = Http::timeout(60)
+                    ->attach('receipt', file_get_contents($filePath), basename($filePath))
+                    ->post(rtrim($url, '/').'/scan', [
+                        'engine' => 'doctr',
+                    ]);
+
+                if ($response->successful()) {
+                    $result = $response->json();
+                    if (is_array($result)) {
+                        return $result;
+                    }
+                }
+            } catch (Throwable $e) {
+                // Fall back to CLI process below
+            }
+        }
+
+        $python = config('services.receipt_ocr.python', config('services.paddle_ocr.python', 'python3'));
         $script = base_path('scripts/ocr_engine_runner.py');
 
         $process = new Process([$python, $script, 'doctr', $filePath]);
@@ -42,7 +81,7 @@ class DocTrAdapter implements OcrEngineAdapterInterface
                 'regions' => 0,
                 'confidence' => null,
                 'duration_ms' => 0,
-                'error' => 'Process error: ' . $process->getErrorOutput(),
+                'error' => 'Process error: '.$process->getErrorOutput(),
             ];
         }
 
