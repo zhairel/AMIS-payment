@@ -554,6 +554,7 @@
                     item.message = 'Scanning receipt via AMIS AI...';
 
                     const formData = new FormData();
+                    formData.append('image', item.file);
                     formData.append('receipt', item.file);
 
                     try {
@@ -600,7 +601,12 @@
                     item.message = 'Comparing docTR, Tesseract, and Paperless-ngx...';
 
                     const formData = new FormData();
+                    formData.append('image', item.file);
                     formData.append('receipt', item.file);
+                    formData.append('expected_provider', item.expected.provider || '');
+                    formData.append('expected_reference', item.expected.reference || '');
+                    formData.append('expected_date', item.expected.date || '');
+                    formData.append('expected_amount', item.expected.amount || '');
                     formData.append('expected[provider]', item.expected.provider || '');
                     formData.append('expected[reference]', item.expected.reference || '');
                     formData.append('expected[date]', item.expected.date || '');

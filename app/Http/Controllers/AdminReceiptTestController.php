@@ -27,17 +27,19 @@ class AdminReceiptTestController extends Controller
     ): JsonResponse {
         $request->validate([
             'image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png', 'max:10240'],
+            'receipt' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png', 'max:10240'],
             'test_id' => ['nullable', 'string'],
             'expected_provider' => ['nullable', 'string'],
             'expected_reference' => ['nullable', 'string'],
             'expected_date' => ['nullable', 'string'],
             'expected_amount' => ['nullable', 'string'],
+            'expected' => ['nullable', 'array'],
         ]);
 
         $fullPath = null;
+        $file = $request->file('image') ?: $request->file('receipt');
 
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
+        if ($file) {
             $testId = (string) Str::uuid();
             $extension = strtolower($file->guessExtension() ?: $file->getClientOriginalExtension() ?: 'png');
             $testPath = $file->storeAs("private/receipt-tests/{$testId}", "test.{$extension}", 'local');
@@ -57,10 +59,10 @@ class AdminReceiptTestController extends Controller
         }
 
         $expectedValues = [
-            'provider' => $request->input('expected_provider'),
-            'reference' => $request->input('expected_reference'),
-            'date' => $request->input('expected_date'),
-            'amount' => $request->input('expected_amount'),
+            'provider' => $request->input('expected_provider') ?: $request->input('expected.provider'),
+            'reference' => $request->input('expected_reference') ?: $request->input('expected.reference'),
+            'date' => $request->input('expected_date') ?: $request->input('expected.date'),
+            'amount' => $request->input('expected_amount') ?: $request->input('expected.amount'),
         ];
 
         $comparison = $comparator->compareAllEngines($fullPath, $expectedValues);
@@ -81,11 +83,10 @@ class AdminReceiptTestController extends Controller
         try {
             // Stage 1: IMAGE_VALIDATION
             $stage = 'IMAGE_VALIDATION';
-            $request->validate([
-                'image' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png', 'max:10240'],
-            ]);
-
-            $file = $request->file('image');
+            $file = $request->file('image') ?: $request->file('receipt');
+            if (!$file || !$file->isValid()) {
+                return $this->failureResponse('IMAGE_VALIDATION', 'No valid image file was uploaded.', 'Missing image/receipt input', $startTime, 'image.png', 0);
+            }
             $originalFilename = Str::limit($file->getClientOriginalName(), 255, '');
             $sizeBytes = $file->getSize();
 
