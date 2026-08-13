@@ -9,20 +9,13 @@
         <div class="payment-shell">
             <header class="payment-page-header">
                 <div>
-                    <span class="payment-page-eyebrow">School Year {{ $students->first()?->account?->school_year ?? '2026–2027' }}</span>
+                    <span class="payment-page-eyebrow">School Year {{ $students->first()?->account?->school_year ?? $demoChildren->first()?->school_year ?? '2026–2027' }}</span>
                     <h1 class="payment-page-title">Family Payments</h1>
                     <p class="payment-page-subtitle">See your family balance, review each student's account, and submit payment receipts in one place.</p>
                 </div>
-
-                <button type="button" class="payment-link-child" @click="showAddStudent = true">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/>
-                    </svg>
-                    Add or link a student
-                </button>
             </header>
 
-            @if($students->isEmpty())
+            @if($students->isEmpty() && $demoChildren->isEmpty())
                 <section class="payment-empty-state" aria-labelledby="empty-students-title">
                     <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
                         <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -30,9 +23,9 @@
                         </svg>
                     </div>
                     <h2 id="empty-students-title" class="text-xl font-extrabold text-slate-900">No students linked yet</h2>
-                    <p class="mx-auto mb-5 mt-2 max-w-md text-sm leading-6 text-slate-600">Add a student using their school ID and date of birth. Their balance and monthly payment schedule will appear here.</p>
+                    <p class="mx-auto mb-5 mt-2 max-w-md text-sm leading-6 text-slate-600">Link an existing student using their school ID. AMIS securely matches the parent email recorded in enrollment.</p>
                     <button type="button" class="inline-flex min-h-11 items-center rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-800" @click="showAddStudent = true">
-                        Add a student
+                        Link student account
                     </button>
                 </section>
             @else
@@ -42,14 +35,21 @@
                     $familyAmountDueNow = round($pastDueNow + $currentMonthDueNow, 2);
                     $familyRemainingBalance = max(0, round((float) $familyTotalRemaining, 2));
                     $futureScheduledBalance = max(0, round($familyRemainingBalance - $familyAmountDueNow, 2));
+                    $currentPaymentMonth = $currentPaymentSummary['month_key'] !== null
+                        ? ($monthlyGroups[$currentPaymentSummary['month_key']]['month_name'] ?? null)
+                        : null;
+                    $currentPaymentMonth = mb_strtoupper($currentPaymentMonth ?: now(config('finance.timezone', 'Asia/Manila'))->format('F'));
                 @endphp
                 <section class="payment-summary-card" aria-labelledby="family-balance-title">
                     <div class="payment-summary-primary">
                         <span class="payment-section-kicker">Family account overview</span>
-                        <span id="family-balance-title" class="payment-summary-label">Total Remaining Balance</span>
+                        <span id="family-balance-title" class="payment-summary-label">{{ $demoChildren->isNotEmpty() && $students->isEmpty() ? 'Demo Remaining Balance' : 'Total Remaining Balance' }}</span>
                         <strong class="payment-summary-amount">₱{{ number_format($familyRemainingBalance, 2) }}</strong>
-                        <p class="payment-summary-help">Combined remaining school balance for all enrolled children and all unpaid monthly installments.</p>
-                        <p class="payment-summary-due-now"><span>Amount requiring payment now</span><strong>₱{{ number_format($familyAmountDueNow, 2) }}</strong></p>
+                        <p class="payment-summary-help">{{ $demoChildren->isNotEmpty() && $students->isEmpty() ? 'AFPS-only sample balances. These children are not connected to official AMIS student or enrollment records.' : 'Combined remaining school balance for all enrolled children and all unpaid monthly installments.' }}</p>
+                        <p class="payment-summary-due-now"><span>{{ $demoChildren->isNotEmpty() && $students->isEmpty() ? $currentPaymentMonth.' — Demo monthly tuition due' : $currentPaymentMonth.' — Amount requiring payment now' }}</span><strong>₱{{ number_format($familyAmountDueNow, 2) }}</strong></p>
+                        @if($demoChildren->isNotEmpty() && $students->isEmpty())
+                            <p class="payment-summary-help"><strong>Schedule preview only.</strong> Payment posting stays disabled because these children are not linked to official AMIS records.</p>
+                        @endif
                         @if($familyAdvanceCredit > 0)
                             <p class="payment-summary-help"><strong>Advance credit: ₱{{ number_format($familyAdvanceCredit, 2) }}</strong></p>
                         @endif
@@ -69,18 +69,33 @@
                         </div>
                         <div class="payment-summary-stat">
                             <span>Students</span>
-                            <strong>{{ $students->count() }} enrolled</strong>
+                            <strong>{{ $students->count() + $demoChildren->count() }} {{ $demoChildren->isNotEmpty() && $students->isEmpty() ? 'demo' : 'enrolled' }}</strong>
                         </div>
                     </div>
                 </section>
+
+                @if($demoChildren->isNotEmpty())
+                    <aside class="payment-demo-notice" role="status">
+                        <strong>AFPS DEMO CHILDREN</strong>
+                        <span>Payment-system display data only. No official student, enrollment, or admin.amis.edu.ph record is linked or changed.</span>
+                    </aside>
+                @endif
 
                 <section class="payment-section" aria-labelledby="students-heading">
                     <div class="payment-section-heading">
                         <div>
                             <span class="payment-section-kicker">Student accounts</span>
-                            <h2 id="students-heading" class="payment-section-title">Your linked students</h2>
+                            <h2 id="students-heading" class="payment-section-title">Your linked students / children</h2>
                             <p class="payment-section-description">Open a student account to see its fee breakdown.</p>
                         </div>
+                        @if($demoChildren->isEmpty())
+                        <button type="button" class="payment-link-child" @click="showAddStudent = true">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/>
+                            </svg>
+                            Link student account
+                        </button>
+                        @endif
                     </div>
 
                     <div class="payment-student-grid">
@@ -113,8 +128,8 @@
                                                 : ($dueDate?->isCurrentMonth() ? 'Current' : 'Upcoming'));
 
                                         return [
-                                            'month' => $dueDate?->format('F Y') ?? $billing->month_name,
-                                            'due_date' => $dueDate?->format('M d, Y'),
+                                            'month' => $dueDate ? strtoupper($dueDate->format('F Y')) : strtoupper((string) $billing->month_name),
+                                            'due_date' => $dueDate ? strtoupper($dueDate->format('M d, Y')) : null,
                                             'original' => $originalAmount,
                                             'verified' => $verifiedPaid,
                                             'remaining' => $remainingAmount,
@@ -169,12 +184,68 @@
                                     <span class="payment-student-name" title="{{ $studentName }}">{{ $studentName }}</span>
                                     <span class="payment-student-meta">{{ $student->grade_level }} · ID {{ $student->student_number }}</span>
                                     @if(($account?->discount_percentage ?? 0) > 0)
-                                        <span class="payment-student-discount">{{ number_format((float) $account->discount_percentage, 0) }}% sibling discount</span>
+                                        <span class="payment-student-discount">{{ number_format((float) $account->discount_percentage, 0) }}% SIBLINGS DISCOUNT</span>
                                     @endif
                                 </span>
                                 <span class="payment-student-balance">
                                     <span>Balance</span>
                                     <strong>₱{{ number_format($account?->remaining_balance ?? 0, 2) }}</strong>
+                                </span>
+                            </button>
+                        @endforeach
+                        @foreach($demoChildren as $demoChild)
+                            @php
+                                $demoAvatarUrl = asset($demoChild->gender === 'Female'
+                                    ? 'images/avatars/student-female-avatar.png'
+                                    : 'images/avatars/student-male-avatar.png');
+                                $demoPlanTotal = max(0, round((float) $demoChild->total_balance - (float) $demoChild->enrollment_fee_paid, 2));
+                                $demoInstallmentBreakdown = app(\App\Services\DemoPaymentScheduleService::class)->installmentsFor($demoChild);
+                                $demoFinalInstallment = (float) (collect($demoInstallmentBreakdown)->last()['original'] ?? $demoChild->monthly_tuition);
+                                $demoNextPayment = collect($demoInstallmentBreakdown)
+                                    ->first(fn ($installment) => (float) $installment['remaining'] > 0.01);
+                                $demoBreakdown = [
+                                    'name' => mb_strtoupper($demoChild->display_name),
+                                    'avatar' => $demoAvatarUrl,
+                                    'avatar_is_fallback' => true,
+                                    'tuition' => (float) $demoChild->tuition_fee,
+                                    'misc' => (float) $demoChild->miscellaneous_fee,
+                                    'books' => (float) $demoChild->books_fee,
+                                    'discount' => (float) $demoChild->discount_amount,
+                                    'discount_percentage' => (float) $demoChild->discount_percentage,
+                                    'sibling_order' => $loop->iteration,
+                                    'total' => (float) $demoChild->total_balance,
+                                    'enrollment' => (float) $demoChild->enrollment_fee_paid,
+                                    'remaining' => (float) $demoChild->remaining_balance,
+                                    'installments' => (int) $demoChild->installment_months,
+                                    'monthly' => (float) $demoChild->monthly_tuition,
+                                    'final_installment' => $demoFinalInstallment,
+                                    'installment_plan_total' => $demoPlanTotal,
+                                    'installment_verified' => 0,
+                                    'installment_remaining' => $demoPlanTotal,
+                                    'installment_breakdown' => $demoInstallmentBreakdown,
+                                    'next_payment' => $demoNextPayment,
+                                ];
+                            @endphp
+                            <button
+                                type="button"
+                                class="payment-student-card is-demo"
+                                aria-label="View demo account details for {{ $demoChild->display_name }}"
+                                @click="openBreakdown({{ Js::from($demoBreakdown) }})"
+                            >
+                                <span class="payment-student-avatar">
+                                    <img src="{{ $demoAvatarUrl }}" alt="Demo avatar of {{ $demoChild->display_name }}" class="payment-student-avatar-placeholder">
+                                </span>
+                                <span class="payment-student-info">
+                                    <span class="payment-student-name" title="{{ $demoChild->display_name }}">{{ mb_strtoupper($demoChild->display_name) }}</span>
+                                    <span class="payment-student-meta">{{ $demoChild->grade_level }} · ID {{ $demoChild->demo_student_number }}</span>
+                                    <span class="payment-student-demo-badge">AFPS DEMO · NOT AN OFFICIAL RECORD</span>
+                                    @if((float) $demoChild->discount_percentage > 0)
+                                        <span class="payment-student-discount">{{ number_format((float) $demoChild->discount_percentage, 0) }}% SIBLINGS DISCOUNT</span>
+                                    @endif
+                                </span>
+                                <span class="payment-student-balance">
+                                    <span>Demo Balance</span>
+                                    <strong>₱{{ number_format((float) $demoChild->remaining_balance, 2) }}</strong>
                                 </span>
                             </button>
                         @endforeach
@@ -267,7 +338,7 @@
                                         @endif
                                     </span>
                                     <span class="payment-notification-copy">
-                                        <span class="payment-notification-meta"><em>{{ $notificationLabel }}</em><small>{{ $notification['date']?->format('M d, Y') }}</small></span>
+                                        <span class="payment-notification-meta"><em>{{ $notificationLabel }}</em><small>{{ $notification['date'] ? strtoupper($notification['date']->format('M d, Y')) : '' }}</small></span>
                                         <strong>{{ $notification['title'] }}</strong>
                                         <span>{{ $notification['message'] }}</span>
                                     </span>
@@ -293,13 +364,23 @@
                             <h2 id="schedule-heading" class="payment-section-title"><span class="payment-section-heading-icon" aria-hidden="true">₱</span>Monthly payments</h2>
                             <p class="payment-section-description">View the family schedule, then upload one receipt. AMIS allocates verified payments automatically.</p>
                         </div>
-                        @if($consolidatedFinanceReceipt)
-                            <button type="button" class="payment-consolidated-receipt-button" @click="openTransaction({{ Js::from($consolidatedFinanceReceipt) }})">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.75 3.75h10.5A2.25 2.25 0 0119.5 6v14.25l-3-1.5-3 1.5-3-1.5-3 1.5V6a2.25 2.25 0 012.25-2.25zM9 8.25h6M9 12h6M9 15.75h3"/></svg>
-                                <span><strong>FULL RECEIPT</strong><small>{{ $consolidatedFinanceReceipt['period_label'] }}</small></span>
-                            </button>
-                        @endif
                     </div>
+
+                    <aside class="payment-fee-support-banner" aria-label="Tuition fee support">
+                        <span class="payment-fee-support-icon" aria-hidden="true">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+                            </svg>
+                        </span>
+                        <span class="payment-fee-support-copy">
+                            <strong>Does your tuition fee or balance look incorrect?</strong>
+                            <small>Contact IT Support and include the student's full name, student ID, affected month, and a screenshot so we can check it quickly.</small>
+                        </span>
+                        <a href="mailto:zhairel.lingasa@gmail.com?subject=AMIS%20Tuition%20Fee%20or%20Balance%20Concern" class="payment-fee-support-link">
+                            <span>Email IT Support</span>
+                            <strong>zhairel.lingasa@gmail.com</strong>
+                        </a>
+                    </aside>
 
                     @if(empty($monthlyGroups))
                         <div class="payment-empty-state">
@@ -320,9 +401,53 @@
                                 ->sortBy('due_date')
                                 ->map(fn ($group) => $group['month_number'] === 0
                                     ? 'Enrollment / Initial Payment'
-                                    : $group['due_date']->format('F Y'))
+                                    : strtoupper($group['due_date']->format('F Y')))
                                 ->values();
+                            $monthFilterCounts = [
+                                'current' => $orderedMonthlyGroups->filter(fn ($group) => $group['unpaid_count'] > 0 && ($group['is_current'] || $group['is_overdue']))->count(),
+                                'upcoming' => $orderedMonthlyGroups->filter(fn ($group) => $group['unpaid_count'] > 0 && ! $group['is_current'] && ! $group['is_overdue'])->count(),
+                                'paid' => $orderedMonthlyGroups->filter(fn ($group) => $group['unpaid_count'] === 0)->count(),
+                            ];
                         @endphp
+
+                        <div class="payment-month-filter" role="tablist" aria-label="Filter monthly payments">
+                            @foreach(['current' => 'CURRENT', 'upcoming' => 'UPCOMING', 'paid' => 'PAID'] as $filterValue => $filterLabel)
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    :aria-selected="(monthFilter === '{{ $filterValue }}').toString()"
+                                    :class="{ 'is-active': monthFilter === '{{ $filterValue }}' }"
+                                    @click="monthFilter = '{{ $filterValue }}'; openMonth = null"
+                                >
+                                    <span>{{ $filterLabel }}</span>
+                                    <small>{{ $monthFilterCounts[$filterValue] }}</small>
+                                </button>
+                            @endforeach
+                        </div>
+
+                        @php
+                            $currentPaidGroup = $orderedMonthlyGroups->first(
+                                fn ($group) => $group['is_current'] && $group['unpaid_count'] === 0
+                            );
+                            $currentPaidMonthLabel = $currentPaidGroup
+                                ? ($currentPaidGroup['month_number'] === 0
+                                    ? 'Enrollment / Initial Payment'
+                                    : mb_strtoupper($currentPaidGroup['month_label']))
+                                : null;
+                        @endphp
+
+                        @if($currentPaidGroup)
+                            <section x-show="monthFilter === 'paid'" x-cloak class="payment-full-paid-note" role="status" aria-label="{{ $currentPaidMonthLabel }} paid in full">
+                                <span class="payment-full-paid-icon" aria-hidden="true">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12.75l2.25 2.25L15 10.5m6 1.5a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                </span>
+                                <span class="payment-full-paid-copy">
+                                    <strong>Assalamu alaikum! Shukran for completing your {{ $currentPaidMonthLabel }} family payment.</strong>
+                                    <small>Finance has verified the full amount, and this month is now paid in full.</small>
+                                </span>
+                                <button type="button" @click="activeTab = 'transactions'; window.scrollTo({ top: 0, behavior: 'smooth' })">View transactions <span aria-hidden="true">→</span></button>
+                            </section>
+                        @endif
 
                         <div class="payment-month-list">
                             @foreach($orderedMonthlyGroups as $monthKey => $group)
@@ -330,18 +455,22 @@
                                     $isCurrent = $group['is_current'];
                                     $allPaid = $group['unpaid_count'] === 0;
                                     $isOverdue = !$isCurrent && $group['is_overdue'];
+                                    $hasAdvanceApplied = ! $allPaid && ! $isCurrent && ! $isOverdue && (float) $group['total_paid'] > 0.01;
+                                    $showPaymentStats = $isOverdue || $isCurrent || $hasAdvanceApplied;
                                     $mainAmountLabel = $allPaid
                                         ? 'Paid in full'
-                                        : ($isOverdue ? 'Past due' : ($isCurrent ? 'Current balance' : 'Scheduled charges'));
+                                        : ($isOverdue ? 'Past due' : ($isCurrent ? 'Current balance' : ($hasAdvanceApplied ? 'Remaining scheduled' : 'Scheduled charges')));
                                     $mainAmount = $allPaid
                                         ? 0
-                                        : (($isOverdue || $isCurrent) ? $group['total_remaining'] : $group['total_due']);
-                                    $monthLabel = $group['month_number'] === 0 ? 'Enrollment / Initial Payment' : ucwords(mb_strtolower($group['month_label']));
+                                        : $group['total_remaining'];
+                                    $monthLabel = $group['month_number'] === 0 ? 'Enrollment / Initial Payment' : mb_strtoupper($group['month_label']);
                                 @endphp
 
                                 <article
                                     class="payment-month-card {{ $allPaid ? 'is-paid' : ($isOverdue ? 'is-overdue' : ($isCurrent ? 'is-current' : 'is-upcoming')) }}"
                                     :class="{ 'is-open': openMonth === {{ Js::from($monthKey) }} }"
+                                    x-show="monthFilter === '{{ $allPaid ? 'paid' : (($isCurrent || $isOverdue) ? 'current' : 'upcoming') }}'"
+                                    x-cloak
                                 >
                                     <button
                                         type="button"
@@ -363,7 +492,7 @@
                                                     <span class="payment-status payment-status-upcoming">Upcoming</span>
                                                 @endif
                                             </span>
-                                            <span class="payment-month-meta">Due {{ $group['due_date']->format('F Y') }}</span>
+                                            <span class="payment-month-meta">Due {{ strtoupper($group['due_date']->format('F Y')) }}</span>
                                         </span>
 
                                         <span class="payment-month-balance">
@@ -371,14 +500,14 @@
                                             <strong>₱{{ number_format($mainAmount, 2) }}</strong>
                                         </span>
 
-                                        @if($isOverdue || $isCurrent)
+                                        @if($showPaymentStats)
                                             <span class="payment-month-quick-stats">
-                                                <span><small>{{ $isOverdue ? 'Original charges' : 'Monthly charges' }}</small><strong>₱{{ number_format($group['total_due'], 2) }}</strong></span>
-                                                <span class="is-paid"><small>Paid</small><strong>₱{{ number_format($group['total_paid'], 2) }}</strong></span>
+                                                <span><small>{{ $hasAdvanceApplied ? 'Original scheduled' : ($isOverdue ? 'Original charges' : 'Monthly charges') }}</small><strong>₱{{ number_format($group['total_due'], 2) }}</strong></span>
+                                                <span class="is-paid"><small>{{ $hasAdvanceApplied ? 'Advance applied' : 'Paid' }}</small><strong>₱{{ number_format($group['total_paid'], 2) }}</strong></span>
                                             </span>
                                         @endif
 
-                                        <span class="payment-month-breakdown-prompt {{ ($isOverdue || $isCurrent) ? '' : 'is-compact' }}">
+                                        <span class="payment-month-breakdown-prompt {{ $showPaymentStats ? '' : 'is-compact' }}">
                                             <strong>{{ count($group['children']) }} {{ Str::plural('Student', count($group['children'])) }}</strong>
                                             <small x-text="openMonth === {{ Js::from($monthKey) }} ? 'Hide breakdown' : 'View breakdown'"></small>
                                         </span>
@@ -409,10 +538,13 @@
                                                             ? 'PAID'
                                                             : ((float) $child['verified_paid'] > 0.01 ? 'PARTIAL' : 'UNPAID');
                                                     @endphp
-                                                    <div class="payment-billing-row">
-                                                        <span>
-                                                            <strong>{{ mb_strtoupper($child['full_name']) }}</strong>
-                                                            <small>{{ $child['grade_level'] }} · ID {{ $child['student_number'] }}</small>
+                                                    <div class="payment-billing-row payment-child-fee-card is-child-{{ ($loop->index % 4) + 1 }}">
+                                                        <span class="payment-child-identity">
+                                                            <span class="payment-child-sequence" aria-label="Child {{ $loop->iteration }}">{{ $loop->iteration }}</span>
+                                                            <span class="payment-child-identity-copy">
+                                                                <strong>{{ mb_strtoupper($child['full_name']) }}</strong>
+                                                                <small>{{ $child['grade_level'] }} · ID {{ $child['student_number'] }}</small>
+                                                            </span>
                                                         </span>
                                                         <span class="payment-billing-figures">
                                                             <span class="payment-billing-amount">
@@ -436,21 +568,8 @@
                                     </div>
                                 </article>
 
-                        @if($isCurrent && $allPaid)
-                            <section class="payment-full-paid-note" role="status" aria-label="{{ $monthLabel }} paid in full">
-                                <span class="payment-full-paid-icon" aria-hidden="true">
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12.75l2.25 2.25L15 10.5m6 1.5a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                </span>
-                                <span class="payment-full-paid-copy">
-                                    <strong>Assalamu alaikum! Shukran for completing your {{ $monthLabel }} family payment.</strong>
-                                    <small>Finance has verified the full amount, and this month is now paid in full.</small>
-                                </span>
-                                <button type="button" @click="activeTab = 'transactions'; window.scrollTo({ top: 0, behavior: 'smooth' })">View transactions <span aria-hidden="true">→</span></button>
-                            </section>
-                        @endif
-
-                        @if($isCurrent && $currentPaymentSummary['month_key'] !== null)
-                            <section class="payment-proof-section is-family-payment" aria-label="Submit a family payment">
+                        @if($isCurrent && ! $allPaid && $currentPaymentSummary['month_key'] !== null)
+                            <section x-show="monthFilter === 'current'" x-cloak class="payment-proof-section is-family-payment" aria-label="Submit a family payment">
                                 @if($automaticAllocationMonths->isNotEmpty())
                                     <div class="payment-upload-allocation-info" role="note">
                                         <span class="payment-upload-allocation-copy">
@@ -521,6 +640,12 @@
                             </section>
                         @endif
                             @endforeach
+
+                            @foreach(['current' => 'No balance currently requires payment.', 'upcoming' => 'No upcoming monthly payments.', 'paid' => 'No fully paid months yet.'] as $filterValue => $emptyMessage)
+                                @if($monthFilterCounts[$filterValue] === 0)
+                                    <div x-show="monthFilter === '{{ $filterValue }}'" x-cloak class="payment-month-filter-empty">{{ $emptyMessage }}</div>
+                                @endif
+                            @endforeach
                         </div>
                     @endif
                 </section>
@@ -544,7 +669,7 @@
                                 @php
                                     $effectiveStatus = $submission->effective_status;
                                     $displayPaymentNumber = $submission->submission_number;
-                                    $historyStatus = ucfirst(str_replace('_', ' ', $effectiveStatus));
+                                    $historyStatus = mb_strtoupper(str_replace('_', ' ', $effectiveStatus));
                                     $historyStatusClass = match($effectiveStatus) {
                                         'rejected' => 'bg-rose-50 text-rose-700',
                                         default => 'bg-amber-50 text-amber-700',
@@ -563,12 +688,12 @@
                                         'number' => $displayPaymentNumber,
                                         'official_receipt_number' => null,
                                         'submission_number' => $submission->submission_number,
-                                        'date' => $submission->submitted_at?->format('F j, Y · h:i A'),
-                                        'receipt_date' => $submission->submitted_at?->format('F j, Y'),
+                                        'date' => $submission->submitted_at ? strtoupper($submission->submitted_at->format('F j, Y · h:i A')) : null,
+                                        'receipt_date' => $submission->submitted_at ? strtoupper($submission->submitted_at->format('F j, Y')) : null,
                                         'payer' => $user->name,
                                         'source' => 'Online Payment',
                                         'method' => $pendingMethodLabel,
-                                        'transaction_date' => $submission->transaction_date?->format('F j, Y'),
+                                        'transaction_date' => $submission->transaction_date ? strtoupper($submission->transaction_date->format('F j, Y')) : null,
                                         'account' => $submission->account_received,
                                         'reference' => $submission->reference_no,
                                         'total' => (float) $submission->total_amount,
@@ -590,31 +715,31 @@
                                 <button
                                     type="button"
                                     x-show="transactionFilter === 'all' || transactionFilter === '{{ $effectiveStatus }}'"
-                                    class="flex w-full flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md"
+                                    class="payment-transaction-card flex w-full flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md"
                                     @click="openTransaction({{ Js::from($transactionData) }})"
                                 >
-                                    <span class="min-w-0">
+                                    <span class="payment-transaction-copy min-w-0">
                                         <span class="block text-[11px] font-bold uppercase tracking-wide text-slate-500">Submission No.</span>
                                         <strong class="mt-0.5 block text-sm text-slate-900">{{ $displayPaymentNumber }}</strong>
-                                        <span class="mt-1 flex flex-wrap gap-1.5"><span class="payment-source-badge is-online">Online Payment</span><span class="payment-method-badge">{{ $pendingMethodLabel }}</span></span>
-                                        <span class="mt-1 block text-xs text-slate-500">Submitted {{ $submission->submitted_at?->format('M d, Y') }} · Ref {{ $submission->reference_no ?: 'Not recorded' }}</span>
+                                        <span class="mt-1 flex flex-wrap gap-1.5"><span class="payment-source-badge is-online">ONLINE PAYMENT</span><span class="payment-method-badge">{{ mb_strtoupper($pendingMethodLabel) }}</span></span>
+                                        <span class="mt-1 block text-xs text-slate-500">Submitted {{ $submission->submitted_at ? strtoupper($submission->submitted_at->format('M d, Y')) : '' }} · Ref {{ $submission->reference_no ?: 'Not recorded' }}</span>
                                     </span>
-                                    <span class="flex flex-shrink-0 items-center gap-4 text-right">
+                                    <span class="payment-transaction-summary flex flex-shrink-0 items-center gap-4 text-right">
                                         <span><strong class="block text-base text-slate-900">₱{{ number_format($submission->total_amount, 2) }}</strong><span class="mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-bold {{ $historyStatusClass }}">{{ $historyStatus }}</span></span>
                                         <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                                     </span>
                                 </button>
                             @endforeach
                             @foreach($familyFinanceTransactions as $record)
-                                <article x-show="transactionFilter === 'all' || transactionFilter === 'verified'" class="flex w-full flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm">
-                                    <span class="min-w-0">
+                                <article x-show="transactionFilter === 'all' || transactionFilter === 'verified'" class="payment-transaction-card flex w-full flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm">
+                                    <span class="payment-transaction-copy min-w-0">
                                         <span class="block text-[11px] font-bold uppercase tracking-wide text-slate-500">Official Receipt No.</span>
                                         <strong class="mt-0.5 block text-sm text-slate-900">{{ $record['official_receipt_number'] }}</strong>
-                                        <span class="mt-1 flex flex-wrap gap-1.5"><span class="payment-source-badge {{ $record['source'] === 'ONLINE' ? 'is-online' : 'is-onsite' }}">{{ $record['source_label'] }}</span><span class="payment-method-badge">{{ $record['method_label'] }}</span></span>
-                                        <span class="mt-1 block text-xs text-slate-500">{{ $record['source'] === 'ONLINE' ? 'Approved online receipt' : 'Recorded by AMIS Finance' }}{{ $record['transaction_at'] ? ' · '.$record['transaction_at']->format('M d, Y') : '' }}</span>
+                                        <span class="mt-1 flex flex-wrap gap-1.5"><span class="payment-source-badge {{ $record['source'] === 'ONLINE' ? 'is-online' : 'is-onsite' }}">{{ mb_strtoupper($record['source_label']) }}</span><span class="payment-method-badge">{{ mb_strtoupper($record['method_label']) }}</span></span>
+                                        <span class="mt-1 block text-xs text-slate-500">{{ $record['source'] === 'ONLINE' ? 'Approved online receipt' : 'Recorded by AMIS Finance' }}{{ $record['transaction_at'] ? ' · '.strtoupper($record['transaction_at']->format('M d, Y')) : '' }}</span>
                                     </span>
-                                    <span class="payment-history-actions flex flex-shrink-0 flex-wrap items-center justify-end gap-3 text-right">
-                                        <span><strong class="block text-base text-slate-900">₱{{ number_format($record['amount'], 2) }}</strong><span class="mt-1 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Verified</span></span>
+                                    <span class="payment-transaction-summary payment-history-actions flex flex-shrink-0 flex-wrap items-center justify-end gap-3 text-right">
+                                        <span><strong class="block text-base text-slate-900">₱{{ number_format($record['amount'], 2) }}</strong><span class="mt-1 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">VERIFIED</span></span>
                                     </span>
                                 </article>
                             @endforeach
@@ -640,28 +765,24 @@
                     <div class="mb-3 flex items-start justify-between gap-4">
                         <div>
                             <span class="payment-section-kicker">Student account</span>
-                            <h2 id="add-student-title" class="text-xl font-extrabold text-slate-900">Add a student</h2>
+                            <h2 id="add-student-title" class="text-xl font-extrabold text-slate-900">Link student account</h2>
                         </div>
                         <button type="button" aria-label="Close" class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100" @click="showAddStudent = false" :disabled="linkLoading">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
-                    <p class="mb-5 text-sm leading-6 text-slate-600">Enter the student's school ID and date of birth. This securely connects their payment account to your portal.</p>
+                    <p class="mb-5 text-sm leading-6 text-slate-600">Enter the student's school ID. AMIS will verify the parent email from the approved enrollment before connecting the payment account.</p>
                     <form class="space-y-4" @submit.prevent="linkStudent()">
                         <div>
                             <label for="student-number" class="mb-1.5 block text-sm font-bold text-slate-700">Student number / ID</label>
                             <input id="student-number" type="text" x-model.trim="studentNumber" class="w-full rounded-xl border-slate-300 px-4 py-3 text-base focus:border-emerald-600 focus:ring-emerald-600" placeholder="Example: 260001" required :disabled="linkLoading">
-                        </div>
-                        <div>
-                            <label for="student-dob" class="mb-1.5 block text-sm font-bold text-slate-700">Date of birth</label>
-                            <input id="student-dob" type="date" x-model="studentDob" class="w-full rounded-xl border-slate-300 px-4 py-3 text-base focus:border-emerald-600 focus:ring-emerald-600" required :disabled="linkLoading">
                         </div>
                         <p x-show="linkError" x-text="linkError" class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800"></p>
                         <p x-show="linkSuccess" x-text="linkSuccess" class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800"></p>
                         <div class="flex gap-3 border-t border-slate-100 pt-4">
                             <button type="button" class="min-h-11 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50" @click="showAddStudent = false" :disabled="linkLoading">Cancel</button>
                             <button type="submit" class="min-h-11 flex-1 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-60" :disabled="linkLoading">
-                                <span x-text="linkLoading ? 'Adding…' : 'Add student'"></span>
+                                <span x-text="linkLoading ? 'Linking…' : 'Link account'"></span>
                             </button>
                         </div>
                     </form>
@@ -678,7 +799,7 @@
                             <img :src="breakdown?.avatar" :alt="'Profile avatar of ' + (breakdown?.name || 'student')" class="h-full w-full" :class="breakdown?.avatar_is_fallback ? 'object-contain' : 'object-cover'">
                         </span>
                         <div class="min-w-0">
-                            <span class="payment-section-kicker">Student account details</span>
+                            <span class="payment-section-kicker">Student Account Details</span>
                             <h2 id="breakdown-title" class="truncate text-xl font-extrabold text-slate-900" x-text="breakdown?.name"></h2>
                         </div>
                     </div>
@@ -688,22 +809,22 @@
                 </div>
                 <template x-if="breakdown">
                     <div class="space-y-3 text-sm">
-                        <div class="flex justify-between gap-4"><span class="text-slate-600">Tuition fee</span><strong x-text="money(breakdown.tuition)"></strong></div>
-                        <div class="flex justify-between gap-4"><span class="text-slate-600">Miscellaneous fee</span><strong x-text="money(breakdown.misc)"></strong></div>
+                        <div class="flex justify-between gap-4"><span class="text-slate-600">Tuition Fee</span><strong x-text="money(breakdown.tuition)"></strong></div>
+                        <div class="flex justify-between gap-4"><span class="text-slate-600">Miscellaneous Fee</span><strong x-text="money(breakdown.misc)"></strong></div>
                         <div class="flex justify-between gap-4"><span class="text-slate-600">Books and LMS</span><strong x-text="money(breakdown.books)"></strong></div>
-                        <div x-show="breakdown.discount > 0" class="flex justify-between gap-4 text-emerald-700"><span x-text="'Sibling discount (' + Number(breakdown.discount_percentage).toFixed(0) + '%)'"></span><strong x-text="'-' + money(breakdown.discount)"></strong></div>
+                        <div x-show="breakdown.discount > 0" class="flex justify-between gap-4 text-emerald-700"><span x-text="'Sibling Discount (' + Number(breakdown.discount_percentage).toFixed(0) + '%)'"></span><strong x-text="'-' + money(breakdown.discount)"></strong></div>
                         <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <p class="mb-3 text-xs font-extrabold uppercase tracking-wide text-slate-500">Payment plan calculation</p>
+                            <p class="mb-3 text-xs font-extrabold uppercase tracking-wide text-slate-500">Payment Plan Calculation</p>
                             <div class="flex justify-between gap-4">
-                                <span class="text-slate-600">Total school fees</span>
+                                <span class="text-slate-600">Total School Fees</span>
                                 <strong x-text="money(breakdown.total)"></strong>
                             </div>
                             <div class="mt-2 flex justify-between gap-4">
-                                <span class="text-slate-600">Less: Enrollment / initial payment <small class="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-700">Paid</small></span>
+                                <span class="text-slate-600">Less: Enrollment / Initial Payment <small class="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-700">Paid</small></span>
                                 <strong class="text-emerald-700" x-text="'-' + money(breakdown.enrollment)"></strong>
                             </div>
                             <div class="mt-3 flex justify-between gap-4 border-t border-slate-200 pt-3">
-                                <span><strong class="block text-slate-800">Monthly tuition plan</strong><small class="text-slate-500" x-text="breakdown.installments + ' scheduled installments'"></small></span>
+                                <span><strong class="block text-slate-800">Monthly Tuition Plan</strong><small class="text-slate-500" x-text="breakdown.installments + ' Scheduled Installments'"></small></span>
                                 <strong class="text-lg text-slate-900" x-text="money(breakdown.installment_plan_total)"></strong>
                             </div>
                         </div>
@@ -711,11 +832,11 @@
                         <div class="overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50">
                             <button type="button" class="flex w-full items-center justify-between gap-4 p-4 text-left" @click="installmentsOpen = !installmentsOpen" :aria-expanded="installmentsOpen.toString()">
                                 <span>
-                                    <span class="block font-bold text-emerald-950" x-text="breakdown.installments + ' monthly tuition installments'"></span>
-                                    <span class="mt-0.5 block text-xs text-emerald-700" x-text="installmentsOpen ? 'Hide exact monthly schedule' : 'View exact monthly schedule'"></span>
+                                    <span class="block font-bold text-emerald-950" x-text="breakdown.installments + '-Month SOA Fee Breakdown'"></span>
+                                    <span class="mt-0.5 block text-xs text-emerald-700" x-text="installmentsOpen ? 'Hide Monthly Fees' : 'View Monthly Fees'"></span>
                                 </span>
                                 <span class="flex flex-shrink-0 items-center gap-3">
-                                    <span class="text-right"><strong class="block text-emerald-950" x-text="money(breakdown.monthly) + ' regular'"></strong><small x-show="Math.abs(breakdown.final_installment - breakdown.monthly) > 0.001" class="text-emerald-700" x-text="money(breakdown.final_installment) + ' final month'"></small></span>
+                                    <span class="text-right"><strong class="block text-emerald-950" x-text="money(breakdown.monthly) + ' Regular'"></strong><small x-show="Math.abs(breakdown.final_installment - breakdown.monthly) > 0.001" class="text-emerald-700" x-text="money(breakdown.final_installment) + ' Final Month'"></small></span>
                                     <svg class="h-4 w-4 text-emerald-700 transition" :class="installmentsOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </span>
                             </button>
@@ -729,40 +850,22 @@
                                         <div class="flex items-start justify-between gap-4">
                                             <span class="min-w-0">
                                                 <strong class="block text-sm text-slate-900" x-text="installment.month"></strong>
-                                                <small class="mt-0.5 block text-slate-500" x-text="'Due ' + (installment.due_date || 'date not set')"></small>
+                                                <small class="mt-0.5 block text-slate-500" x-text="'Due ' + (installment.due_date || 'Date Not Set')"></small>
                                             </span>
                                             <span class="text-right">
                                                 <strong class="block text-sm text-slate-900" x-text="money(installment.original)"></strong>
-                                                <small class="mt-0.5 inline-flex rounded-full px-2 py-0.5 font-bold"
-                                                       :class="{
-                                                           'bg-emerald-50 text-emerald-700': installment.status === 'Paid',
-                                                           'bg-rose-50 text-rose-700': installment.status === 'Overdue',
-                                                           'bg-blue-50 text-blue-700': installment.status === 'Current',
-                                                           'bg-slate-100 text-slate-600': installment.status === 'Upcoming'
-                                                       }"
-                                                       x-text="installment.status"></small>
                                             </span>
-                                        </div>
-                                        <div class="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs">
-                                            <span class="text-slate-500">Verified paid <strong class="text-slate-700" x-text="money(installment.verified)"></strong></span>
-                                            <span class="text-slate-500">Remaining <strong :class="installment.remaining > 0 ? 'text-amber-700' : 'text-emerald-700'" x-text="money(installment.remaining)"></strong></span>
                                         </div>
                                     </div>
                                 </template>
                             </div>
-                        </div>
-
-                        <div class="rounded-xl border border-emerald-100 bg-white p-4 shadow-sm">
-                            <div class="flex justify-between gap-4"><span class="text-slate-600">Monthly tuition plan</span><strong x-text="money(breakdown.installment_plan_total)"></strong></div>
-                            <div class="mt-2 flex justify-between gap-4"><span class="text-slate-600">Less: Verified monthly payments</span><strong class="text-emerald-700" x-text="'-' + money(breakdown.installment_verified)"></strong></div>
-                            <div class="mt-3 flex justify-between gap-4 border-t border-slate-200 pt-3"><span><strong class="block text-slate-800">Current remaining balance</strong><small class="text-slate-500">Automatically updated after Finance approval</small></span><strong class="text-lg text-emerald-800" x-text="money(breakdown.installment_remaining)"></strong></div>
                         </div>
                     </div>
                 </template>
                 <div class="mt-6 flex gap-3">
                     <button type="button" class="min-h-11 flex-1 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50" @click="showBreakdown = false">Close</button>
                     <button x-show="breakdown?.next_payment" type="button" class="min-h-11 flex-[1.6] rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-800" @click="showBreakdown = false; activeTab = 'monthly'">
-                        View family payment schedule
+                        View Family Payment Schedule
                     </button>
                 </div>
             </div>
@@ -775,7 +878,7 @@
                 <div class="p-6">
                     <div class="mb-5 flex items-start justify-between gap-4">
                         <div>
-                            <span class="payment-section-kicker" x-text="transaction?.is_consolidated ? 'Consolidated family receipt' : (transaction?.status === 'verified' ? 'Official payment receipt' : 'Payment submission')"></span>
+                            <span class="payment-section-kicker" x-text="transaction?.status === 'verified' ? 'Official payment receipt' : 'Payment submission'"></span>
                             <h2 id="transaction-title" class="text-xl font-extrabold text-slate-900" x-text="transaction?.number"></h2>
                             <p class="mt-1 text-sm text-slate-500" x-text="transaction?.date"></p>
                         </div>
@@ -785,94 +888,19 @@
                     </div>
                     <template x-if="transaction">
                         <div class="space-y-4">
-                            <section x-show="transaction.status === 'verified' && transaction.is_consolidated" class="payment-receipt-stack">
-                                <template x-for="(payment, paymentIndex) in transaction.payments" :key="payment.official_receipt_number || paymentIndex">
-                                    <article class="payment-receipt-slip">
-                                        <div class="payment-receipt-zigzag is-top" aria-hidden="true"></div>
-                                        <header class="payment-receipt-slip-header">
-                                            <span class="payment-receipt-slip-logo">AMIS</span>
-                                            <div><strong>Al-Hikmah International Academy</strong><small>Family Finance Office · Official Payment Receipt</small></div>
-                                        </header>
-
-                                        <h3 class="payment-receipt-slip-title" x-text="payment.receipt_title"></h3>
-
-                                        <div class="payment-receipt-slip-number">
-                                            <span><small>Official Receipt No.</small><strong x-text="payment.official_receipt_number"></strong></span>
-                                            <span><small>Status</small><strong>VERIFIED</strong></span>
-                                        </div>
-
-                                        <div class="payment-receipt-slip-highlight">
-                                            <span><small>Date</small><strong x-text="payment.date || 'Not recorded'"></strong></span>
-                                            <span><small>Time</small><strong x-text="payment.time || 'Not recorded'"></strong></span>
-                                            <span class="is-amount"><small>Amount paid</small><strong x-text="money(payment.amount)"></strong></span>
-                                        </div>
-
-                                        <dl class="payment-receipt-slip-meta">
-                                            <div><dt>Payment source</dt><dd x-text="payment.source"></dd></div>
-                                            <div><dt>Mode of payment</dt><dd x-text="payment.method"></dd></div>
-                                            <div><dt>Transaction / Reference No.</dt><dd x-text="payment.reference || 'Not recorded'"></dd></div>
-                                            <div><dt>Family / Payer</dt><dd x-text="transaction.payer || 'Family account'"></dd></div>
-                                        </dl>
-
-                                        <section class="payment-receipt-allocations">
-                                            <h4>PAYMENT ALLOCATION</h4>
-                                            <div x-show="payment.children.length === 0" class="payment-receipt-slip-empty">No open student balance was available. The amount was recorded as advance credit.</div>
-                                            <template x-for="(child, childIndex) in payment.children" :key="child.name + childIndex">
-                                                <div class="payment-receipt-allocation">
-                                                    <div class="payment-receipt-allocation-heading">
-                                                        <span><strong x-text="child.name"></strong><small x-text="child.month || 'Family payment'"></small></span>
-                                                        <em :class="{ 'is-paid': child.status === 'PAID', 'is-partial': child.status === 'PARTIAL', 'is-unpaid': child.status === 'UNPAID' }" x-text="child.status"></em>
-                                                    </div>
-                                                    <dl class="payment-receipt-allocation-values">
-                                                        <div><dt>Monthly Due Before Payment</dt><dd x-text="money(child.due_before)"></dd></div>
-                                                        <div class="is-applied"><dt>Allocated Payment</dt><dd x-text="money(child.applied)"></dd></div>
-                                                        <div><dt>Remaining Balance</dt><dd x-text="money(child.remaining)"></dd></div>
-                                                        <div><dt>Status</dt><dd x-text="child.status_label"></dd></div>
-                                                    </dl>
-                                                </div>
-                                            </template>
-                                            <div class="payment-receipt-allocation-total"><span>TOTAL APPLIED</span><strong x-text="money(payment.applied_total)"></strong></div>
-                                        </section>
-
-                                        <section class="payment-receipt-payment-summary">
-                                            <h4>PAYMENT SUMMARY</h4>
-                                            <div><span>Total Monthly Due</span><strong x-text="money(payment.total_monthly_due)"></strong></div>
-                                            <div><span>Amount Received</span><strong x-text="money(payment.amount)"></strong></div>
-                                            <div><span>Payment Method</span><strong x-text="payment.method"></strong></div>
-                                            <div class="is-total"><span>Total Applied</span><strong x-text="money(payment.applied_total)"></strong></div>
-                                            <div><span>Remaining for Covered Month(s)</span><strong x-text="money(payment.remaining_for_covered_months)"></strong></div>
-                                            <div x-show="payment.advance_credit > 0"><span>Advance Credit</span><strong x-text="money(payment.advance_credit)"></strong></div>
-                                        </section>
-
-                                        <section class="payment-receipt-family-summary">
-                                            <h4>FAMILY ACCOUNT SUMMARY</h4>
-                                            <div><span>Outstanding Before Payment</span><strong x-text="money(payment.family_balance_before)"></strong></div>
-                                            <div class="is-after"><span>Outstanding After Payment</span><strong x-text="money(payment.family_balance_after)"></strong></div>
-                                            <p>Combined unpaid balances across all children, billing months, and partial installments.</p>
-                                        </section>
-
-                                        <footer class="payment-receipt-slip-footer">
-                                            <strong>Payment verified by AMIS Finance</strong>
-                                            <span>Allocation is automatic and settles the oldest outstanding family balance first.</span>
-                                        </footer>
-                                        <div class="payment-receipt-zigzag is-bottom" aria-hidden="true"></div>
-                                    </article>
-                                </template>
-                            </section>
-
-                            <section x-show="transaction.status === 'verified' && !transaction.is_consolidated" class="payment-long-receipt">
+                            <section x-show="transaction.status === 'verified'" class="payment-long-receipt">
                                 <header class="payment-long-receipt-header">
-                                    <div><span class="payment-long-receipt-mark">AMIS</span><strong>Al-Hikmah International Academy</strong><small>Family Finance Office</small></div>
-                                    <div><h3 x-text="transaction.is_consolidated ? 'FULL RECEIPT' : 'RECEIPT'"></h3><span><small x-text="transaction.is_consolidated ? 'Official receipts included' : 'Official Receipt No.'"></small><strong x-text="transaction.is_consolidated ? transaction.receipt_count : transaction.official_receipt_number"></strong></span><span><small>Receipt date</small><strong x-text="transaction.receipt_date || 'Not recorded'"></strong></span></div>
+                                    <div><span class="payment-long-receipt-mark">AMIS</span><strong>Al Munawwara Islamic School</strong><small>Family Finance Office</small></div>
+                                    <div><h3>RECEIPT</h3><span><small>Official Receipt No.</small><strong x-text="transaction.official_receipt_number"></strong></span><span><small>Receipt date</small><strong x-text="transaction.receipt_date || 'Not recorded'"></strong></span></div>
                                 </header>
 
                                 <section class="payment-long-receipt-party">
                                     <div><small>Billed to</small><strong x-text="transaction.payer || 'Family account'"></strong><span>Students: <b x-text="transaction.covered_students.length ? transaction.covered_students.join(', ') : 'Advance credit'"></b></span></div>
-                                    <div><span><small>Payment source</small><strong x-text="transaction.source"></strong></span><span><small>Payment method</small><strong x-text="transaction.method"></strong></span><span><small>Payment reference</small><strong x-text="transaction.reference || 'Not recorded'"></strong></span></div>
+                                    <div><span><small>Payment source</small><strong x-text="transaction.source?.toUpperCase()"></strong></span><span><small>Payment method</small><strong x-text="transaction.method?.toUpperCase()"></strong></span><span><small>Payment reference</small><strong x-text="transaction.reference || 'Not recorded'"></strong></span></div>
                                 </section>
 
                                 <section class="payment-long-receipt-items">
-                                    <div class="payment-long-receipt-table-head"><strong x-text="transaction.is_consolidated ? 'Student / billing balance' : 'Description'"></strong><strong>Amount</strong></div>
+                                    <div class="payment-long-receipt-table-head"><strong>Description</strong><strong>Amount</strong></div>
                                     <div x-show="transaction.allocations.length === 0" class="payment-long-receipt-empty">No open billing balance was available. This payment was recorded as advance credit.</div>
                                     <template x-for="(allocation, index) in transaction.allocations" :key="index">
                                         <div class="payment-long-receipt-item">
@@ -882,34 +910,23 @@
                                     </template>
                                 </section>
 
-                                <section x-show="transaction.is_consolidated" class="payment-long-receipt-payments">
-                                    <div class="payment-long-receipt-payment-head"><strong>Verified payment history</strong><strong>Deduction</strong></div>
-                                    <template x-for="(payment, index) in transaction.payments" :key="payment.official_receipt_number || index">
-                                        <div class="payment-long-receipt-payment-row">
-                                            <span><strong x-text="payment.official_receipt_number || 'Verified payment'"></strong><small><span x-text="payment.source"></span> · <span x-text="payment.method"></span> · <span x-text="payment.date || 'Date not recorded'"></span></small></span>
-                                            <strong x-text="'-' + money(payment.amount)"></strong>
-                                        </div>
-                                    </template>
-                                </section>
-
                                 <section class="payment-long-receipt-totals">
                                     <div><span>Subtotal — listed balances</span><strong x-text="money(transaction.itemized_charges_total)"></strong></div>
-                                    <div x-show="!transaction.is_consolidated" class="is-deduction"><span>Less: <b x-text="transaction.source"></b> · <b x-text="transaction.method"></b></span><strong x-text="'-' + money(transaction.applied_total)"></strong></div>
-                                    <div x-show="transaction.is_consolidated" class="is-deduction"><span>Less: total verified payments applied</span><strong x-text="'-' + money(transaction.applied_total)"></strong></div>
+                                    <div class="is-deduction"><span>Less: <b x-text="transaction.source?.toUpperCase()"></b> · <b x-text="transaction.method?.toUpperCase()"></b></span><strong x-text="'-' + money(transaction.applied_total)"></strong></div>
                                     <div><span>Remaining on listed balances</span><strong x-text="money(transaction.itemized_remaining_total)"></strong></div>
                                     <div x-show="transaction.advance_credit > 0"><span>Advance credit</span><strong x-text="money(transaction.advance_credit)"></strong></div>
                                     <div class="is-total"><span>Total amount paid</span><strong x-text="money(transaction.total)"></strong></div>
                                     <div x-show="transaction.balance_after !== null" class="is-family-balance"><span>Remaining family balance after payment</span><strong x-text="money(transaction.balance_after)"></strong></div>
                                 </section>
 
-                                <footer class="payment-long-receipt-notes"><strong>Notes</strong><p x-text="transaction.remarks || 'Verified by AMIS Finance. Payment allocation was completed automatically using the oldest outstanding family balance first.'"></p><small x-text="transaction.is_consolidated ? 'This consolidated view combines the family payment history. Every payment keeps its own permanent Official Receipt number.' : 'This official payment record is permanently linked to the AMIS Finance audit trail.'"></small></footer>
+                                <footer class="payment-long-receipt-notes"><strong>Notes</strong><p x-text="transaction.remarks || 'Verified by AMIS Finance. Payment allocation was completed automatically using the oldest outstanding family balance first.'"></p><small>This official payment record is permanently linked to the AMIS Finance audit trail.</small></footer>
                             </section>
 
                             <section x-show="transaction.status !== 'verified'" class="space-y-4">
                                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Status</small><strong class="mt-1 block capitalize" x-text="transaction.status"></strong></div>
-                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Payment Source</small><strong class="mt-1 block" x-text="transaction.source"></strong></div>
-                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Payment Method</small><strong class="mt-1 block" x-text="transaction.method"></strong></div>
+                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Status</small><strong class="mt-1 block uppercase" x-text="transaction.status"></strong></div>
+                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Payment Source</small><strong class="mt-1 block" x-text="transaction.source?.toUpperCase()"></strong></div>
+                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Payment Method</small><strong class="mt-1 block" x-text="transaction.method?.toUpperCase()"></strong></div>
                                     <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Submitted</small><strong class="mt-1 block" x-text="transaction.receipt_date || 'Not recorded'"></strong></div>
                                     <div class="col-span-2 rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Submission No.</small><strong class="mt-1 block break-all" x-text="transaction.submission_number"></strong></div>
                                     <div class="col-span-2 rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Payment Reference</small><strong class="mt-1 block break-all" x-text="transaction.reference || 'Not recorded'"></strong></div>
@@ -932,7 +949,6 @@
                     showAddStudent: false,
                     activeTab: 'notifications',
                     studentNumber: '',
-                    studentDob: '',
                     linkLoading: false,
                     linkError: '',
                     linkSuccess: '',
@@ -942,6 +958,7 @@
                     showTransaction: false,
                     transaction: null,
                     transactionFilter: 'all',
+                    monthFilter: 'current',
                     openMonth: null,
 
                     init() {
@@ -971,7 +988,7 @@
                                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                                     'Accept': 'application/json'
                                 },
-                                body: JSON.stringify({ student_number: this.studentNumber, date_of_birth: this.studentDob })
+                                body: JSON.stringify({ student_number: this.studentNumber })
                             });
                             const data = await response.json();
                             if (!response.ok) throw new Error(data.message || 'We could not add this student. Please check the details.');
