@@ -391,11 +391,13 @@
             <div class="upper-mid">
                 <table class="student-info-table">
                     <tr>
-                        <td class="info-lbl">Name of Student</td>
-                        <td class="info-val">{{ strtoupper($soaData['student_name']) }}</td>
+                        <td colspan="2" style="padding-bottom: 5px;">
+                            <div class="info-lbl" style="font-size: 10px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">Name of Student:</div>
+                            <div class="info-val" style="font-size: 12px; font-weight: 900; color: #0f172a; margin-top: 1px; line-height: 1.25;">{{ strtoupper($soaData['student_name']) }}</div>
+                        </td>
                     </tr>
                     <tr>
-                        <td class="info-lbl">Address</td>
+                        <td class="info-lbl">Address:</td>
                         <td class="info-val">{{ strtoupper($soaData['address']) }}</td>
                     </tr>
                     <tr>
@@ -407,19 +409,19 @@
                         <td class="info-val">{{ $soaData['lrn'] }}</td>
                     </tr>
                     <tr>
-                        <td class="info-lbl">Category</td>
+                        <td class="info-lbl">Category:</td>
                         <td class="info-val">{{ $soaData['category'] }}</td>
                     </tr>
                     <tr>
-                        <td class="info-lbl">Grade Level</td>
+                        <td class="info-lbl">Grade Level:</td>
                         <td class="info-val">{{ $soaData['grade_level'] }}</td>
                     </tr>
                     <tr>
-                        <td class="info-lbl">Discount Privilege</td>
+                        <td class="info-lbl">Discount Privilege:</td>
                         <td class="info-val">{{ $soaData['discount_privilege'] }}</td>
                     </tr>
                     <tr>
-                        <td class="info-lbl">Discount Status</td>
+                        <td class="info-lbl">Discount Status:</td>
                         <td class="info-val">{{ $soaData['discount_status'] }}</td>
                     </tr>
                 </table>
