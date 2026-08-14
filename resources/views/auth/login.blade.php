@@ -1,35 +1,35 @@
 <x-guest-layout title="Family Payments Login" :show-loader="false">
-    <div class="min-h-screen bg-slate-950 lg:grid lg:grid-cols-[1.05fr_.95fr]">
-        <!-- LEFT PANEL: Clean, Elegant, Centered School Identity Panel -->
-        <section class="relative hidden overflow-hidden bg-emerald-950 p-12 text-white lg:flex lg:flex-col lg:items-center lg:justify-center">
+    <div class="min-h-screen bg-slate-950 flex flex-col lg:grid lg:grid-cols-[1.05fr_.95fr]">
+        <!-- LEFT / TOP BRANDING PANEL: Clean, Elegant, Centered School Identity Panel -->
+        <section class="relative overflow-hidden bg-emerald-950 px-6 py-12 text-white flex flex-col items-center justify-center lg:min-h-screen lg:p-12">
             <div class="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-emerald-400/10 pointer-events-none"></div>
             <div class="absolute -bottom-40 -left-24 h-[30rem] w-[30rem] rounded-full bg-teal-300/10 pointer-events-none"></div>
             <div class="absolute inset-0 bg-gradient-to-b from-emerald-900/15 via-transparent to-black/25 pointer-events-none"></div>
             
-            <div class="relative z-10 flex flex-col items-center justify-center text-center max-w-lg px-6">
+            <div class="relative z-10 flex flex-col items-center justify-center text-center max-w-lg mx-auto">
                 <!-- AMIS Official Logo -->
-                <img src="{{ asset('images/AMIS_Logo.png') }}" class="h-36 w-36 xl:h-40 xl:w-40 object-contain drop-shadow-2xl" alt="AL MUNAWWARA ISLAMIC SCHOOL Logo">
+                <img src="{{ asset('images/AMIS_Logo.png') }}" class="h-28 w-28 sm:h-32 sm:w-32 lg:h-40 lg:w-40 object-contain drop-shadow-2xl" alt="AL MUNAWWARA ISLAMIC SCHOOL Logo">
 
                 <!-- Arabic School Name -->
-                <h1 class="mt-8 text-3xl xl:text-4xl font-bold tracking-wide text-white font-serif leading-relaxed" dir="rtl" style="font-family: 'Amiri', 'Tajawal', serif;">
+                <h1 class="mt-6 lg:mt-8 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-wide text-white font-serif leading-relaxed" dir="rtl" style="font-family: 'Amiri', 'Tajawal', serif;">
                     المدرسة المنورة الإسلامية
                 </h1>
 
                 <!-- English School Name -->
-                <p class="mt-3 text-base xl:text-lg font-bold uppercase tracking-[0.22em] text-white/95 leading-normal">
+                <p class="mt-2.5 lg:mt-3 text-sm sm:text-base lg:text-lg font-bold uppercase tracking-[0.2em] text-white/95 leading-normal">
                     AL MUNAWWARA ISLAMIC SCHOOL
                 </p>
 
                 <!-- System Name -->
-                <p class="mt-2 text-sm xl:text-base font-medium tracking-wider text-emerald-200/80">
+                <p class="mt-1.5 lg:mt-2 text-xs sm:text-sm lg:text-base font-medium tracking-wider text-emerald-200/85">
                     Family Payment System
                 </p>
             </div>
         </section>
 
-        <!-- RIGHT PANEL: Login Form -->
-        <section class="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8 sm:px-8">
-            <div class="w-full max-w-md" x-data="{
+        <!-- RIGHT / BOTTOM LOGIN PANEL -->
+        <section class="flex flex-1 flex-col items-center justify-center bg-slate-50 px-4 py-10 sm:px-8 lg:min-h-screen lg:py-12">
+            <div class="w-full max-w-md my-auto" x-data="{
                 mode: 'otp',
                 step: 'email',
                 email: '{{ old('email') }}',
@@ -125,20 +125,10 @@
                     }
                 }
             }">
-                <!-- Mobile top branding -->
-                <div class="mb-7 flex items-center gap-3 lg:hidden">
-                    <img src="{{ asset('images/AMIS_Logo.png') }}" class="h-11 w-11 object-contain" alt="AMIS Logo">
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Al Munawwara Islamic School</p>
-                        <h1 class="font-extrabold text-slate-900">Family Payment System</h1>
-                    </div>
-                </div>
-
                 <!-- Main White Card -->
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-8">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-[.18em] text-emerald-700">Authorized parents & guardians</p>
-                        <h2 class="mt-2 text-2xl font-black text-slate-900">Sign in to Family Payments</h2>
+                        <h2 class="text-2xl font-black text-slate-900">Sign in to Family Payments</h2>
                         <p class="mt-2 text-sm leading-6 text-slate-500">Use a one-time email code or your account password.</p>
                     </div>
 
@@ -218,7 +208,11 @@
                     </div>
                 </div>
 
-                <p class="mt-5 text-center text-xs text-slate-400">OTP requests and sign-in attempts are rate-limited and audited.</p>
+                <!-- Footer notice & copyright -->
+                <div class="mt-6 space-y-1.5 text-center text-xs text-slate-400">
+                    <p>OTP requests and sign-in attempts are rate-limited and audited.</p>
+                    <p class="text-slate-400/80">© {{ date('Y') }} Al Munawwara Islamic School. All rights reserved.</p>
+                </div>
             </div>
         </section>
     </div>
