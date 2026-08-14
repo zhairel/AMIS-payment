@@ -173,7 +173,6 @@
     padding: 1.6rem 1.85rem;
     background: linear-gradient(145deg, #f0fdf4 0%, #e8f7f0 100%);
     border: 1px solid #ccebdc;
-    border-left: 4px solid var(--fp-green);
     border-radius: var(--fp-radius-lg);
     position: relative;
 }
@@ -10073,7 +10072,6 @@
     padding: 1.6rem 1.85rem;
     background: var(--fp-green-soft);
     border: 1px solid var(--fp-green-border);
-    border-left: 4px solid var(--fp-green);
     border-radius: var(--fp-radius-lg);
 }
 
