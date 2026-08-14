@@ -150,17 +150,18 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 10px;
+            table-layout: fixed;
         }
         .upper-left {
             display: table-cell;
-            width: 32%;
+            width: 30%;
             vertical-align: top;
-            padding-right: 12px;
+            padding-right: 10px;
             font-size: 10px;
         }
         .upper-mid {
             display: table-cell;
-            width: 35%;
+            width: 37%;
             vertical-align: top;
             padding-right: 8px;
             font-size: 10.5px;
@@ -389,11 +390,19 @@
 
             {{-- COLUMN 2: STUDENT DETAILS --}}
             <div class="upper-mid">
+                @php
+                    $sName = strtoupper($soaData['student_name'] ?? '');
+                    $sLen = mb_strlen($sName);
+                    $nameSize = $sLen > 30 ? '10px' : ($sLen > 24 ? '10.5px' : ($sLen > 18 ? '11px' : '11.5px'));
+                    $nameSpacing = $sLen > 28 ? '-0.2px' : '0px';
+                @endphp
                 <table class="student-info-table">
                     <tr>
-                        <td colspan="2" style="padding-bottom: 5px;">
-                            <div class="info-lbl" style="font-size: 10px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">Name of Student:</div>
-                            <div class="info-val" style="font-size: 12px; font-weight: 900; color: #0f172a; margin-top: 1px; line-height: 1.25;">{{ strtoupper($soaData['student_name']) }}</div>
+                        <td colspan="2" style="padding-bottom: 4px;">
+                            <div class="info-lbl" style="font-size: 9.5px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">NAME OF STUDENT:</div>
+                            <div class="info-val" style="font-size: {{ $nameSize }}; letter-spacing: {{ $nameSpacing }}; font-weight: 900; color: #0f172a; margin-top: 1px; line-height: 1.2; white-space: nowrap; overflow: visible;">
+                                {{ $sName }}
+                            </div>
                         </td>
                     </tr>
                     <tr>
