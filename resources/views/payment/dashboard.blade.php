@@ -336,13 +336,13 @@
                 @php
                     $familyTransactionCount = $familyFinanceTransactions->count() + $unpostedPaymentSubmissions->count();
                 @endphp
-                <div class="flex items-center border-b border-slate-200 gap-3">
+                <div class="flex items-center overflow-x-auto border-b border-slate-200 gap-2 sm:gap-4 no-scrollbar">
                     <button type="button"
                             role="tab"
                             @click="activeTab = 'notifications'"
                             :class="activeTab === 'notifications' ? 'border-emerald-700 text-emerald-800 font-extrabold border-b-2' : 'border-transparent text-slate-500 hover:text-slate-800 font-semibold'"
-                            class="inline-flex items-center gap-2 px-4 py-3 text-sm transition pb-3.5 -mb-px">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            class="inline-flex items-center gap-2 px-3 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap transition pb-3.5 -mb-px">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                         </svg>
                         <span>Notifications</span>
@@ -355,8 +355,8 @@
                             role="tab"
                             @click="activeTab = 'monthly'"
                             :class="activeTab === 'monthly' ? 'border-emerald-700 text-emerald-800 font-extrabold border-b-2' : 'border-transparent text-slate-500 hover:text-slate-800 font-semibold'"
-                            class="inline-flex items-center gap-2 px-4 py-3 text-sm transition pb-3.5 -mb-px">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            class="inline-flex items-center gap-2 px-3 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap transition pb-3.5 -mb-px">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
                         <span>Monthly Payments</span>
@@ -366,8 +366,8 @@
                             role="tab"
                             @click="activeTab = 'transactions'"
                             :class="activeTab === 'transactions' ? 'border-emerald-700 text-emerald-800 font-extrabold border-b-2' : 'border-transparent text-slate-500 hover:text-slate-800 font-semibold'"
-                            class="inline-flex items-center gap-2 px-4 py-3 text-sm transition pb-3.5 -mb-px">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            class="inline-flex items-center gap-2 px-3 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap transition pb-3.5 -mb-px">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                         </svg>
                         <span>Transactions & Receipts</span>
@@ -377,7 +377,7 @@
 
                 <!-- TAB 1: NOTIFICATIONS & UPDATES -->
                 <div x-show="activeTab === 'notifications'" x-cloak class="space-y-6">
-                    <div class="rounded-3xl border border-slate-200/80 bg-white p-8 sm:p-12 shadow-sm">
+                    <div class="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-10 lg:p-12 shadow-sm">
                         <div class="flex items-center gap-3 border-b border-slate-100 pb-5">
                             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shrink-0">
                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -386,7 +386,7 @@
                             </div>
                             <div>
                                 <h2 class="text-lg font-black text-slate-900">Account Notifications & Updates</h2>
-                                <p class="text-xs text-slate-500">Important reminders about balances, due months, and receipt verification status.</p>
+                                <p class="text-xs text-slate-500">Important reminders about due payments, receipt verification, and account activity.</p>
                             </div>
                         </div>
 
@@ -399,7 +399,7 @@
                                             'overdue', 'previous' => 'bg-rose-50 border-rose-200 text-rose-800',
                                             'pending' => 'bg-amber-50 border-amber-200 text-amber-800',
                                             'success' => 'bg-emerald-50 border-emerald-200 text-emerald-800',
-                                            default => 'bg-slate-50 border-slate-200 text-slate-700',
+                                            default => 'bg-slate-100 border-slate-200 text-slate-700',
                                         };
                                         $notificationLabel = match($notificationType) {
                                             'overdue', 'previous' => 'Action Needed',
@@ -409,23 +409,36 @@
                                         };
                                     @endphp
 
-                                    <div class="rounded-2xl border border-slate-200 bg-slate-50/50 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                        <div class="space-y-1">
-                                            <div class="flex items-center gap-2">
-                                                <span class="rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide {{ $badgeBg }}">
+                                    <div class="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-7 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 shadow-sm hover:border-slate-300 transition">
+                                        <div class="space-y-2.5 max-w-2xl">
+                                            <!-- 1. Status Badge & 2. Date -->
+                                            <div class="flex items-center gap-3">
+                                                <span class="rounded-full border px-3 py-0.5 text-xs font-semibold {{ $badgeBg }}">
                                                     {{ $notificationLabel }}
                                                 </span>
                                                 @if($notification['date'])
-                                                    <span class="text-xs text-slate-400 font-medium">{{ $notification['date']->format('M d, Y') }}</span>
+                                                    <span class="text-xs text-slate-400 font-medium">{{ $notification['date']->format('M j, Y') }}</span>
                                                 @endif
                                             </div>
-                                            <h3 class="text-sm font-bold text-slate-900">{{ $notification['title'] }}</h3>
-                                            <p class="text-xs text-slate-600 leading-relaxed">{{ $notification['message'] }}</p>
+
+                                            <!-- 3. Main Title -->
+                                            <h3 class="text-base font-bold text-slate-900 leading-snug">{{ $notification['title'] }}</h3>
+
+                                            <!-- 4. Short Explanation -->
+                                            <p class="text-sm text-slate-600 leading-relaxed">{{ $notification['message'] }}</p>
+
+                                            <!-- Secondary Technical Details (Receipt / Submission Number) -->
+                                            @if(!empty($notification['reference']))
+                                                <div class="text-xs text-slate-400 font-mono font-medium pt-0.5">
+                                                    {{ $notification['reference'] }}
+                                                </div>
+                                            @endif
                                         </div>
 
-                                        <div class="sm:text-right shrink-0">
-                                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Amount</span>
-                                            <strong class="text-base font-black text-slate-900">₱{{ number_format($notification['amount'], 2) }}</strong>
+                                        <!-- 5. Amount Label & 6. Amount Value -->
+                                        <div class="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex sm:flex-col justify-between items-baseline sm:items-end">
+                                            <span class="text-xs font-medium text-slate-400 block">Amount</span>
+                                            <strong class="text-lg sm:text-xl font-black text-slate-900 tracking-tight block sm:mt-1">₱{{ number_format($notification['amount'], 2) }}</strong>
                                         </div>
                                     </div>
                                 @endforeach
@@ -641,7 +654,7 @@
 
                 <!-- TAB 3: TRANSACTION & RECEIPT HISTORY -->
                 <div x-show="activeTab === 'transactions'" x-cloak class="space-y-6">
-                    <div class="rounded-3xl border border-slate-200/80 bg-white p-8 sm:p-12 shadow-sm">
+                    <div class="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-10 lg:p-12 shadow-sm">
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5">
                             <div class="flex items-center gap-3">
                                 <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shrink-0">
@@ -673,9 +686,14 @@
                                     @php
                                         $effectiveStatus = $submission->effective_status;
                                         $displayPaymentNumber = $submission->submission_number;
-                                        $historyStatus = mb_strtoupper(str_replace('_', ' ', $effectiveStatus));
+                                        $historyStatusLabel = match($effectiveStatus) {
+                                            'rejected' => 'Rejected',
+                                            'verified' => 'Verified',
+                                            default => 'Under Review',
+                                        };
                                         $historyStatusClass = match($effectiveStatus) {
                                             'rejected' => 'bg-rose-50 text-rose-700 border-rose-200',
+                                            'verified' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                             default => 'bg-amber-50 text-amber-700 border-amber-200',
                                         };
                                         $pendingMethod = strtoupper(str_replace([' ', '-'], '_', (string) ($submission->payment_mode ?: $submission->method)));
@@ -719,42 +737,46 @@
 
                                     <div x-show="transactionFilter === 'all' || transactionFilter === '{{ $effectiveStatus }}'"
                                          @click="openTransaction({{ Js::from($transactionData) }})"
-                                         class="rounded-2xl border border-slate-200/80 bg-white p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 cursor-pointer hover:border-emerald-300 hover:shadow-md transition">
-                                        <div>
-                                            <div class="flex items-center gap-2">
-                                                <span class="rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $historyStatusClass }}">
-                                                    {{ $historyStatus }}
+                                         class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 cursor-pointer hover:border-emerald-300 hover:shadow-md transition">
+                                        <div class="space-y-1">
+                                            <div class="flex items-center gap-2.5">
+                                                <span class="rounded-full border px-2.5 py-0.5 text-xs font-semibold {{ $historyStatusClass }}">
+                                                    {{ $historyStatusLabel }}
                                                 </span>
-                                                <span class="text-xs font-bold text-slate-500 uppercase">{{ $pendingMethodLabel }}</span>
+                                                <span class="text-xs font-semibold text-slate-500">{{ $pendingMethodLabel }}</span>
                                             </div>
-                                            <h4 class="mt-1 text-sm font-black text-slate-900">Submission #{{ $displayPaymentNumber }}</h4>
-                                            <span class="text-xs text-slate-400">Ref: {{ $submission->reference_no ?: 'None' }} · {{ $submission->submitted_at ? $submission->submitted_at->format('M d, Y') : '' }}</span>
+                                            <h4 class="text-sm sm:text-base font-bold text-slate-900">Submission #{{ $displayPaymentNumber }}</h4>
+                                            <p class="text-xs text-slate-500">
+                                                Ref: {{ $submission->reference_no ?: 'None' }} · Submitted {{ $submission->submitted_at ? $submission->submitted_at->format('M j, Y') : '' }}
+                                            </p>
                                         </div>
 
-                                        <div class="sm:text-right shrink-0">
-                                            <strong class="text-base font-black text-slate-900 block">₱{{ number_format($submission->total_amount, 2) }}</strong>
-                                            <span class="text-xs text-emerald-700 font-bold">View Details →</span>
+                                        <div class="sm:text-right shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex sm:flex-col justify-between items-baseline sm:items-end">
+                                            <strong class="text-base sm:text-lg font-black text-slate-900 block">₱{{ number_format($submission->total_amount, 2) }}</strong>
+                                            <span class="text-xs text-emerald-700 font-bold sm:mt-1">View Details →</span>
                                         </div>
                                     </div>
                                 @endforeach
 
                                 @foreach($familyFinanceTransactions as $record)
                                     <div x-show="transactionFilter === 'all' || transactionFilter === 'verified'"
-                                         class="rounded-2xl border border-slate-200/80 bg-white p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
-                                        <div>
-                                            <div class="flex items-center gap-2">
-                                                <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800 uppercase">
+                                         class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
+                                        <div class="space-y-1">
+                                            <div class="flex items-center gap-2.5">
+                                                <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
                                                     Verified Official Receipt
                                                 </span>
-                                                <span class="text-xs font-bold text-slate-500 uppercase">{{ $record['method_label'] }}</span>
+                                                <span class="text-xs font-semibold text-slate-500">{{ $record['method_label'] }}</span>
                                             </div>
-                                            <h4 class="mt-1 text-sm font-black text-slate-900">OR #{{ $record['official_receipt_number'] }}</h4>
-                                            <span class="text-xs text-slate-400">{{ $record['source'] === 'ONLINE' ? 'Online Payment Verified' : 'Onsite Finance Receipt' }} · {{ $record['transaction_at'] ? $record['transaction_at']->format('M d, Y') : '' }}</span>
+                                            <h4 class="text-sm sm:text-base font-bold text-slate-900">OR #{{ $record['official_receipt_number'] }}</h4>
+                                            <p class="text-xs text-slate-500">
+                                                {{ $record['source'] === 'ONLINE' ? 'Approved Online Payment' : 'Recorded Onsite by Finance' }} · {{ $record['transaction_at'] ? $record['transaction_at']->format('M j, Y') : '' }}
+                                            </p>
                                         </div>
 
-                                        <div class="sm:text-right shrink-0">
-                                            <strong class="text-base font-black text-slate-900 block">₱{{ number_format($record['amount'], 2) }}</strong>
-                                            <span class="text-xs text-emerald-700 font-bold">Recorded in Audit Trail</span>
+                                        <div class="sm:text-right shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex sm:flex-col justify-between items-baseline sm:items-end">
+                                            <strong class="text-base sm:text-lg font-black text-slate-900 block">₱{{ number_format($record['amount'], 2) }}</strong>
+                                            <span class="text-xs text-emerald-700 font-bold sm:mt-1">Official Audit Record</span>
                                         </div>
                                     </div>
                                 @endforeach

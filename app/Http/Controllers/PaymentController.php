@@ -819,12 +819,14 @@ class PaymentController extends Controller
 
         foreach ($monthlyGroups as $group) {
             if ($group['is_overdue'] && $group['unpaid_count'] > 0) {
+                $monthName = ucfirst(strtolower($group['month_name']));
                 $paymentNotifications->push([
                     'type' => 'overdue',
-                    'title' => mb_strtoupper($group['month_name']).' '.$group['year'].' balance is overdue',
-                    'message' => 'The remaining balance has been carried into your current family total.',
+                    'title' => $monthName.' '.$group['year'].' Payment Overdue',
+                    'message' => 'Your payment for '.$monthName.' '.$group['year'].' is past due. The remaining balance has been carried over to your current family total.',
                     'amount' => $group['total_remaining'],
                     'date' => $group['due_date'],
+                    'reference' => null,
                     'target_tab' => 'monthly',
                     'month_key' => $group['month_number'],
                     'show_logo' => false,
@@ -835,10 +837,11 @@ class PaymentController extends Controller
         foreach ($paymentSubmissions->filter(fn ($submission) => $submission->effective_status === 'pending')->take(3) as $submission) {
             $paymentNotifications->push([
                 'type' => 'pending',
-                'title' => 'Payment receipt received',
-                'message' => $submission->submission_number.' is awaiting Finance verification. No need to submit it again.',
+                'title' => 'Payment Receipt Received',
+                'message' => 'Your payment receipt has been received and is now waiting for Finance verification. No need to upload it again.',
                 'amount' => (float) $submission->total_amount,
                 'date' => $submission->submitted_at,
+                'reference' => 'Submission No: '.$submission->submission_number,
                 'target_tab' => 'transactions',
                 'month_key' => null,
                 'show_logo' => true,
@@ -849,10 +852,11 @@ class PaymentController extends Controller
             $officialReceiptNumber = $officialReceiptNumbersBySubmission->get($submission->id);
             $paymentNotifications->push([
                 'type' => 'success',
-                'title' => 'PAYMENT VERIFIED',
-                'message' => ($officialReceiptNumber ? 'Official Receipt No. '.$officialReceiptNumber : 'Submission '.$submission->submission_number).' was successfully posted to '.$submission->payments->count().' '.str('student account')->plural($submission->payments->count()).'.',
+                'title' => 'Payment Verified',
+                'message' => 'Your payment has been verified successfully.',
                 'amount' => (float) $submission->total_amount,
                 'date' => $submission->submitted_at,
+                'reference' => $officialReceiptNumber ? 'Receipt No: '.$officialReceiptNumber : 'Submission No: '.$submission->submission_number,
                 'target_tab' => 'transactions',
                 'month_key' => null,
                 'show_logo' => true,
@@ -862,10 +866,11 @@ class PaymentController extends Controller
         foreach ($legacyPayments->where('status', 'pending')->take(max(0, 3 - $paymentSubmissions->count())) as $payment) {
             $paymentNotifications->push([
                 'type' => 'pending',
-                'title' => 'Receipt awaiting verification',
-                'message' => mb_strtoupper($payment->student?->applicant?->full_name ?? 'Student payment'),
+                'title' => 'Payment Receipt Received',
+                'message' => 'Payment for '.($payment->student?->applicant?->full_name ?? 'student').' is waiting for Finance verification.',
                 'amount' => (float) $payment->amount,
                 'date' => $payment->created_at,
+                'reference' => null,
                 'target_tab' => 'transactions',
                 'month_key' => null,
                 'show_logo' => false,
@@ -879,14 +884,15 @@ class PaymentController extends Controller
         );
 
         if ($upcomingGroup) {
-            // Keep the next payable month above historical receipt updates so
-            // parents see the current payment reminder first.
+            $uMonthName = ucfirst(strtolower($upcomingGroup['month_name']));
+            $uCount = $upcomingGroup['unpaid_count'];
             $paymentNotifications->prepend([
                 'type' => 'upcoming',
-                'title' => mb_strtoupper($upcomingGroup['month_name']).' '.$upcomingGroup['year'].' payment is coming up',
-                'message' => $upcomingGroup['unpaid_count'].' '.str('student')->plural($upcomingGroup['unpaid_count']).' included in this monthly payment.',
+                'title' => $uMonthName.' '.$upcomingGroup['year'].' Payment Reminder',
+                'message' => 'Your monthly payment for '.$uMonthName.' '.$upcomingGroup['year'].' is coming up. '.$uCount.' '.str('student is')->plural($uCount).' included in this payment.',
                 'amount' => $upcomingGroup['total_remaining'],
                 'date' => $upcomingGroup['due_date'],
+                'reference' => null,
                 'target_tab' => 'monthly',
                 'month_key' => $upcomingGroup['month_number'],
                 'show_logo' => false,
