@@ -68,16 +68,6 @@
                                 <span class="due-currency">₱</span>
                                 <strong class="due-value">{{ number_format($familyAmountDueNow, 2) }}</strong>
                             </div>
-
-                            <div class="due-meta-row">
-                                <span>Across {{ $allChildrenList->count() }} {{ $allChildrenList->count() === 1 ? 'student' : 'students' }}</span>
-                                <span class="meta-dot" aria-hidden="true">·</span>
-                                <button type="button" 
-                                        class="link-view-breakdown"
-                                        @click="activeTab = 'monthly'; $nextTick(() => document.getElementById('schedule-heading')?.scrollIntoView({ behavior: 'smooth' }))">
-                                    <span>View breakdown →</span>
-                                </button>
-                            </div>
                         </div>
 
                         <div class="family-hero-annual-panel">
@@ -152,31 +142,6 @@
                             <span class="stat-sub">Future payments</span>
                         </div>
                     </div>
-
-                    <!-- 3. CHILDREN ROW (Small Circular Initials + Name + Grade) -->
-                    @if($allChildrenList->isNotEmpty())
-                        <div class="hub-divider" aria-hidden="true"></div>
-
-                        <div class="family-children-row">
-                            <span class="children-label">{{ $allChildrenList->count() }} CHILDREN</span>
-                            <div class="children-items-list">
-                                @foreach($allChildrenList as $child)
-                                    @php
-                                        $cName = $child->first_name ?? explode(' ', $child->display_name ?? $child->name ?? 'Student')[0];
-                                        $cInitial = mb_substr($cName, 0, 1);
-                                        $cGrade = $child->grade_level ?? $child->account?->grade_level ?? 'Grade';
-                                        $cAccent = str_contains(strtoupper($cName), 'MARYAM') ? 'accent-blue' : (str_contains(strtoupper($cName), 'YUSUF') ? 'accent-gold' : 'accent-green');
-                                    @endphp
-                                    <div class="child-circle-entry {{ $cAccent }}">
-                                        <span class="child-mini-avatar">{{ $cInitial }}</span>
-                                        <strong class="child-text-name">{{ mb_strtoupper($cName) }}</strong>
-                                        <span class="child-text-dot" aria-hidden="true">·</span>
-                                        <span class="child-text-grade">{{ $cGrade }}</span>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
                 </section>
 
                 <!-- 4. MUTED ONE-LINE DEMO NOTICE -->
