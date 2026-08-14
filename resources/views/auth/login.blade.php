@@ -11,22 +11,22 @@
                 <!-- 1. AMIS Official Logo -->
                 <img src="{{ asset('images/AMIS_Logo.png') }}" class="h-32 w-32 sm:h-36 sm:w-36 lg:h-44 lg:w-44 object-contain drop-shadow-2xl" alt="AL MUNAWWARA ISLAMIC SCHOOL Logo">
 
-                <!-- 2. Arabic School Name (+8px larger, generous spacing) -->
+                <!-- 2. Arabic School Name -->
                 <h1 class="mt-8 sm:mt-10 lg:mt-12 text-3xl sm:text-4xl lg:text-[40px] xl:text-[44px] font-bold tracking-wide text-white font-serif leading-snug drop-shadow" dir="rtl" style="font-family: 'Amiri', 'Tajawal', serif;">
                     المدرسة المنورة الإسلامية
                 </h1>
 
-                <!-- 3. English School Name (+8px larger, generous spacing) -->
+                <!-- 3. English School Name -->
                 <p class="mt-4 lg:mt-5 text-lg sm:text-xl lg:text-2xl font-bold uppercase tracking-[0.22em] text-white/95 leading-normal drop-shadow-sm">
                     AL MUNAWWARA ISLAMIC SCHOOL
                 </p>
 
-                <!-- 4. System Name (+8px larger, generous spacing) -->
-                <p class="mt-2.5 lg:mt-3 text-base sm:text-lg lg:text-xl font-semibold tracking-wider text-emerald-100/90">
+                <!-- 4. System Name (+8 font size) -->
+                <p class="mt-3 lg:mt-4 text-xl sm:text-2xl lg:text-[28px] font-bold tracking-wide text-emerald-100 drop-shadow-sm">
                     Family Payment System
                 </p>
 
-                <!-- 5. Description (+8px larger, generous spacing, max-width ~480px) -->
+                <!-- 5. Description -->
                 <p class="mt-6 lg:mt-8 max-w-[480px] text-sm sm:text-base lg:text-base leading-relaxed text-emerald-50/85">
                     Access your children's balances, monthly tuition fees, official statements of account, and payment receipts in one secure portal.
                 </p>
@@ -147,8 +147,8 @@
                     <div class="mt-6">
                         <!-- Step 1: Email Input -->
                         <div x-show="step==='email'">
-                            <label for="otp-email" class="text-sm font-bold text-slate-700">Parent email address</label>
-                            <input id="otp-email" x-model.trim="email" @keydown.enter.prevent="sendOtp()" type="email" autocomplete="email" placeholder="name@school.edu.ph" class="mt-2 w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 text-sm focus:border-emerald-600 focus:ring-emerald-600">
+                            <label for="otp-email" class="text-xs font-bold uppercase tracking-wider text-slate-700">PARENT EMAIL ADDRESS</label>
+                            <input id="otp-email" x-model.trim="email" @keydown.enter.prevent="sendOtp()" type="email" autocomplete="email" placeholder="jhon@gmail.com" class="mt-2 w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 text-sm focus:border-emerald-600 focus:ring-emerald-600">
                             <button type="button" @click="sendOtp()" :disabled="loading" class="mt-4 w-full rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-extrabold text-white hover:bg-emerald-800 disabled:opacity-50 transition">
                                 <span x-show="!loading">Send verification code</span>
                                 <span x-show="loading">Sending securely…</span>
