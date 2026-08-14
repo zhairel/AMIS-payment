@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Official Statement of Account - {{ $soaData['student_name'] }} (SY {{ $soaData['school_year'] }})</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <style>
         @page {
             size: A4 portrait;
@@ -58,24 +61,28 @@
             color: #475569;
             text-decoration: none;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 600;
+        }
+        .btn-back:hover {
+            text-decoration: underline;
         }
 
         /* HEADER */
         .school-header {
-            display: table;
-            width: 100%;
-            border-bottom: 2px solid #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #065f46;
             padding-bottom: 8px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .school-header-cell {
-            display: table-cell;
-            vertical-align: middle;
+            display: flex;
+            align-items: center;
         }
         .header-english {
             width: 45%;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 900;
             color: #111827;
             letter-spacing: 0.2px;
@@ -83,6 +90,7 @@
         .header-logo {
             width: 10%;
             text-align: center;
+            justify-content: center;
         }
         .header-logo img {
             width: 52px;
@@ -91,11 +99,22 @@
         }
         .header-arabic {
             width: 45%;
+            justify-content: flex-end;
             text-align: right;
-            font-size: 17px;
-            font-weight: bold;
-            color: #047857;
             direction: rtl;
+        }
+        .header-arabic img {
+            max-height: 42px;
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+        .header-arabic span {
+            font-family: 'Amiri', 'Traditional Arabic', serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: #065f46;
+            line-height: 1.2;
         }
 
         /* TITLE BANNER */
@@ -329,7 +348,7 @@
                 <img src="/images/AMIS_Logo.png" alt="AMIS Logo" onerror="this.src='/images/AMIS_Logo_receipt.jpg'">
             </div>
             <div class="school-header-cell header-arabic">
-                المدرسة المنورة الإسلامية
+                <img src="/images/amis-arabic-wordmark.svg" alt="المدرسة المنورة الإسلامية" onerror="this.outerHTML='<span>المدرسة المنورة الإسلامية</span>'">
             </div>
         </div>
 
