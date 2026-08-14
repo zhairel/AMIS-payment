@@ -247,34 +247,28 @@
     box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
 }
 
-/* 1. Top Branding Section (No Chips, Elegant Integrated Identity) */
+/* 1. Top Branding Section (No Square Shape, Clean Unboxed Identity) */
 .auth-brand-header {
     display: flex;
-    align-items: center;
-    gap: 1.15rem;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
-.auth-brand-logo-wrap {
-    width: 64px;
-    height: 64px;
-    flex-shrink: 0;
-    border-radius: 16px;
-    background: #f0fdf4;
-    border: 1px solid #ccebdc;
-    padding: 6px;
+.auth-brand-school-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 14px rgba(8, 122, 91, 0.09);
+    gap: 1rem;
 }
 
-.auth-brand-logo {
-    width: 100%;
-    height: 100%;
+.auth-brand-logo-pure {
+    width: 62px;
+    height: 62px;
+    flex-shrink: 0;
     object-fit: contain;
+    filter: drop-shadow(0 4px 10px rgba(8, 122, 91, 0.12));
 }
 
-.auth-brand-titles {
+.auth-brand-school-text {
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -299,18 +293,19 @@
     text-transform: uppercase;
 }
 
-.auth-product-name {
-    margin-top: 0.2rem;
+.auth-system-big-title {
+    margin: 0;
     color: #087a5b;
-    font-size: 0.84rem;
-    font-weight: 750;
-    letter-spacing: 0.01em;
+    font-size: 1.42rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
 }
 
 .auth-card-divider {
     height: 1px;
     background: #f1f5f9;
-    margin: 1.35rem 0 1.45rem;
+    margin: 1.2rem 0 1.35rem;
 }
 
 /* 2. Welcome Section */
@@ -1153,12 +1148,34 @@ input:-webkit-autofill:active {
     .auth-entry-card {
         padding: 1.5rem 1.15rem !important;
     }
-    .google-gis-wrapper {
-        width: 270px;
-        height: 32px;
-        transform: scale(1.05);
-        transform-origin: center;
-        margin: 2px 0;
-    }
+}
+
+/* Footer integration for Auth / Login page */
+.login-form-panel .amis-site-footer {
+    margin-top: 1.5rem;
+    padding: 0;
+    background: transparent;
+    border-top: none;
+    text-align: center;
+}
+
+.login-form-panel .amis-footer-links {
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.login-form-panel .amis-footer-link {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.login-form-panel .amis-footer-link:hover {
+    color: #087a5b;
+}
+
+.login-form-panel .amis-footer-subtext,
+.login-form-panel .amis-footer-copyright {
+    color: #94a3b8;
+    font-size: 0.75rem;
 }
 
