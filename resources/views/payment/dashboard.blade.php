@@ -226,8 +226,8 @@
                                         <span class="payment-student-discount">{{ number_format((float) $account->discount_percentage, 0) }}% SIBLINGS DISCOUNT</span>
                                     @endif
                                 </span>
-                                <div class="payment-student-side">
-                                    <span class="payment-student-balance">
+                                <div class="payment-student-side" style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; padding-left: 12px; border-left: 1px solid #e2e8f0; min-width: 115px;">
+                                    <span class="payment-student-balance" style="padding-left: 0; border-left: none; text-align: right;">
                                         <span>Balance</span>
                                         <strong>₱{{ number_format($account?->remaining_balance ?? 0, 2) }}</strong>
                                     </span>
@@ -236,9 +236,10 @@
                                         target="_blank"
                                         @click.stop
                                         class="payment-card-soa-btn"
+                                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 11px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; text-decoration: none; white-space: nowrap;"
                                         title="Open & Print Official School Statement of Account (PDF)"
                                     >
-                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <svg style="width: 13px; height: 13px; min-width: 13px; min-height: 13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <span>Official SOA (PDF)</span>
                                     </a>
                                 </div>
@@ -332,8 +333,8 @@
                                          <span class="payment-student-discount">{{ number_format((float) $demoChild->discount_percentage, 0) }}% SIBLINGS DISCOUNT</span>
                                     @endif
                                 </span>
-                                <div class="payment-student-side">
-                                    <span class="payment-student-balance">
+                                <div class="payment-student-side" style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; padding-left: 12px; border-left: 1px solid #e2e8f0; min-width: 115px;">
+                                    <span class="payment-student-balance" style="padding-left: 0; border-left: none; text-align: right;">
                                         <span>Demo Balance</span>
                                         <strong>₱{{ number_format($demoRemainingBalance, 2) }}</strong>
                                     </span>
@@ -342,9 +343,10 @@
                                         target="_blank"
                                         @click.stop
                                         class="payment-card-soa-btn"
+                                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 11px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; text-decoration: none; white-space: nowrap;"
                                         title="Open & Print Official School Statement of Account (PDF)"
                                     >
-                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <svg style="width: 13px; height: 13px; min-width: 13px; min-height: 13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <span>Official SOA (PDF)</span>
                                     </a>
                                 </div>
