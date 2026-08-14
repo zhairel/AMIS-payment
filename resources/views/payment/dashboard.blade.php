@@ -271,31 +271,32 @@
                                 class="payment-student-card"
                                 aria-label="Open Official Statement of Account (PDF) for {{ $studentName }}"
                             >
-                                <span class="payment-student-avatar">
-                                    <img
-                                        src="{{ $avatarUrl }}"
-                                        alt="Profile avatar of {{ $studentName }}"
-                                        class="{{ $hasUploadedPhoto ? '' : 'payment-student-avatar-placeholder' }}"
-                                    >
-                                </span>
-                                <span class="payment-student-info">
-                                    <span class="payment-student-name" title="{{ $studentName }}">{{ $studentName }}</span>
-                                    <span class="payment-student-meta">{{ $student->grade_level }} · ID {{ $student->student_number }}</span>
-                                    @if(($account?->discount_percentage ?? 0) > 0)
-                                        <span class="payment-student-discount">{{ number_format((float) $account->discount_percentage, 0) }}% SIBLINGS DISCOUNT</span>
-                                    @endif
-                                </span>
-                                <div class="payment-student-side" style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; padding-left: 12px; border-left: 1px solid #e2e8f0; min-width: 115px;">
-                                    <span class="payment-student-balance" style="padding-left: 0; border-left: none; text-align: right;">
-                                        <span>Balance</span>
-                                        <strong>₱{{ number_format($account?->remaining_balance ?? 0, 2) }}</strong>
-                                    </span>
-                                    <span
-                                        class="payment-card-soa-btn"
-                                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 11px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; text-decoration: none; white-space: nowrap;"
-                                        title="Open & Print Official School Statement of Account (PDF)"
-                                    >
-                                        <svg style="width: 13px; height: 13px; min-width: 13px; min-height: 13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                <div class="student-card-main">
+                                    <div class="student-card-avatar">
+                                        <img
+                                            src="{{ $avatarUrl }}"
+                                            alt="Profile avatar of {{ $studentName }}"
+                                            class="{{ $hasUploadedPhoto ? '' : 'avatar-placeholder' }}"
+                                        >
+                                    </div>
+                                    <div class="student-card-details">
+                                        <h3 class="student-card-name" title="{{ $studentName }}">{{ $studentName }}</h3>
+                                        <div class="student-card-meta">{{ $student->grade_level }} · ID {{ $student->student_number }}</div>
+                                        @if(($account?->discount_percentage ?? 0) > 0)
+                                            <div class="student-card-tags">
+                                                <span class="student-tag-discount">{{ number_format((float) $account->discount_percentage, 0) }}% sibling discount</span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                <div class="student-card-finance">
+                                    <div class="student-card-balance">
+                                        <span class="balance-label">Balance</span>
+                                        <strong class="balance-value">₱{{ number_format($account?->remaining_balance ?? 0, 2) }}</strong>
+                                    </div>
+                                    <span class="student-card-soa-btn" title="Open & Print Official School Statement of Account (PDF)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <span>Official SOA (PDF)</span>
                                     </span>
                                 </div>
@@ -376,28 +377,30 @@
                                 class="payment-student-card is-demo"
                                 aria-label="Open Official Statement of Account (PDF) for {{ $demoChild->display_name }}"
                             >
-                                <span class="payment-student-avatar">
-                                    <img src="{{ $demoAvatarUrl }}" alt="Demo avatar of {{ $demoChild->display_name }}" class="payment-student-avatar-placeholder">
-                                </span>
-                                <span class="payment-student-info">
-                                    <span class="payment-student-name" title="{{ $demoChild->display_name }}">{{ mb_strtoupper($demoChild->display_name) }}</span>
-                                    <span class="payment-student-meta">{{ $demoChild->grade_level }} · ID {{ $demoChild->demo_student_number }}</span>
-                                    <span class="payment-student-demo-badge">AFPS DEMO · NOT AN OFFICIAL RECORD</span>
-                                    @if((float) $demoChild->discount_percentage > 0)
-                                         <span class="payment-student-discount">{{ number_format((float) $demoChild->discount_percentage, 0) }}% SIBLINGS DISCOUNT</span>
-                                    @endif
-                                </span>
-                                <div class="payment-student-side" style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; padding-left: 12px; border-left: 1px solid #e2e8f0; min-width: 115px;">
-                                    <span class="payment-student-balance" style="padding-left: 0; border-left: none; text-align: right;">
-                                        <span>Demo Balance</span>
-                                        <strong>₱{{ number_format($demoRemainingBalance, 2) }}</strong>
-                                    </span>
-                                    <span
-                                        class="payment-card-soa-btn"
-                                        style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 11px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; text-decoration: none; white-space: nowrap;"
-                                        title="Open & Print Official School Statement of Account (PDF)"
-                                    >
-                                        <svg style="width: 13px; height: 13px; min-width: 13px; min-height: 13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                <div class="student-card-main">
+                                    <div class="student-card-avatar">
+                                        <img src="{{ $demoAvatarUrl }}" alt="Demo avatar of {{ $demoChild->display_name }}" class="avatar-placeholder">
+                                    </div>
+                                    <div class="student-card-details">
+                                        <h3 class="student-card-name" title="{{ $demoChild->display_name }}">{{ mb_strtoupper($demoChild->display_name) }}</h3>
+                                        <div class="student-card-meta">{{ $demoChild->grade_level }} · ID {{ $demoChild->demo_student_number }}</div>
+                                        <div class="student-card-tags">
+                                            <span class="student-tag-demo">Demo record</span>
+                                            @if((float) $demoChild->discount_percentage > 0)
+                                                <span class="tag-sep" aria-hidden="true">·</span>
+                                                <span class="student-tag-discount">{{ number_format((float) $demoChild->discount_percentage, 0) }}% sibling discount</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="student-card-finance">
+                                    <div class="student-card-balance">
+                                        <span class="balance-label">Balance</span>
+                                        <strong class="balance-value">₱{{ number_format($demoRemainingBalance, 2) }}</strong>
+                                    </div>
+                                    <span class="student-card-soa-btn" title="Open & Print Official School Statement of Account (PDF)">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <span>Official SOA (PDF)</span>
                                     </span>
                                 </div>
