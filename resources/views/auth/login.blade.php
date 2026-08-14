@@ -1,45 +1,33 @@
 <x-guest-layout title="Family Payments Login" :show-loader="false">
     <div class="min-h-screen bg-slate-950 lg:grid lg:grid-cols-[1.05fr_.95fr]">
-        <section class="relative hidden overflow-hidden bg-emerald-950 p-12 text-white lg:flex lg:flex-col lg:justify-between">
+        <!-- LEFT PANEL: Clean, Elegant, Centered School Identity Panel -->
+        <section class="relative hidden overflow-hidden bg-emerald-950 p-12 text-white lg:flex lg:flex-col lg:items-center lg:justify-center">
             <div class="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-emerald-400/10 pointer-events-none"></div>
             <div class="absolute -bottom-40 -left-24 h-[30rem] w-[30rem] rounded-full bg-teal-300/10 pointer-events-none"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-emerald-900/15 via-transparent to-black/25 pointer-events-none"></div>
             
-            <div class="relative flex items-center gap-4">
-                <img src="{{ asset('images/AMIS_Logo.svg') }}" class="h-14 w-14 rounded-2xl bg-white p-2 shadow-md" alt="AMIS Logo">
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-[.2em] text-emerald-300">AMIS Secure Access</p>
-                    <h1 class="mt-1 text-xl font-extrabold">Family Payment System</h1>
-                </div>
-            </div>
+            <div class="relative z-10 flex flex-col items-center justify-center text-center max-w-lg px-6">
+                <!-- AMIS Official Logo -->
+                <img src="{{ asset('images/AMIS_Logo.png') }}" class="h-36 w-36 xl:h-40 xl:w-40 object-contain drop-shadow-2xl" alt="AL MUNAWWARA ISLAMIC SCHOOL Logo">
 
-            <div class="relative max-w-xl">
-                <span class="inline-flex rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-200">
-                    Protected workspace
-                </span>
-                <h2 class="mt-5 text-4xl font-black leading-tight xl:text-5xl">
-                    Family payments.<br>One secure place.
-                </h2>
-                <p class="mt-5 max-w-lg text-base leading-7 text-emerald-100/70">
-                    Access children balances, monthly tuition fees, official statements of account, and payment receipts in one unified portal.
+                <!-- Arabic School Name -->
+                <h1 class="mt-8 text-3xl xl:text-4xl font-bold tracking-wide text-white font-serif leading-relaxed" dir="rtl" style="font-family: 'Amiri', 'Tajawal', serif;">
+                    المدرسة المنورة الإسلامية
+                </h1>
+
+                <!-- English School Name -->
+                <p class="mt-3 text-base xl:text-lg font-bold uppercase tracking-[0.22em] text-white/95 leading-normal">
+                    AL MUNAWWARA ISLAMIC SCHOOL
                 </p>
-            </div>
 
-            <div class="relative grid grid-cols-3 gap-3 text-xs">
-                <div class="rounded-xl border border-white/10 bg-white/5 p-4">
-                    <strong class="block text-sm text-white">Email OTP</strong>
-                    <span class="mt-1 block text-emerald-100/60">One-time 4-digit code</span>
-                </div>
-                <div class="rounded-xl border border-white/10 bg-white/5 p-4">
-                    <strong class="block text-sm text-white">Family access</strong>
-                    <span class="mt-1 block text-emerald-100/60">Linked children verified</span>
-                </div>
-                <div class="rounded-xl border border-white/10 bg-white/5 p-4">
-                    <strong class="block text-sm text-white">Audited</strong>
-                    <span class="mt-1 block text-emerald-100/60">Security events recorded</span>
-                </div>
+                <!-- System Name -->
+                <p class="mt-2 text-sm xl:text-base font-medium tracking-wider text-emerald-200/80">
+                    Family Payment System
+                </p>
             </div>
         </section>
 
+        <!-- RIGHT PANEL: Login Form -->
         <section class="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8 sm:px-8">
             <div class="w-full max-w-md" x-data="{
                 mode: 'otp',
@@ -137,11 +125,11 @@
                     }
                 }
             }">
-                <!-- Mobile top branding (matching admin) -->
+                <!-- Mobile top branding -->
                 <div class="mb-7 flex items-center gap-3 lg:hidden">
-                    <img src="{{ asset('images/AMIS_Logo.svg') }}" class="h-11 w-11" alt="AMIS Logo">
+                    <img src="{{ asset('images/AMIS_Logo.png') }}" class="h-11 w-11 object-contain" alt="AMIS Logo">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">AMIS Secure Access</p>
+                        <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Al Munawwara Islamic School</p>
                         <h1 class="font-extrabold text-slate-900">Family Payment System</h1>
                     </div>
                 </div>
