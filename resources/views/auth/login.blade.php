@@ -7,22 +7,27 @@
             <div class="absolute inset-0 bg-gradient-to-b from-emerald-900/15 via-transparent to-black/25 pointer-events-none"></div>
             
             <div class="relative z-10 flex flex-col items-center justify-center text-center max-w-lg mx-auto">
-                <!-- AMIS Official Logo -->
+                <!-- 1. AMIS Official Logo -->
                 <img src="{{ asset('images/AMIS_Logo.png') }}" class="h-28 w-28 sm:h-32 sm:w-32 lg:h-40 lg:w-40 object-contain drop-shadow-2xl" alt="AL MUNAWWARA ISLAMIC SCHOOL Logo">
 
-                <!-- Arabic School Name -->
+                <!-- 2. Arabic School Name -->
                 <h1 class="mt-6 lg:mt-8 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-wide text-white font-serif leading-relaxed" dir="rtl" style="font-family: 'Amiri', 'Tajawal', serif;">
                     المدرسة المنورة الإسلامية
                 </h1>
 
-                <!-- English School Name -->
+                <!-- 3. English School Name -->
                 <p class="mt-2.5 lg:mt-3 text-sm sm:text-base lg:text-lg font-bold uppercase tracking-[0.2em] text-white/95 leading-normal">
                     AL MUNAWWARA ISLAMIC SCHOOL
                 </p>
 
-                <!-- System Name -->
-                <p class="mt-1.5 lg:mt-2 text-xs sm:text-sm lg:text-base font-medium tracking-wider text-emerald-200/85">
+                <!-- 4. System Name -->
+                <p class="mt-1.5 lg:mt-2 text-xs sm:text-sm lg:text-base font-semibold tracking-wider text-emerald-200/90">
                     Family Payment System
+                </p>
+
+                <!-- 5. Restored Description below Family Payment System -->
+                <p class="mt-4 sm:mt-5 max-w-[460px] text-xs sm:text-sm lg:text-sm leading-relaxed text-emerald-100/75">
+                    Access your children's balances, monthly tuition fees, official statements of account, and payment receipts in one secure portal.
                 </p>
             </div>
         </section>
