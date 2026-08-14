@@ -12,18 +12,17 @@
         @keydown.escape.window="closeTopModal()"
     >
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-            
-            <!-- Top Breadcrumb & Page Kicker -->
+                       <!-- Top Breadcrumb & Page Kicker -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-800">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-800 uppercase tracking-wide">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
                             <span>School Year {{ $schoolYearLabel }}</span>
                         </span>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-800">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-800 uppercase tracking-wide">
                             <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                             Family Portal Active
                         </span>
@@ -114,11 +113,11 @@
                             </p>
 
                             @if($familyAdvanceCredit > 0)
-                                <div class="pt-3 border-t border-white/15 flex items-center gap-2 text-xs font-bold text-emerald-300">
+                                <div class="pt-3 border-t border-white/15 flex items-center gap-2 text-xs font-bold text-emerald-300 uppercase tracking-wide">
                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
-                                    <span>Advance credit: ₱{{ number_format($familyAdvanceCredit, 2) }}</span>
+                                    <span>Advance Credit: ₱{{ number_format($familyAdvanceCredit, 2) }}</span>
                                 </div>
                             @endif
                         </div>
@@ -238,8 +237,8 @@
                                         <div class="flex h-12 w-12 items-center justify-center rounded-2xl border {{ $studentAccentBg }} text-lg font-black shadow-inner">
                                             {{ $studentInitial }}
                                         </div>
-                                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
-                                            Active Student
+                                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800 uppercase tracking-wide">
+                                            ACTIVE STUDENT
                                         </span>
                                     </div>
 
@@ -260,7 +259,7 @@
                                         @if(($account?->discount_percentage ?? 0) > 0)
                                             <div class="flex justify-between items-center text-emerald-700">
                                                 <span class="font-medium">Discount Applied:</span>
-                                                <span class="font-bold">{{ number_format((float) $account->discount_percentage, 0) }}% Sibling Discount</span>
+                                                <span class="font-bold uppercase tracking-wider">{{ number_format((float) $account->discount_percentage, 0) }}% SIBLING DISCOUNT</span>
                                             </div>
                                         @endif
                                     </div>
@@ -291,8 +290,8 @@
                                         <div class="flex h-12 w-12 items-center justify-center rounded-2xl border {{ $demoAccentBg }} text-lg font-black shadow-inner">
                                             {{ $demoInitial }}
                                         </div>
-                                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
-                                            Active Student
+                                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800 uppercase tracking-wide">
+                                            ACTIVE STUDENT
                                         </span>
                                     </div>
 
@@ -313,7 +312,7 @@
                                         @if((float) $demoChild->discount_percentage > 0)
                                             <div class="flex justify-between items-center text-emerald-700">
                                                 <span class="font-medium">Discount Applied:</span>
-                                                <span class="font-bold">{{ number_format((float) $demoChild->discount_percentage, 0) }}% Sibling Discount</span>
+                                                <span class="font-bold uppercase tracking-wider">{{ number_format((float) $demoChild->discount_percentage, 0) }}% SIBLING DISCOUNT</span>
                                             </div>
                                         @endif
                                     </div>
@@ -402,10 +401,10 @@
                                             default => 'bg-slate-100 border-slate-200 text-slate-700',
                                         };
                                         $notificationLabel = match($notificationType) {
-                                            'overdue', 'previous' => 'Action Needed',
-                                            'pending' => 'Under Review',
-                                            'success' => 'Payment Verified',
-                                            default => 'Upcoming',
+                                            'overdue', 'previous' => 'ACTION NEEDED',
+                                            'pending' => 'UNDER REVIEW',
+                                            'success' => 'PAYMENT VERIFIED',
+                                            default => 'UPCOMING',
                                         };
                                     @endphp
 
@@ -413,7 +412,7 @@
                                         <div class="space-y-2.5 max-w-2xl">
                                             <!-- 1. Status Badge & 2. Date -->
                                             <div class="flex items-center gap-3">
-                                                <span class="rounded-full border px-3 py-0.5 text-xs font-semibold {{ $badgeBg }}">
+                                                <span class="rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-wide {{ $badgeBg }}">
                                                     {{ $notificationLabel }}
                                                 </span>
                                                 @if($notification['date'])
@@ -512,11 +511,11 @@
 
                         <!-- Filter Switcher Buttons -->
                         <div class="flex items-center gap-2">
-                            @foreach(['current' => 'Current Due', 'upcoming' => 'Upcoming', 'paid' => 'Paid Months'] as $filterValue => $filterLabel)
+                            @foreach(['current' => 'CURRENT DUE', 'upcoming' => 'UPCOMING', 'paid' => 'PAID MONTHS'] as $filterValue => $filterLabel)
                                 <button type="button"
                                         @click="monthFilter = '{{ $filterValue }}'; openMonth = null"
                                         :class="monthFilter === '{{ $filterValue }}' ? 'bg-emerald-700 text-white shadow-sm' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'"
-                                        class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition">
+                                        class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-wide transition">
                                     <span>{{ $filterLabel }}</span>
                                     <span :class="monthFilter === '{{ $filterValue }}' ? 'bg-emerald-800 text-emerald-100' : 'bg-slate-100 text-slate-600'" class="rounded-full px-2 py-0.5 text-[10px] font-extrabold">
                                         {{ $monthFilterCounts[$filterValue] }}
@@ -535,27 +534,28 @@
                                     $hasAdvanceApplied = ! $allPaid && ! $isCurrent && ! $isOverdue && (float) $group['total_paid'] > 0.01;
                                     $mainAmount = $allPaid ? 0 : $group['total_remaining'];
                                     $monthLabel = $group['month_number'] === 0 ? 'Enrollment / Initial Payment' : mb_strtoupper($group['month_label']);
+                                    $monthAbbr = strtoupper(substr($group['month_number'] === 0 ? 'ENR' : $group['month_label'], 0, 3));
                                     $monthCardFilter = $allPaid ? 'paid' : (($isCurrent || $isOverdue) ? 'current' : 'upcoming');
                                 @endphp
 
                                 <div x-show="monthFilter === '{{ $monthCardFilter }}'" x-cloak class="rounded-3xl border border-slate-200/80 bg-white overflow-hidden shadow-sm transition hover:border-slate-300">
                                     <div class="p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 cursor-pointer" @click="openMonth = openMonth === {{ Js::from($monthKey) }} ? null : {{ Js::from($monthKey) }}">
                                         <div class="flex items-center gap-4">
-                                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl {{ $allPaid ? 'bg-emerald-50 text-emerald-700' : ($isOverdue ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-700') }} font-black text-sm shrink-0">
-                                                {{ substr($monthLabel, 0, 3) }}
+                                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl {{ $allPaid ? 'bg-emerald-50 text-emerald-700' : ($isOverdue ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-700') }} font-black text-sm shrink-0 uppercase">
+                                                {{ $monthAbbr }}
                                             </div>
 
                                             <div>
                                                 <div class="flex items-center gap-2">
                                                     <h3 class="text-base font-black text-slate-900">{{ $monthLabel }}</h3>
                                                     @if($allPaid)
-                                                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">Paid in Full</span>
+                                                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800 uppercase tracking-wide">PAID IN FULL</span>
                                                     @elseif($isOverdue)
-                                                        <span class="rounded-full bg-rose-50 border border-rose-200 px-2 py-0.5 text-[10px] font-extrabold text-rose-800">Past Due</span>
+                                                        <span class="rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-[10px] font-extrabold text-rose-800 uppercase tracking-wide">PAST DUE</span>
                                                     @elseif($isCurrent)
-                                                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">Current</span>
+                                                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800 uppercase tracking-wide">CURRENT</span>
                                                     @else
-                                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-extrabold text-slate-600">Upcoming</span>
+                                                        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-extrabold text-slate-600 uppercase tracking-wide">UPCOMING</span>
                                                     @endif
                                                 </div>
                                                 <span class="text-xs text-slate-400 font-medium">Due {{ strtoupper($group['due_date']->format('F Y')) }}</span>
@@ -605,7 +605,7 @@
                                                                     <span class="text-xs text-slate-500 font-semibold">{{ $child['grade_level'] }} · ID {{ $child['student_number'] }}</span>
                                                                 </div>
                                                             </div>
-                                                            <span class="rounded-full border px-2 py-0.5 text-[10px] font-extrabold uppercase {{ $statusBadge }} shrink-0">
+                                                            <span class="rounded-full border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide {{ $statusBadge }} shrink-0">
                                                                 {{ $childPaymentStatus }}
                                                             </span>
                                                         </div>
@@ -633,7 +633,7 @@
                             <div x-show="monthFilter === 'current'" x-cloak class="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-8 sm:p-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 shadow-sm">
                                 <div class="space-y-1">
                                     <span class="rounded-full bg-emerald-100 border border-emerald-200 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-800">
-                                        Online Payment Gateway
+                                        ONLINE PAYMENT GATEWAY
                                     </span>
                                     <h3 class="text-lg font-black text-slate-900">Submit Payment Proof for Verification</h3>
                                     <p class="text-xs text-slate-600 max-w-xl leading-relaxed">
@@ -669,11 +669,11 @@
                             </div>
 
                             <div class="flex items-center gap-2">
-                                @foreach(['all' => 'All', 'pending' => 'Pending', 'verified' => 'Verified', 'rejected' => 'Rejected'] as $filterValue => $filterLabel)
+                                @foreach(['all' => 'ALL', 'pending' => 'PENDING', 'verified' => 'VERIFIED', 'rejected' => 'REJECTED'] as $filterValue => $filterLabel)
                                     <button type="button"
                                             @click="transactionFilter = '{{ $filterValue }}'"
                                             :class="transactionFilter === '{{ $filterValue }}' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-                                            class="rounded-xl px-3.5 py-1.5 text-xs font-bold transition">
+                                            class="rounded-xl px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide transition">
                                         {{ $filterLabel }}
                                     </button>
                                 @endforeach
@@ -687,9 +687,9 @@
                                         $effectiveStatus = $submission->effective_status;
                                         $displayPaymentNumber = $submission->submission_number;
                                         $historyStatusLabel = match($effectiveStatus) {
-                                            'rejected' => 'Rejected',
-                                            'verified' => 'Verified',
-                                            default => 'Under Review',
+                                            'rejected' => 'REJECTED',
+                                            'verified' => 'VERIFIED',
+                                            default => 'UNDER REVIEW',
                                         };
                                         $historyStatusClass = match($effectiveStatus) {
                                             'rejected' => 'bg-rose-50 text-rose-700 border-rose-200',
@@ -740,10 +740,10 @@
                                          class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 cursor-pointer hover:border-emerald-300 hover:shadow-md transition">
                                         <div class="space-y-1">
                                             <div class="flex items-center gap-2.5">
-                                                <span class="rounded-full border px-2.5 py-0.5 text-xs font-semibold {{ $historyStatusClass }}">
+                                                <span class="rounded-full border px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide {{ $historyStatusClass }}">
                                                     {{ $historyStatusLabel }}
                                                 </span>
-                                                <span class="text-xs font-semibold text-slate-500">{{ $pendingMethodLabel }}</span>
+                                                <span class="text-xs font-semibold text-slate-500 uppercase">{{ $pendingMethodLabel }}</span>
                                             </div>
                                             <h4 class="text-sm sm:text-base font-bold text-slate-900">Submission #{{ $displayPaymentNumber }}</h4>
                                             <p class="text-xs text-slate-500">
@@ -763,10 +763,10 @@
                                          class="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
                                         <div class="space-y-1">
                                             <div class="flex items-center gap-2.5">
-                                                <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-                                                    Verified Official Receipt
+                                                <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-bold text-emerald-800 uppercase tracking-wide">
+                                                    VERIFIED OFFICIAL RECEIPT
                                                 </span>
-                                                <span class="text-xs font-semibold text-slate-500">{{ $record['method_label'] }}</span>
+                                                <span class="text-xs font-semibold text-slate-500 uppercase">{{ $record['method_label'] }}</span>
                                             </div>
                                             <h4 class="text-sm sm:text-base font-bold text-slate-900">OR #{{ $record['official_receipt_number'] }}</h4>
                                             <p class="text-xs text-slate-500">
@@ -804,7 +804,7 @@
                 <div class="p-8">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-emerald-800">Student Account</span>
+                            <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-800">STUDENT ACCOUNT</span>
                             <h2 class="mt-2 text-xl font-black text-slate-900">Link Student Account</h2>
                         </div>
                         <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100" @click="showAddStudent = false" :disabled="linkLoading">
@@ -837,7 +837,7 @@
                 <div class="p-8">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-emerald-800" x-text="transaction?.status === 'verified' ? 'Verified Receipt' : 'Payment Submission'"></span>
+                            <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-800" x-text="transaction?.status === 'verified' ? 'VERIFIED RECEIPT' : 'PAYMENT SUBMISSION'"></span>
                             <h2 class="mt-2 text-xl font-black text-slate-900" x-text="transaction?.number"></h2>
                             <p class="text-xs text-slate-400" x-text="transaction?.date"></p>
                         </div>
