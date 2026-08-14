@@ -54,13 +54,13 @@
                     $allChildrenList = $students->isNotEmpty() ? $students : $demoChildren;
                 @endphp
 
-                <!-- PARENT-FRIENDLY OVERVIEW HUB (Clean, Uncluttered, Spacing & Typography-Driven) -->
+                <!-- PARENT-FRIENDLY OVERVIEW HUB (Modern School Payment Portal Vibe) -->
                 <section class="family-overview-hub" aria-labelledby="family-overview-heading">
                     <h2 id="family-overview-heading" class="sr-only">Family Payment Overview</h2>
 
-                    <!-- 1. TOP HERO ROW (Current Month Due + Secondary Annual Remaining) -->
+                    <!-- 1. TOP HERO ROW (Soft green-tinted hero panel + soft neutral annual panel) -->
                     <div class="family-hero-row">
-                        <div class="family-hero-main">
+                        <div class="family-hero-due-panel">
                             <div class="due-month-kicker">{{ $currentPaymentMonth }} {{ now()->format('Y') }}</div>
                             <div class="due-sub-label">Amount due this month</div>
 
@@ -80,14 +80,16 @@
                             </div>
                         </div>
 
-                        <div class="family-hero-secondary">
+                        <div class="family-hero-annual-panel">
                             <div class="annual-balance-block">
-                                <span class="annual-label">{{ $demoChildren->isNotEmpty() && $students->isEmpty() ? 'Demo Remaining for school year' : 'Remaining for school year' }}</span>
+                                <span class="annual-label">{{ $demoChildren->isNotEmpty() && $students->isEmpty() ? 'Demo Remaining for School Year' : 'Remaining for School Year' }}</span>
                                 <strong class="annual-amount">₱{{ number_format($familyRemainingBalance, 2) }}</strong>
+                                <p class="annual-sub">Total balance across all school months</p>
                             </div>
 
                             @if($familyAdvanceCredit > 0)
                                 <div class="advance-credit-line">
+                                    <svg class="w-3.5 h-3.5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     <span>Advance credit: ₱{{ number_format($familyAdvanceCredit, 2) }}</span>
                                 </div>
                             @endif
@@ -96,44 +98,70 @@
 
                     <div class="hub-divider" aria-hidden="true"></div>
 
-                    <!-- 2. PLAIN STATISTICS ROW (Amount on top, label below, no heavy boxes) -->
+                    <!-- 2. STATS GRID (Light individual panels with small accent icons) -->
                     <div class="family-stats-grid">
-                        <div class="stat-item is-paid">
+                        <div class="stat-card is-paid">
+                            <div class="stat-head">
+                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="stat-caption">TOTAL PAID THIS MONTH</span>
+                            </div>
                             <strong class="stat-amount">₱{{ number_format($currentMonthPaid, 2) }}</strong>
-                            <span class="stat-caption">Total paid this month</span>
                         </div>
 
-                        <div class="stat-item is-still-due">
+                        <div class="stat-card is-still-due">
+                            <div class="stat-head">
+                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <span class="stat-caption">CURRENT BALANCE</span>
+                            </div>
                             <strong class="stat-amount">₱{{ number_format($currentMonthDueNow, 2) }}</strong>
-                            <span class="stat-caption">Current balance</span>
                         </div>
 
-                        <div class="stat-item is-past-due {{ $pastDueNow > 0 ? 'has-due' : '' }}">
+                        <div class="stat-card is-past-due {{ $pastDueNow > 0 ? 'has-due' : '' }}">
+                            <div class="stat-head">
+                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="stat-caption">PAST DUE</span>
+                            </div>
                             <strong class="stat-amount">₱{{ number_format($pastDueNow, 2) }}</strong>
-                            <span class="stat-caption">Past due</span>
                         </div>
 
-                        <div class="stat-item is-future">
+                        <div class="stat-card is-future">
+                            <div class="stat-head">
+                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                </svg>
+                                <span class="stat-caption">UPCOMING BALANCE</span>
+                            </div>
                             <strong class="stat-amount">₱{{ number_format($futureScheduledBalance, 2) }}</strong>
-                            <span class="stat-caption">Upcoming balance</span>
                         </div>
                     </div>
 
-                    <!-- 3. CHILDREN PLAIN TEXT ROW -->
+                    <!-- 3. CHILDREN ROW (Small Circular Initials + Name + Grade) -->
                     @if($allChildrenList->isNotEmpty())
                         <div class="hub-divider" aria-hidden="true"></div>
 
                         <div class="family-children-row">
                             <span class="children-label">Children:</span>
-                            <span class="children-list-text">
+                            <div class="children-items-list">
                                 @foreach($allChildrenList as $child)
                                     @php
                                         $cName = $child->first_name ?? explode(' ', $child->display_name ?? $child->name ?? 'Student')[0];
+                                        $cInitial = mb_substr($cName, 0, 1);
                                         $cGrade = $child->grade_level ?? $child->account?->grade_level ?? 'Grade';
                                     @endphp
-                                    <span class="child-entry"><strong>{{ $cName }}</strong> · {{ $cGrade }}</span>@if(!$loop->last) <span class="child-pipe" aria-hidden="true">|</span> @endif
+                                    <div class="child-circle-entry">
+                                        <span class="child-mini-avatar">{{ $cInitial }}</span>
+                                        <strong class="child-text-name">{{ $cName }}</strong>
+                                        <span class="child-text-dot" aria-hidden="true">·</span>
+                                        <span class="child-text-grade">{{ $cGrade }}</span>
+                                    </div>
                                 @endforeach
-                            </span>
+                            </div>
                         </div>
                     @endif
                 </section>
