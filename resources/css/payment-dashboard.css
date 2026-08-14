@@ -755,6 +755,56 @@
     line-height: 1.35;
 }
 
+.payment-student-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.45rem;
+    min-width: 105px;
+    padding-left: 0.8rem;
+    border-left: 1px solid #e7ece9;
+}
+
+.payment-student-side .payment-student-balance {
+    min-width: auto;
+    padding-left: 0;
+    border-left: none;
+    text-align: right;
+}
+
+.payment-card-soa-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid #059669;
+    background: #ecfdf5;
+    color: #065f46;
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(5, 150, 105, 0.08);
+    transition: all 0.15s ease-in-out;
+    white-space: nowrap;
+}
+
+.payment-card-soa-btn svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
+
+.payment-card-soa-btn:hover {
+    background: #059669;
+    color: #ffffff;
+    border-color: #047857;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(5, 150, 105, 0.22);
+}
+
 .payment-student-balance {
     min-width: 98px;
     padding-left: 0.8rem;

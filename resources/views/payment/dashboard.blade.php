@@ -204,11 +204,13 @@
                                 ];
                             @endphp
 
-                            <button
-                                type="button"
+                            <div
                                 class="payment-student-card"
+                                role="button"
+                                tabindex="0"
                                 aria-label="View account details for {{ $studentName }}"
                                 @click="openBreakdown({{ Js::from($breakdown) }})"
+                                @keydown.enter="openBreakdown({{ Js::from($breakdown) }})"
                             >
                                 <span class="payment-student-avatar">
                                     <img
@@ -224,11 +226,23 @@
                                         <span class="payment-student-discount">{{ number_format((float) $account->discount_percentage, 0) }}% SIBLINGS DISCOUNT</span>
                                     @endif
                                 </span>
-                                <span class="payment-student-balance">
-                                    <span>Balance</span>
-                                    <strong>₱{{ number_format($account?->remaining_balance ?? 0, 2) }}</strong>
-                                </span>
-                            </button>
+                                <div class="payment-student-side">
+                                    <span class="payment-student-balance">
+                                        <span>Balance</span>
+                                        <strong>₱{{ number_format($account?->remaining_balance ?? 0, 2) }}</strong>
+                                    </span>
+                                    <a
+                                        href="{{ route('payment.students.official-soa', ['studentIdentifier' => $sId]) }}"
+                                        target="_blank"
+                                        @click.stop
+                                        class="payment-card-soa-btn"
+                                        title="Open & Print Official School Statement of Account (PDF)"
+                                    >
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>Official SOA (PDF)</span>
+                                    </a>
+                                </div>
+                            </div>
                         @endforeach
                         @foreach($demoChildren as $demoChild)
                             @php
@@ -299,11 +313,13 @@
                                     ])->values()->all(),
                                 ];
                             @endphp
-                            <button
-                                type="button"
+                            <div
                                 class="payment-student-card is-demo"
+                                role="button"
+                                tabindex="0"
                                 aria-label="View demo account details for {{ $demoChild->display_name }}"
                                 @click="openBreakdown({{ Js::from($demoBreakdown) }})"
+                                @keydown.enter="openBreakdown({{ Js::from($demoBreakdown) }})"
                             >
                                 <span class="payment-student-avatar">
                                     <img src="{{ $demoAvatarUrl }}" alt="Demo avatar of {{ $demoChild->display_name }}" class="payment-student-avatar-placeholder">
@@ -316,11 +332,23 @@
                                          <span class="payment-student-discount">{{ number_format((float) $demoChild->discount_percentage, 0) }}% SIBLINGS DISCOUNT</span>
                                     @endif
                                 </span>
-                                <span class="payment-student-balance">
-                                    <span>Demo Balance</span>
-                                    <strong>₱{{ number_format($demoRemainingBalance, 2) }}</strong>
-                                </span>
-                            </button>
+                                <div class="payment-student-side">
+                                    <span class="payment-student-balance">
+                                        <span>Demo Balance</span>
+                                        <strong>₱{{ number_format($demoRemainingBalance, 2) }}</strong>
+                                    </span>
+                                    <a
+                                        href="{{ route('payment.students.official-soa', ['studentIdentifier' => $demoChild->demo_student_number]) }}"
+                                        target="_blank"
+                                        @click.stop
+                                        class="payment-card-soa-btn"
+                                        title="Open & Print Official School Statement of Account (PDF)"
+                                    >
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>Official SOA (PDF)</span>
+                                    </a>
+                                </div>
+                            </div>
                         @endforeach
                     </div>
                 </section>
