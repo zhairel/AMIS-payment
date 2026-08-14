@@ -531,7 +531,7 @@
                     <td></td>
                     <td class="cell-right"></td>
                     <td class="cell-center">{{ $soaData['enrollment_date'] }}</td>
-                    <td class="cell-right highlight-yellow">{{ number_format($soaData['enrollment_paid'], 2) }}</td>
+                    <td class="cell-right highlight-yellow" title="Payment received and applied to this account">{{ number_format($soaData['enrollment_paid'], 2) }}</td>
                     <td class="cell-center">{{ $soaData['enrollment_account'] }}</td>
                     <td class="cell-right">{{ number_format($runningBalance, 2) }}</td>
                 </tr>
@@ -555,7 +555,7 @@
                     <td></td>
                     <td class="cell-right"></td>
                     <td class="cell-center">{{ $soaData['books_date'] }}</td>
-                    <td class="cell-right highlight-yellow">{{ number_format($soaData['books_paid'], 2) }}</td>
+                    <td class="cell-right highlight-yellow" title="Payment received and applied to this account">{{ number_format($soaData['books_paid'], 2) }}</td>
                     <td class="cell-center">{{ $soaData['books_account'] }}</td>
                     <td class="cell-right">{{ number_format($runningBalance, 2) }}</td>
                 </tr>
@@ -586,9 +586,9 @@
                     <tr>
                         <td></td>
                         <td>{{ $monthName }}</td>
-                        <td class="cell-right {{ $monthName === 'July' ? 'highlight-yellow' : '' }}">{{ number_format($mFee, 2) }}</td>
+                        <td class="cell-right {{ $monthName === 'July' ? 'highlight-yellow' : '' }}" @if($monthName === 'July') title="Required payment for this month" @endif>{{ number_format($mFee, 2) }}</td>
                         <td class="cell-center">{{ $isPaidMonth ? '3-Jul-26' : '' }}</td>
-                        <td class="cell-right {{ $isPaidMonth ? 'highlight-yellow' : '' }}">
+                        <td class="cell-right {{ $isPaidMonth ? 'highlight-yellow' : '' }}" @if($isPaidMonth) title="Payment received and applied to this account" @endif>
                             {{ $isPaidMonth ? number_format($mPaid, 2) : '-' }}
                         </td>
                         <td class="cell-center">{{ $isPaidMonth ? '9997' : '' }}</td>
@@ -615,7 +615,7 @@
                         <td>{{ $monthName }}</td>
                         <td class="cell-right">{{ number_format($mFee, 2) }}</td>
                         <td class="cell-center">{{ $isPaidMonth ? '15-Jan-27' : '' }}</td>
-                        <td class="cell-right {{ $isPaidMonth ? 'highlight-yellow' : '' }}">
+                        <td class="cell-right {{ $isPaidMonth ? 'highlight-yellow' : '' }}" @if($isPaidMonth) title="Payment received and applied to this account" @endif>
                             {{ $isPaidMonth ? number_format($mPaid, 2) : '-' }}
                         </td>
                         <td class="cell-center">{{ $isPaidMonth ? '9997' : '' }}</td>
@@ -636,7 +636,7 @@
                 </tr>
                 <tr>
                     <td colspan="2" style="font-weight:bold; border-right:none;">Due Monthly Payment (9 Months)</td>
-                    <td class="cell-right highlight-yellow" style="border-left:none;">{{ number_format($soaData['monthly_rate'], 2) }}</td>
+                    <td class="cell-right highlight-yellow" style="border-left:none;" title="Monthly amount due for this student">{{ number_format($soaData['monthly_rate'], 2) }}</td>
                     <td colspan="4" style="border-left:none;"></td>
                 </tr>
             </tbody>

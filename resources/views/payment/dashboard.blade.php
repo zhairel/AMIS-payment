@@ -645,7 +645,7 @@
                                                                 <strong>₱{{ number_format($child['remaining_amount'], 2) }}</strong>
                                                             </span>
                                                             <span class="payment-billing-paid-column">
-                                                                <small>Total Payment</small>
+                                                                <small>Paid This Month</small>
                                                                 <strong>₱{{ number_format($child['verified_paid'], 2) }}</strong>
                                                             </span>
                                                             <span class="payment-billing-status-column">
