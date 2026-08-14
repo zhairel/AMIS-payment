@@ -78,7 +78,7 @@ class ReceiptClassificationService
         ])->filter(fn ($value) => $value !== null && $value !== '')->count();
         $wordCount = preg_match_all('/[a-z]{3,}/i', $text);
 
-        if ($wordCount >= 2 && $receiptPhraseHits === 0 && $coreFieldCount < 2) {
+        if ($wordCount >= 2 && $receiptPhraseHits === 0 && $coreFieldCount === 0) {
             return [
                 'type' => 'not_receipt',
                 'score' => -5,

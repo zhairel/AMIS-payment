@@ -115,7 +115,7 @@
                             </div>
 
                                 <div x-show="receiptAnalysisComplete" x-transition.opacity class="payment-receipt-auto-fields">
-                                <div class="payment-auto-fill-heading"><span><strong>Transaction details</strong><small x-text="duplicateStatus === 'fail' ? 'This receipt or transaction/reference number was already submitted. Upload a different receipt.' : documentStatus === 'fail' ? 'This file is not a payment receipt. Upload a valid receipt to unlock these fields.' : scanNeedsManualReview ? 'Some details were not clear. Please complete or correct the highlighted fields.' : 'We filled in the receipt details. Please double-check each field.'"></small></span><i :class="scanNeedsManualReview ? 'is-review' : ''" x-text="duplicateStatus === 'fail' ? 'Duplicate receipt' : documentStatus === 'fail' ? 'Invalid receipt' : scanNeedsManualReview ? 'Manual review needed' : 'Auto-filled'"></i></div>
+                                <div class="payment-auto-fill-heading"><span><strong>Transaction details</strong><small x-text="duplicateStatus === 'fail' ? 'This receipt or transaction/reference number was already submitted. Upload a different receipt.' : documentStatus === 'fail' ? 'This file is not a payment receipt. Upload a valid receipt to unlock these fields.' : missingFieldsCount > 0 ? `Receipt scanned. Please complete ${missingFieldsCount} missing field${missingFieldsCount > 1 ? 's' : ''} (${missingRequiredFields.join(', ')}).` : 'Receipt scanned successfully. All details auto-filled — please verify.'"></small></span><i :class="missingFieldsCount > 0 ? 'is-review' : ''" x-text="duplicateStatus === 'fail' ? 'Duplicate receipt' : documentStatus === 'fail' ? 'Invalid receipt' : missingFieldsCount > 0 ? `${missingFieldsCount} field${missingFieldsCount > 1 ? 's' : ''} to verify` : 'Auto-filled'"></i></div>
                                 <div x-show="scanNeedsManualReview && documentStatus !== 'fail' && duplicateStatus !== 'fail'" class="payment-manual-edit-notice"><strong>Almost done</strong><span>Edit any missing or incorrect information below using the receipt as your guide.</span></div>
                                 <div x-show="documentStatus === 'fail'" class="payment-invalid-receipt-notice"><strong>Fields locked</strong><span>The uploaded picture was not recognized as a payment receipt. Upload the actual transaction receipt to continue.</span></div>
                                 <div x-show="duplicateStatus === 'fail'" class="payment-invalid-receipt-notice"><strong>Duplicate payment detected</strong><span>These details are locked. Upload a different receipt to continue.</span></div>
@@ -549,11 +549,20 @@
                     get selectedAccount() { return this.selectedChannel?.accounts?.[this.selectedAccountIndex] || null; },
                     get isPartialPayment() { return this.amountCents(this.transactionAmount) > 0 && this.amountCents(this.transactionAmount) < this.amountCents(this.paymentTotal); },
                     get validPaymentMode() { return ['gcash', 'maya', 'bdo_online', 'bdo_otc', 'bank_transfer', 'remittance'].includes(this.paymentMode); },
+                    get missingRequiredFields() {
+                        const missing = [];
+                        if (!this.validPaymentMode) missing.push('Mode of payment');
+                        if (!this.paymentReference) missing.push('Transaction / reference number');
+                        if (!this.transactionDate) missing.push('Transaction date');
+                        if (!Number(this.transactionAmount)) missing.push('Amount paid');
+                        return missing;
+                    },
+                    get missingFieldsCount() { return this.missingRequiredFields.length; },
                     get requiredDetailsComplete() { return this.validPaymentMode && !!this.paymentReference && !!this.transactionDate && Number(this.transactionAmount) > 0; },
                     get scanNeedsManualReview() { return this.documentStatus === 'warning' || this.imageQualityStatus === 'warning' || !this.requiredDetailsComplete || ['warning', 'fail'].includes(this.ocrAmountStatus) || ['warning', 'fail'].includes(this.paymentMethodStatus) || ['warning', 'fail'].includes(this.receiptDateStatus) || this.duplicateStatus !== 'pass'; },
                     get scanResultStatus() { return this.documentStatus === 'fail' || this.receiptMustBeReuploaded || this.duplicateStatus === 'fail' ? 'fail' : this.scanNeedsManualReview ? 'warning' : 'pass'; },
-                    get scanResultTitle() { return this.duplicateStatus === 'fail' ? 'Duplicate Receipt Detected' : this.documentStatus === 'fail' ? 'This is not a payment receipt' : this.receiptMustBeReuploaded ? 'Please upload a clearer receipt' : this.scanNeedsManualReview ? 'Some details need your review' : 'Receipt details completed'; },
-                    get scanResultSummary() { if (this.duplicateStatus === 'fail') return 'AMIS found that this exact receipt image or reference number was already submitted. Please re-upload a different receipt to continue.'; if (this.documentStatus === 'fail') return this.documentMessage; if (this.receiptMustBeReuploaded) return this.imageQualityMessage; return this.scanNeedsManualReview ? 'Some payment details could not be read automatically. Complete or correct them below; Finance will verify the original receipt.' : 'AMIS found all required payment details. Please double-check them before continuing.'; },
+                    get scanResultTitle() { return this.duplicateStatus === 'fail' ? 'Duplicate Receipt Detected' : this.documentStatus === 'fail' ? 'This is not a payment receipt' : this.receiptMustBeReuploaded ? 'Please upload a clearer receipt' : this.missingFieldsCount > 0 ? `Please verify ${this.missingFieldsCount} missing field${this.missingFieldsCount > 1 ? 's' : ''}` : 'Receipt details completed'; },
+                    get scanResultSummary() { if (this.duplicateStatus === 'fail') return 'AMIS found that this exact receipt image or reference number was already submitted. Please re-upload a different receipt to continue.'; if (this.documentStatus === 'fail') return this.documentMessage; if (this.receiptMustBeReuploaded) return this.imageQualityMessage; return this.missingFieldsCount > 0 ? `Some payment details could not be read automatically. Please enter: ${this.missingRequiredFields.join(', ')}.` : 'AMIS found all required payment details. Please double-check them before continuing.'; },
                     get securityReady() { return this.receiptAnalysisComplete && !!this.receiptFile && this.requiredDetailsComplete && !this.receiptMustBeReuploaded && this.documentStatus !== 'fail' && this.ocrAmountStatus !== 'fail' && this.paymentMethodStatus !== 'fail' && this.receiptDateStatus !== 'fail' && this.duplicateStatus !== 'fail' && !this.receiptScanning; },
                     money(value) { return '₱' + Number(value || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); },
                     amountCents(value) { return Math.round(Number(value || 0) * 100); },
@@ -788,14 +797,23 @@
                         this.receiptHash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
                     },
                     applyReceiptResult(data) {
-                        const detectedMethod = data.detected_method;
+                        const detectedMethod = data.detected_method || data.provider;
                         const detectedAmount = data.detected_amount;
                         const detectedDate = data.detected_date;
                         const detectedTime = data.detected_time;
                         const detectedReference = data.detected_ref;
                         if (data.perceptual_hash) this.receiptPerceptualHash = data.perceptual_hash;
-                        this.detectedReceipt = {method: detectedMethod || null, amount: detectedAmount ?? null, date: detectedDate || null, time: detectedTime || null, sender: data.detected_sender || null, receiver: data.detected_receiver || null, merchant: data.detected_merchant || null, account: data.detected_account || null};
-                        const documentType = data.document_type;
+                        this.detectedReceipt = {
+                            method: detectedMethod || null,
+                            amount: detectedAmount ?? null,
+                            date: detectedDate || null,
+                            time: detectedTime || null,
+                            sender: data.detected_sender || null,
+                            receiver: data.detected_receiver || null,
+                            merchant: data.detected_merchant || null,
+                            account: data.detected_account || null
+                        };
+                        const documentType = data.document_type || 'uncertain';
                         this.documentStatus = documentType === 'receipt' ? 'pass' : documentType === 'not_receipt' ? 'fail' : 'warning';
                         this.documentMessage = data.document_message || 'Finance will manually verify this receipt.';
                         if (this.documentStatus === 'fail') {
@@ -804,48 +822,76 @@
                             this.paymentMethodStatus = 'fail'; this.paymentMethodMessage = 'Payment mode was not checked because this is not a receipt.';
                             this.receiptDateStatus = 'fail'; this.receiptDateMessage = 'Transaction date was not checked because this is not a receipt.';
                         } else {
-                            this.paymentReference = detectedReference || '';
-                            this.autoFilledReference = this.paymentReference;
-                            this.transactionAmount = detectedAmount ?? null;
-                            this.setTransactionDate(detectedDate);
-                            this.setTransactionTime(detectedTime);
-                            this.paymentMode = this.normalizePaymentMode(detectedMethod);
+                            if (detectedReference && !this.paymentReference) {
+                                this.paymentReference = String(detectedReference).trim();
+                                this.autoFilledReference = this.paymentReference;
+                            }
+                            if (detectedAmount !== null && detectedAmount !== undefined && detectedAmount !== '' && Number(detectedAmount) > 0 && (!this.transactionAmount || this.transactionAmount === '0.00' || this.transactionAmount === '0')) {
+                                this.transactionAmount = String(detectedAmount);
+                            }
+                            if (detectedDate && !this.transactionDate) {
+                                this.setTransactionDate(detectedDate);
+                            }
+                            if (detectedTime && !this.transactionTime) {
+                                this.setTransactionTime(detectedTime);
+                            }
+                            if (detectedMethod && !this.paymentMode) {
+                                const mapped = this.normalizePaymentMode(detectedMethod);
+                                if (mapped) this.paymentMode = mapped;
+                            }
                         }
-                        if (this.documentStatus !== 'fail') { this.checkReceiptAmount(); this.checkReceiptDate(); this.checkPaymentMode(); }
-                        this.receiptScanMessage = documentType === 'not_receipt' ? 'Not a payment receipt — upload the actual transaction receipt' : detectedReference ? 'Payment details detected — please double-check' : 'Some payment details could not be detected';
+                        if (this.documentStatus !== 'fail') {
+                            this.checkReceiptAmount();
+                            this.checkReceiptDate();
+                            this.checkPaymentMode();
+                        }
+                        if (documentType === 'not_receipt') {
+                            this.receiptScanMessage = 'Not a payment receipt — upload the actual transaction receipt';
+                        } else if (this.missingFieldsCount === 0) {
+                            this.receiptScanMessage = 'Receipt details auto-filled — please verify';
+                        } else if (this.missingFieldsCount < 4) {
+                            this.receiptScanMessage = `Scanned — please complete ${this.missingRequiredFields.join(', ')}`;
+                        } else {
+                            this.receiptScanMessage = 'Proof received — please complete transaction details';
+                        }
                     },
                     async scanReceipt(file) {
                         let serverResult = null;
                         try {
                             const formData = new FormData(); formData.append('receipt', file);
                             if (this.retryPayment?.id) formData.append('retry_submission_id', this.retryPayment.id);
-                            this.ocrProgress = 12; this.ocrProgressLabel = 'Checking your payment receipt…';
-                            const upload = await this.fetchWithTimeout(@json(route('payment.receipts.store')), {method: 'POST', headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json'}, body: formData}, 15000);
+                            this.ocrProgress = 15; this.ocrProgressLabel = 'Scanning your payment receipt…';
+                            const upload = await this.fetchWithTimeout(@json(route('payment.receipts.store')), {method: 'POST', headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json'}, body: formData}, 25000);
                             const accepted = await upload.json();
                             if (!upload.ok) throw new Error(accepted.message || 'Receipt upload failed.');
                             this.receiptSubmissionId = accepted.submission_id;
-                            const foregroundDeadline = Date.now() + 15000;
-                            let attempt = 0;
-                            while (Date.now() < foregroundDeadline) {
-                                await new Promise(resolve => setTimeout(resolve, 500));
-                                const statusResponse = await this.fetchWithTimeout(accepted.status_url, {headers: {'Accept': 'application/json'}}, 3000);
-                                serverResult = await statusResponse.json();
-                                if (!statusResponse.ok) throw new Error(serverResult.message || 'Receipt status could not be read.');
-                                attempt++;
-                                const elapsedRatio = Math.min(1, (15000 - Math.max(0, foregroundDeadline - Date.now())) / 15000);
-                                this.ocrProgress = Math.min(72, 18 + elapsedRatio * 54);
-                                this.ocrProgressLabel = serverResult.status === 'UPLOADED' ? 'Verifying payment details…' : 'Checking your payment receipt…';
-                                if (!serverResult.processing) break;
+
+                            if (!accepted.processing) {
+                                serverResult = accepted;
+                            } else {
+                                const foregroundDeadline = Date.now() + 15000;
+                                while (Date.now() < foregroundDeadline) {
+                                    await new Promise(resolve => setTimeout(resolve, 500));
+                                    const statusResponse = await this.fetchWithTimeout(accepted.status_url, {headers: {'Accept': 'application/json'}}, 5000);
+                                    serverResult = await statusResponse.json();
+                                    if (!statusResponse.ok) throw new Error(serverResult.message || 'Receipt status could not be read.');
+                                    const elapsedRatio = Math.min(1, (15000 - Math.max(0, foregroundDeadline - Date.now())) / 15000);
+                                    this.ocrProgress = Math.min(75, 20 + elapsedRatio * 55);
+                                    this.ocrProgressLabel = serverResult.status === 'UPLOADED' ? 'Extracting payment details…' : 'Checking your payment receipt…';
+                                    if (!serverResult.processing) break;
+                                }
                             }
+
                             if (!serverResult || serverResult.processing) {
                                 this.documentStatus = 'warning';
-                                this.documentMessage = 'The detailed scan is still processing. Continue below and complete the required fields; AMIS Support Staff will verify the original receipt.';
+                                this.documentMessage = 'The detailed scan is still processing. Complete the fields below; Finance will verify the original receipt.';
                                 if (this.imageQualityStatus === 'waiting') this.imageQualityStatus = 'warning';
-                                this.receiptScanMessage = 'Proof received · Continue with the required details';
+                                this.receiptScanMessage = 'Proof received · Enter payment details manually';
                                 this.ocrProgress = 86;
-                                this.ocrProgressLabel = 'Receipt received · You may continue';
+                                this.ocrProgressLabel = 'Receipt received · Complete details below';
                                 return;
                             }
+
                             this.receiptMustBeReuploaded = serverResult.status === 'REUPLOAD_REQUIRED';
                             const readability = serverResult.quality?.readability;
                             this.imageQualityStatus = this.receiptMustBeReuploaded ? 'fail' : ['good', 'acceptable'].includes(readability) ? 'pass' : 'warning';
@@ -867,12 +913,11 @@
                             if (!criticalComplete) {
                                 this.documentStatus = 'warning';
                                 this.documentMessage = serverResult.review_reason || 'Some payment details could not be read automatically. Complete them below; Finance will verify the original receipt.';
-                                this.receiptScanMessage = 'Proof received · Complete missing details';
                             }
                             this.ocrProgressLabel = criticalComplete ? 'Reviewing the detected information…' : 'Receipt received for Finance verification';
                         } catch (serverError) {
                             this.documentStatus = 'warning';
-                            this.documentMessage = 'Some payment details could not be read automatically. Complete them below; your proof can still be submitted for Finance verification.';
+                            this.documentMessage = 'OCR service unavailable. Please complete the fields below manually; Finance will verify the original receipt.';
                             if (this.imageQualityStatus === 'waiting') this.imageQualityStatus = 'warning';
                             this.receiptScanMessage = 'Proof received · Complete the payment details';
                             this.ocrProgress = 86;

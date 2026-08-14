@@ -60,12 +60,37 @@ class ReceiptSubmissionController extends Controller
             'changes' => ['filename' => $receipt->original_filename, 'mime' => $receipt->original_mime, 'size' => $receipt->original_size],
             'ip_address' => $request->ip(), 'user_agent' => $request->userAgent(),
         ]);
-        ProcessReceiptSubmission::dispatch($receipt->id, $retrySubmission?->id)->afterResponse();
+        $ocrProcessed = false;
+        try {
+            app(\App\Services\Receipts\ReceiptOcrPipeline::class)->process($receipt, $retrySubmission?->id);
+            $receipt->refresh();
+            $ocrProcessed = true;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Synchronous OCR processing failed, dispatching job: '.$e->getMessage());
+            ProcessReceiptSubmission::dispatch($receipt->id, $retrySubmission?->id)->afterResponse();
+        }
 
         return response()->json([
             'submission_id' => $receipt->submission_id,
             'status' => $receipt->status,
             'status_url' => route('payment.receipts.show', $receipt->submission_id),
+            'processing' => ! $ocrProcessed && in_array($receipt->status, [ReceiptSubmission::UPLOADED, ReceiptSubmission::PROCESSING], true),
+            'provider' => $receipt->provider,
+            'detected_ref' => $receipt->reference_number,
+            'detected_amount' => $receipt->amount !== null ? (float) $receipt->amount : null,
+            'currency' => $receipt->currency,
+            'detected_date' => $receipt->transaction_date?->format('Y-m-d'),
+            'detected_time' => $receipt->transaction_time,
+            'detected_sender' => $receipt->sender_name,
+            'detected_receiver' => $receipt->receiver_name,
+            'document_type' => data_get($receipt->validation_results, 'classification.type', 'uncertain'),
+            'document_message' => data_get($receipt->validation_results, 'classification.message') ?: $receipt->review_reason,
+            'duplicate_status' => $receipt->duplicate_status,
+            'review_reason' => $receipt->review_reason,
+            'quality' => [
+                'readability' => data_get($receipt->quality_assessment, 'readability'),
+                'message' => data_get($receipt->quality_assessment, 'user_message'),
+            ],
         ], 202);
     }
 
@@ -73,6 +98,16 @@ class ReceiptSubmissionController extends Controller
     {
         $canSeeDiagnostics = in_array($request->user()->role, ['admin', 'staff'], true);
         abort_unless($receipt->user_id === $request->user()->id || $canSeeDiagnostics, 403);
+
+        if ($receipt->status === ReceiptSubmission::UPLOADED) {
+            try {
+                app(\App\Services\Receipts\ReceiptOcrPipeline::class)->process($receipt);
+                $receipt->refresh();
+            } catch (\Throwable $e) {
+                // Keep existing status
+            }
+        }
+
         if ($canSeeDiagnostics) {
             $receipt->load('ocrResults');
         }
@@ -80,7 +115,7 @@ class ReceiptSubmissionController extends Controller
         $response = [
             'submission_id' => $receipt->submission_id,
             'status' => $receipt->status,
-            'processing' => in_array($receipt->status, [ReceiptSubmission::UPLOADED, ReceiptSubmission::PROCESSING, ReceiptSubmission::OCR_COMPLETED], true),
+            'processing' => in_array($receipt->status, [ReceiptSubmission::UPLOADED, ReceiptSubmission::PROCESSING], true),
             'provider' => $receipt->provider,
             'detected_ref' => $receipt->reference_number,
             'detected_amount' => $receipt->amount !== null ? (float) $receipt->amount : null,
