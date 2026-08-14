@@ -45,17 +45,16 @@ class ResetDemoPaymentCommand extends Command
             Cache::forget("demo_rr_ptr_zhairel_lingasa_gmail_com_".preg_replace('/[^a-zA-Z0-9]/', '_', strtolower($monthLabel)));
         }
 
-        // 2. Delete payment submissions
+        // 2. Delete payment submissions and receipt submissions
+        if (Schema::hasTable('receipt_submissions')) {
+            try {
+                DB::table('receipt_submissions')->where('user_id', $userId)->delete();
+                $this->line("  ✓ Cleared receipt submissions for user #{$userId}");
+            } catch (\Throwable $e) {}
+        }
+
         if (Schema::hasTable('payment_submissions')) {
             try {
-                $subIds = DB::table('payment_submissions')
-                    ->where('user_id', $userId)
-                    ->pluck('id');
-
-                if (Schema::hasTable('receipt_submissions')) {
-                    DB::table('receipt_submissions')->whereIn('payment_submission_id', $subIds)->orWhere('user_id', $userId)->delete();
-                }
-
                 DB::table('payment_submissions')->where('user_id', $userId)->delete();
                 $this->line("  ✓ Cleared demo payment submissions for user #{$userId}");
             } catch (\Throwable $e) {
