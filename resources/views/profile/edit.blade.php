@@ -33,7 +33,7 @@
             this.childForm = { name: '', student_id: '', grade_level: 'Grade 1', relationship: 'Parent / Guardian', notes: '' };
         }
     }">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <!-- Top Navigation & Header -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -129,88 +129,95 @@
                 </button>
             </div>
 
-            <!-- TAB 1: PERSONAL INFORMATION -->
-            <div x-show="activeTab === 'personal'" x-cloak class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- TAB 1: PERSONAL INFORMATION (Clean Single-Column Stack) -->
+            <div x-show="activeTab === 'personal'" x-cloak class="space-y-8">
                 
-                <!-- LEFT COLUMN: Profile Form (Span 2) -->
-                <div class="lg:col-span-2">
-                    <div class="rounded-3xl border border-slate-200/80 bg-white p-8 sm:p-12 shadow-sm">
-                        <div class="flex items-center gap-3 border-b border-slate-100 pb-5">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h2 class="text-lg font-black text-slate-900">Profile Information</h2>
-                                <p class="text-xs text-slate-500">Update your account name components and registered email address.</p>
-                            </div>
+                <!-- Card 1: Profile Information -->
+                <div class="rounded-3xl border border-slate-200/80 bg-white p-8 sm:p-12 shadow-sm">
+                    <div class="flex items-center gap-3 border-b border-slate-100 pb-5">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
                         </div>
+                        <div>
+                            <h2 class="text-lg font-black text-slate-900">Profile Information</h2>
+                            <p class="text-xs text-slate-500">Update your account name components and registered email address.</p>
+                        </div>
+                    </div>
 
-                        <div class="mt-6">
-                            @include('profile.partials.update-profile-information-form')
-                        </div>
+                    <div class="mt-6">
+                        @include('profile.partials.update-profile-information-form')
                     </div>
                 </div>
 
-                <!-- RIGHT COLUMN: Sign-In Security (Span 1) -->
-                <div class="space-y-6">
-                    <div class="rounded-3xl border border-slate-200/80 bg-white p-8 shadow-sm">
-                        <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-900">Sign-In Security</h3>
-                        <p class="mt-1 text-xs text-slate-500">Authentication methods connected to your account.</p>
+                <!-- Card 2: Sign-In Security (Positioned Below Profile Information) -->
+                <div class="rounded-3xl border border-slate-200/80 bg-white p-8 sm:p-12 shadow-sm">
+                    <div class="flex items-center gap-3 border-b border-slate-100 pb-5">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-black text-slate-900">Sign-In Security</h2>
+                            <p class="text-xs text-slate-500">Authentication methods connected to your family payment account.</p>
+                        </div>
+                    </div>
 
-                        <div class="mt-5 space-y-3.5">
-                            <!-- Email OTP Method -->
-                            <div class="flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3.5">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-700 text-white">
-                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    <!-- 2-Column Grid for Security Methods -->
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Email OTP Method -->
+                        <div class="flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+                            <div class="flex items-center gap-3.5">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-sm">
+                                    <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-bold text-slate-900">Email OTP Code</div>
+                                    <div class="text-xs text-slate-500">One-time 4-digit code sent to your email</div>
+                                </div>
+                            </div>
+                            <span class="rounded-full bg-emerald-100 border border-emerald-200 px-2.5 py-1 text-xs font-extrabold text-emerald-800">Primary</span>
+                        </div>
+
+                        <!-- Google SSO Method -->
+                        <div class="flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3.5">
+                                    <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-white border border-slate-200 shadow-sm">
+                                        <svg class="h-4.5 w-4.5" viewBox="0 0 24 24">
+                                            <path fill="#EA4335" d="M12 5.04c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 1.76 14.94 1 12 1 7.35 1 3.39 3.65 1.44 7.5l3.8 2.94c.9-2.7 3.4-4.4 6.76-4.4z"/>
+                                            <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.44h6.44c-.28 1.48-1.12 2.73-2.38 3.58l3.69 2.87c2.16-1.99 3.4-4.93 3.4-8.55z"/>
+                                            <path fill="#FBBC05" d="M5.24 14.56c-.23-.69-.36-1.43-.36-2.2s.13-1.51.36-2.2L1.44 7.22C.52 9.07 0 11.13 0 13.3c0 2.17.52 4.23 1.44 6.08l3.8-2.82z"/>
+                                            <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.92l-3.69-2.87c-1.02.68-2.33 1.09-3.97 1.09-3.36 0-5.86-1.7-6.76-4.4l-3.8 2.94C3.39 20.35 7.35 23 12 23z"/>
                                         </svg>
                                     </div>
                                     <div>
-                                        <div class="text-xs font-bold text-slate-900">Email OTP Code</div>
-                                        <div class="text-[11px] text-slate-500">One-time 4-digit code</div>
+                                        <div class="text-sm font-bold text-slate-900">Google Sign-In</div>
+                                        <div class="text-xs text-slate-500">Linked to {{ $user->email }}</div>
                                     </div>
                                 </div>
-                                <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">Primary</span>
+                                <span class="rounded-full bg-emerald-100 border border-emerald-200 px-2.5 py-1 text-xs font-extrabold text-emerald-800">Connected</span>
                             </div>
 
-                            <!-- Google SSO Method -->
-                            <div class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3.5">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-slate-200">
-                                            <svg class="h-4 w-4" viewBox="0 0 24 24">
-                                                <path fill="#EA4335" d="M12 5.04c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 1.76 14.94 1 12 1 7.35 1 3.39 3.65 1.44 7.5l3.8 2.94c.9-2.7 3.4-4.4 6.76-4.4z"/>
-                                                <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.44h6.44c-.28 1.48-1.12 2.73-2.38 3.58l3.69 2.87c2.16-1.99 3.4-4.93 3.4-8.55z"/>
-                                                <path fill="#FBBC05" d="M5.24 14.56c-.23-.69-.36-1.43-.36-2.2s.13-1.51.36-2.2L1.44 7.22C.52 9.07 0 11.13 0 13.3c0 2.17.52 4.23 1.44 6.08l3.8-2.82z"/>
-                                                <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.92l-3.69-2.87c-1.02.68-2.33 1.09-3.97 1.09-3.36 0-5.86-1.7-6.76-4.4l-3.8 2.94C3.39 20.35 7.35 23 12 23z"/>
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <div class="text-xs font-bold text-slate-900">Google Sign-In</div>
-                                            <div class="text-[11px] text-slate-500">Linked to {{ $user->email }}</div>
-                                        </div>
-                                    </div>
-                                    <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">Connected</span>
-                                </div>
-                                <div class="mt-1 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-                                    <span class="text-[11px] text-slate-500">Sign in with one click</span>
-                                    <a href="{{ route('auth.google') }}" class="text-[11px] font-bold text-emerald-700 hover:text-emerald-900">
-                                        Re-authenticate →
-                                    </a>
-                                </div>
+                            <div class="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between">
+                                <span class="text-xs text-slate-500">Fast one-click sign-in</span>
+                                <a href="{{ route('auth.google') }}" class="text-xs font-bold text-emerald-700 hover:text-emerald-900 transition">
+                                    Re-authenticate →
+                                </a>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Clean Security Note (SVG icon only) -->
-                        <div class="mt-5 rounded-xl border border-slate-100 bg-slate-50/70 p-3 flex items-start gap-2.5 text-[11px] text-slate-600 leading-relaxed">
-                            <svg class="h-4 w-4 text-emerald-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                            </svg>
-                            <span>All sign-in attempts are rate-limited and logged in the official AMIS audit trail.</span>
-                        </div>
+                    <!-- Clean Security Note (SVG icon only) -->
+                    <div class="mt-5 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 flex items-start gap-3 text-xs text-slate-600 leading-relaxed">
+                        <svg class="h-4.5 w-4.5 text-emerald-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        <span>All sign-in attempts are rate-limited and logged in the official AMIS audit trail for security.</span>
                     </div>
                 </div>
             </div>
