@@ -170,8 +170,8 @@
                         <!-- Email OTP Method -->
                         <div class="flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
                             <div class="flex items-center gap-3.5">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-sm">
-                                    <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-sm shrink-0">
+                                    <svg class="h-5 w-5" style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                                     </svg>
                                 </div>
@@ -187,8 +187,8 @@
                         <div class="flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3.5">
-                                    <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-white border border-slate-200 shadow-sm">
-                                        <svg class="h-4.5 w-4.5" viewBox="0 0 24 24">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-slate-200 shadow-sm shrink-0">
+                                        <svg class="h-5 w-5" style="width: 20px; height: 20px;" viewBox="0 0 24 24">
                                             <path fill="#EA4335" d="M12 5.04c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 1.76 14.94 1 12 1 7.35 1 3.39 3.65 1.44 7.5l3.8 2.94c.9-2.7 3.4-4.4 6.76-4.4z"/>
                                             <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.44h6.44c-.28 1.48-1.12 2.73-2.38 3.58l3.69 2.87c2.16-1.99 3.4-4.93 3.4-8.55z"/>
                                             <path fill="#FBBC05" d="M5.24 14.56c-.23-.69-.36-1.43-.36-2.2s.13-1.51.36-2.2L1.44 7.22C.52 9.07 0 11.13 0 13.3c0 2.17.52 4.23 1.44 6.08l3.8-2.82z"/>
@@ -214,9 +214,11 @@
 
                     <!-- Clean Security Note (SVG icon only) -->
                     <div class="mt-5 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 flex items-start gap-3 text-xs text-slate-600 leading-relaxed">
-                        <svg class="h-4.5 w-4.5 text-emerald-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                        </svg>
+                        <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 shrink-0 mt-0.5">
+                            <svg class="h-4 w-4" style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                        </div>
                         <span>All sign-in attempts are rate-limited and logged in the official AMIS audit trail for security.</span>
                     </div>
                 </div>
