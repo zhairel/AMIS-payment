@@ -1,28 +1,23 @@
 <x-guest-layout title="Family Payments Login" :show-loader="false">
     <div class="min-h-screen bg-slate-950 flex flex-col lg:grid lg:grid-cols-[1.05fr_.95fr]">
-        <!-- LEFT / TOP BRANDING PANEL: Rich AMIS Logo Green, Larger Typography & Generous Spacing -->
-        <section class="relative overflow-hidden bg-gradient-to-br from-[#065f46] via-[#054e3a] to-[#033b2c] px-6 py-14 text-white flex flex-col items-center justify-center lg:min-h-screen lg:p-14">
-            <!-- Subtle Tonal Background Shapes (Harmonized with Logo Green Palette) -->
-            <div class="absolute -right-28 -top-28 h-96 w-96 rounded-full bg-emerald-400/20 blur-2xl pointer-events-none"></div>
-            <div class="absolute -bottom-36 -left-20 h-[30rem] w-[30rem] rounded-full bg-teal-300/15 blur-2xl pointer-events-none"></div>
-            <div class="absolute inset-0 bg-radial-at-c from-emerald-500/10 via-transparent to-black/20 pointer-events-none"></div>
-            
+        <!-- LEFT / TOP BRANDING PANEL: Clean Solid AMIS Green, Sharp & Premium -->
+        <section class="relative bg-[#065f46] px-6 py-14 text-white flex flex-col items-center justify-center lg:min-h-screen lg:p-14">
             <div class="relative z-10 flex flex-col items-center justify-center text-center max-w-xl mx-auto">
                 <!-- 1. AMIS Official Logo -->
-                <img src="{{ asset('images/AMIS_Logo.png') }}" class="h-32 w-32 sm:h-36 sm:w-36 lg:h-44 lg:w-44 object-contain drop-shadow-2xl" alt="AL MUNAWWARA ISLAMIC SCHOOL Logo">
+                <img src="{{ asset('images/AMIS_Logo.png') }}" class="h-32 w-32 sm:h-36 sm:w-36 lg:h-44 lg:w-44 object-contain drop-shadow-xl" alt="AL MUNAWWARA ISLAMIC SCHOOL Logo">
 
                 <!-- 2. Arabic School Name -->
-                <h1 class="mt-8 sm:mt-10 lg:mt-12 text-3xl sm:text-4xl lg:text-[40px] xl:text-[44px] font-bold tracking-wide text-white font-serif leading-snug drop-shadow" dir="rtl" style="font-family: 'Amiri', 'Tajawal', serif;">
+                <h1 class="mt-8 sm:mt-10 lg:mt-12 text-3xl sm:text-4xl lg:text-[40px] xl:text-[44px] font-bold tracking-wide text-white font-serif leading-snug" dir="rtl" style="font-family: 'Amiri', 'Tajawal', serif;">
                     المدرسة المنورة الإسلامية
                 </h1>
 
                 <!-- 3. English School Name -->
-                <p class="mt-4 lg:mt-5 text-lg sm:text-xl lg:text-2xl font-bold uppercase tracking-[0.22em] text-white/95 leading-normal drop-shadow-sm">
+                <p class="mt-4 lg:mt-5 text-lg sm:text-xl lg:text-2xl font-bold uppercase tracking-[0.22em] text-white leading-normal">
                     AL MUNAWWARA ISLAMIC SCHOOL
                 </p>
 
-                <!-- 4. System Name (+8 font size) -->
-                <p class="mt-3 lg:mt-4 text-xl sm:text-2xl lg:text-[28px] font-bold tracking-wide text-emerald-100 drop-shadow-sm">
+                <!-- 4. System Name -->
+                <p class="mt-3 lg:mt-4 text-xl sm:text-2xl lg:text-[28px] font-bold tracking-wide text-emerald-100">
                     Family Payment System
                 </p>
 
