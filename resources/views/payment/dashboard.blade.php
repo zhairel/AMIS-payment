@@ -567,24 +567,47 @@
                                     <!-- Collapsible Breakdown Panel -->
                                     <div x-show="openMonth === {{ Js::from($monthKey) }}" x-collapse class="border-t border-slate-100 bg-slate-50/50 p-6 sm:p-8 space-y-4">
                                         <div class="text-xs font-black uppercase tracking-wider text-slate-500">Student Breakdown for {{ $monthLabel }}</div>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                             @foreach($group['children'] as $child)
                                                 @php
                                                     $childPaymentStatus = $child['is_paid'] ? 'PAID' : ((float) $child['verified_paid'] > 0.01 ? 'PARTIAL' : 'UNPAID');
                                                     $statusBadge = match($childPaymentStatus) {
-                                                        'PAID' => 'bg-emerald-100 text-emerald-800',
-                                                        'PARTIAL' => 'bg-amber-100 text-amber-800',
-                                                        default => 'bg-slate-200 text-slate-700'
+                                                        'PAID' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                                                        'PARTIAL' => 'bg-amber-100 text-amber-800 border-amber-200',
+                                                        default => 'bg-slate-100 text-slate-700 border-slate-200'
                                                     };
+                                                    $cName = $child['full_name'];
+                                                    $cInitial = mb_substr($cName, 0, 1);
+                                                    $cAccentBg = str_contains(strtoupper($cName), 'MARYAM') ? 'bg-blue-50 text-blue-700 border-blue-200' : (str_contains(strtoupper($cName), 'YUSUF') ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200');
                                                 @endphp
-                                                <div class="rounded-2xl border border-slate-200 bg-white p-4 flex items-center justify-between">
+                                                <div class="rounded-2xl border border-slate-200/90 bg-white p-5 flex flex-col justify-between shadow-sm hover:shadow transition">
                                                     <div>
-                                                        <strong class="text-sm font-bold text-slate-900 block">{{ mb_strtoupper($child['full_name']) }}</strong>
-                                                        <span class="text-xs text-slate-500">{{ $child['grade_level'] }} · ID {{ $child['student_number'] }}</span>
-                                                    </div>
-                                                    <div class="text-right">
-                                                        <strong class="text-sm font-black text-slate-900 block">₱{{ number_format($child['remaining_amount'], 2) }}</strong>
-                                                        <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold {{ $statusBadge }}">{{ $childPaymentStatus }}</span>
+                                                        <div class="flex items-center justify-between gap-3">
+                                                            <div class="flex items-center gap-3">
+                                                                <div class="flex h-10 w-10 items-center justify-center rounded-xl border {{ $cAccentBg }} text-sm font-black shrink-0">
+                                                                    {{ $cInitial }}
+                                                                </div>
+                                                                <div>
+                                                                    <strong class="text-sm font-black text-slate-900 block leading-tight">{{ mb_strtoupper($child['full_name']) }}</strong>
+                                                                    <span class="text-xs text-slate-500 font-semibold">{{ $child['grade_level'] }} · ID {{ $child['student_number'] }}</span>
+                                                                </div>
+                                                            </div>
+                                                            <span class="rounded-full border px-2 py-0.5 text-[10px] font-extrabold uppercase {{ $statusBadge }} shrink-0">
+                                                                {{ $childPaymentStatus }}
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="mt-5 grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+                                                            <div>
+                                                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Remaining Balance</span>
+                                                                <strong class="text-base font-black text-slate-900 block mt-0.5">₱{{ number_format($child['remaining_amount'], 2) }}</strong>
+                                                            </div>
+
+                                                            <div class="text-right">
+                                                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Paid</span>
+                                                                <strong class="text-base font-black text-emerald-700 block mt-0.5">₱{{ number_format($child['verified_paid'], 2) }}</strong>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             @endforeach
