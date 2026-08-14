@@ -1,7 +1,13 @@
 <x-app-layout>
     <x-slot name="title">Account Profile - AMIS Family Payments</x-slot>
 
-    <div class="min-h-screen bg-slate-100/70 py-8 sm:py-12">
+    @php
+        $demoChildren = $demoChildren ?? collect();
+        $students = $students ?? collect();
+        $allChildrenList = $students->isNotEmpty() ? $students : $demoChildren;
+    @endphp
+
+    <div class="min-h-screen bg-slate-100/70 py-8 sm:py-12" x-data="{ activeTab: 'personal' }">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <!-- Top Navigation & Header -->
@@ -13,8 +19,8 @@
                         </svg>
                         Back to Family Payments Dashboard
                     </a>
-                    <h1 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Account & Security Profile</h1>
-                    <p class="mt-1 text-sm text-slate-600">Manage your parent profile information, contact email, and security settings.</p>
+                    <h1 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Account & Family Profile</h1>
+                    <p class="mt-1 text-sm text-slate-600">Manage your parent profile information, linked children, and security settings.</p>
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -59,7 +65,7 @@
                                         <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                         </svg>
-                                        Verified
+                                        Verified Account
                                     </span>
                                 @endif
                             </div>
@@ -74,8 +80,32 @@
                 </div>
             </div>
 
-            <!-- Two-Column Grid: Forms on Left, Info on Right -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Modern Tab Switcher -->
+            <div class="flex items-center border-b border-slate-200 gap-3">
+                <button type="button"
+                        @click="activeTab = 'personal'"
+                        :class="activeTab === 'personal' ? 'border-emerald-700 text-emerald-800 font-extrabold border-b-2' : 'border-transparent text-slate-500 hover:text-slate-800 font-semibold'"
+                        class="inline-flex items-center gap-2 px-4 py-3 text-sm transition pb-3.5 -mb-px">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    Personal Information
+                </button>
+
+                <button type="button"
+                        @click="activeTab = 'children'"
+                        :class="activeTab === 'children' ? 'border-emerald-700 text-emerald-800 font-extrabold border-b-2' : 'border-transparent text-slate-500 hover:text-slate-800 font-semibold'"
+                        class="inline-flex items-center gap-2 px-4 py-3 text-sm transition pb-3.5 -mb-px">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <span>Students' or Children Information</span>
+                    <span class="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-xs font-bold">{{ $allChildrenList->count() }}</span>
+                </button>
+            </div>
+
+            <!-- TAB 1: PERSONAL INFORMATION -->
+            <div x-show="activeTab === 'personal'" x-cloak class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
                 <!-- LEFT COLUMN: Profile Form & Password Form (Span 2) -->
                 <div class="lg:col-span-2 space-y-8">
@@ -90,7 +120,7 @@
                             </div>
                             <div>
                                 <h2 class="text-lg font-black text-slate-900">Profile Information</h2>
-                                <p class="text-xs text-slate-500">Update your account name and registered email address.</p>
+                                <p class="text-xs text-slate-500">Update your account name components and registered email address.</p>
                             </div>
                         </div>
 
@@ -119,13 +149,13 @@
                     </div>
                 </div>
 
-                <!-- RIGHT COLUMN: Security & Account Overview (Span 1) -->
+                <!-- RIGHT COLUMN: Sign-In Security (Span 1) -->
                 <div class="space-y-6">
                     
                     <!-- Security Summary Card -->
                     <div class="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
                         <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-900">Sign-In Security</h3>
-                        <p class="mt-1 text-xs text-slate-500">Authentication methods available for your account.</p>
+                        <p class="mt-1 text-xs text-slate-500">Authentication methods connected to your account.</p>
 
                         <div class="mt-5 space-y-3.5">
                             <!-- Email OTP Method -->
@@ -145,46 +175,125 @@
                             </div>
 
                             <!-- Google SSO Method -->
-                            <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-3.5">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-slate-200">
-                                        <svg class="h-4 w-4" viewBox="0 0 24 24">
-                                            <path fill="#EA4335" d="M12 5.04c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 1.76 14.94 1 12 1 7.35 1 3.39 3.65 1.44 7.5l3.8 2.94c.9-2.7 3.4-4.4 6.76-4.4z"/>
-                                            <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.44h6.44c-.28 1.48-1.12 2.73-2.38 3.58l3.69 2.87c2.16-1.99 3.4-4.93 3.4-8.55z"/>
-                                            <path fill="#FBBC05" d="M5.24 14.56c-.23-.69-.36-1.43-.36-2.2s.13-1.51.36-2.2L1.44 7.22C.52 9.07 0 11.13 0 13.3c0 2.17.52 4.23 1.44 6.08l3.8-2.82z"/>
-                                            <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.92l-3.69-2.87c-1.02.68-2.33 1.09-3.97 1.09-3.36 0-5.86-1.7-6.76-4.4l-3.8 2.94C3.39 20.35 7.35 23 12 23z"/>
-                                        </svg>
+                            <div class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3.5">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-slate-200">
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24">
+                                                <path fill="#EA4335" d="M12 5.04c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 1.76 14.94 1 12 1 7.35 1 3.39 3.65 1.44 7.5l3.8 2.94c.9-2.7 3.4-4.4 6.76-4.4z"/>
+                                                <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.44h6.44c-.28 1.48-1.12 2.73-2.38 3.58l3.69 2.87c2.16-1.99 3.4-4.93 3.4-8.55z"/>
+                                                <path fill="#FBBC05" d="M5.24 14.56c-.23-.69-.36-1.43-.36-2.2s.13-1.51.36-2.2L1.44 7.22C.52 9.07 0 11.13 0 13.3c0 2.17.52 4.23 1.44 6.08l3.8-2.82z"/>
+                                                <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.92l-3.69-2.87c-1.02.68-2.33 1.09-3.97 1.09-3.36 0-5.86-1.7-6.76-4.4l-3.8 2.94C3.39 20.35 7.35 23 12 23z"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs font-bold text-slate-900">Google Sign-In</div>
+                                            <div class="text-[11px] text-slate-500">Linked to {{ $user->email }}</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div class="text-xs font-bold text-slate-900">Google SSO</div>
-                                        <div class="text-[11px] text-slate-500">Sign in with Google</div>
-                                    </div>
+                                    <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">Connected</span>
                                 </div>
-                                <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-extrabold text-slate-700">Available</span>
+                                <div class="mt-1 pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                                    <span class="text-[11px] text-slate-500">Sign in with one click</span>
+                                    <a href="{{ route('auth.google') }}" class="text-[11px] font-bold text-emerald-700 hover:text-emerald-900">
+                                        Re-authenticate →
+                                    </a>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mt-5 border-t border-slate-100 pt-4 text-[11px] text-slate-500 leading-relaxed">
-                            <p>🔒 All login attempts and password changes are rate-limited and logged in the official AMIS audit logs for security.</p>
-                        </div>
-                    </div>
-
-                    <!-- Danger Zone Card -->
-                    <div class="rounded-3xl border border-rose-200/80 bg-rose-50/40 p-6 shadow-sm">
-                        <div class="flex items-center gap-2.5 text-rose-800">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        <!-- Clean Security Note (No emojis, SVG icon only) -->
+                        <div class="mt-5 rounded-xl border border-slate-100 bg-slate-50/70 p-3 flex items-start gap-2.5 text-[11px] text-slate-600 leading-relaxed">
+                            <svg class="h-4 w-4 text-emerald-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                             </svg>
-                            <h3 class="text-sm font-black uppercase tracking-wider">Danger Zone</h3>
-                        </div>
-                        <p class="mt-2 text-xs text-rose-700 leading-relaxed">
-                            Once your parent account is deleted, all linked data will be removed.
-                        </p>
-                        <div class="mt-4">
-                            @include('profile.partials.delete-user-form')
+                            <span>All sign-in attempts and password changes are rate-limited and logged in the official AMIS audit trail.</span>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- TAB 2: STUDENTS' OR CHILDREN INFORMATION -->
+            <div x-show="activeTab === 'children'" x-cloak class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-900">Linked Students / Children</h2>
+                        <p class="text-xs text-slate-500">Review your children's enrollment status, student records, and school levels.</p>
+                    </div>
+                    <a href="{{ route('payment.dashboard') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-800 transition">
+                        <span>Go to Payment Dashboard</span>
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
+                    </a>
+                </div>
+
+                @if($allChildrenList->isEmpty())
+                    <div class="rounded-3xl border border-slate-200 bg-white p-8 text-center">
+                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="mt-3 text-base font-extrabold text-slate-900">No linked students found</h3>
+                        <p class="mt-1 text-xs text-slate-500">Link your child using their AMIS student account in the Payment Dashboard.</p>
+                    </div>
+                @else
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        @foreach($allChildrenList as $child)
+                            @php
+                                $cName = $child->first_name ?? explode(' ', $child->display_name ?? $child->name ?? 'Student')[0];
+                                $cFullName = $child->display_name ?? $child->name ?? ($child->first_name . ' ' . $child->last_name);
+                                $cInitial = mb_substr($cName, 0, 1);
+                                $cGrade = $child->grade_level ?? $child->account?->grade_level ?? 'Grade Level';
+                                $cId = $child->student_id ?? $child->account?->student_id ?? 'AMIS-2026-' . str_pad($child->id ?? 1, 3, '0', STR_PAD_LEFT);
+                                $cAccentBg = str_contains(strtoupper($cName), 'MARYAM') ? 'bg-blue-50 text-blue-700 border-blue-200' : (str_contains(strtoupper($cName), 'YUSUF') ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200');
+                            @endphp
+
+                            <div class="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                                <div>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl border {{ $cAccentBg }} text-lg font-black shadow-inner">
+                                            {{ $cInitial }}
+                                        </div>
+                                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                                            Active Student
+                                        </span>
+                                    </div>
+
+                                    <div class="mt-4">
+                                        <h3 class="text-base font-black text-slate-900">{{ mb_strtoupper($cFullName) }}</h3>
+                                        <div class="mt-1 flex items-center gap-2 text-xs text-slate-500 font-semibold">
+                                            <span>{{ $cGrade }}</span>
+                                            <span aria-hidden="true">·</span>
+                                            <span class="font-mono text-slate-400">{{ $cId }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-5 space-y-2 border-t border-slate-100 pt-4 text-xs text-slate-600">
+                                        <div class="flex justify-between">
+                                            <span class="text-slate-400 font-medium">School Year:</span>
+                                            <span class="font-bold text-slate-800">2026–2027</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-slate-400 font-medium">Institution:</span>
+                                            <span class="font-bold text-slate-800">Al Munawwara</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-6 pt-4 border-t border-slate-100">
+                                    <a href="{{ route('payment.dashboard') }}" class="flex items-center justify-center gap-1.5 w-full rounded-xl bg-slate-50 border border-slate-200 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition">
+                                        <span>View Statement of Account</span>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7m-7 7"/>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </div>
     </div>

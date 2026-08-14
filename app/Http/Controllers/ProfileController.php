@@ -16,8 +16,16 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+        $demoChildren = $user->paymentDemoChildren()->orderBy('id')->get();
+        $students = $demoChildren->isNotEmpty()
+            ? collect()
+            : $user->students()->with(['account.monthlyBillings', 'gradeLevelModel'])->get();
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
+            'students' => $students,
+            'demoChildren' => $demoChildren,
         ]);
     }
 
@@ -26,13 +34,29 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $firstName = trim((string) $request->input('first_name', ''));
+        $middleName = trim((string) $request->input('middle_name', ''));
+        $lastName = trim((string) $request->input('last_name', ''));
+
+        $assembledName = trim($firstName . ($middleName ? ' ' . $middleName : '') . ($lastName ? ' ' . $lastName : ''));
+
+        if ($assembledName !== '') {
+            $user->name = mb_strtoupper($assembledName, 'UTF-8');
+        } elseif ($request->filled('name')) {
+            $user->name = mb_strtoupper($request->input('name'), 'UTF-8');
         }
 
-        $request->user()->save();
+        if ($request->filled('email')) {
+            $newEmail = \Illuminate\Support\Str::lower(trim($request->input('email')));
+            if ($user->email !== $newEmail) {
+                $user->email = $newEmail;
+                $user->email_verified_at = null;
+            }
+        }
+
+        $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
