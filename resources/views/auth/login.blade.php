@@ -25,7 +25,7 @@
                     Family Payment System
                 </p>
 
-                <!-- 5. Restored Description below Family Payment System -->
+                <!-- 5. Description -->
                 <p class="mt-4 sm:mt-5 max-w-[460px] text-xs sm:text-sm lg:text-sm leading-relaxed text-emerald-100/75">
                     Access your children's balances, monthly tuition fees, official statements of account, and payment receipts in one secure portal.
                 </p>
@@ -35,7 +35,6 @@
         <!-- RIGHT / BOTTOM LOGIN PANEL -->
         <section class="flex flex-1 flex-col items-center justify-center bg-slate-50 px-4 py-10 sm:px-8 lg:min-h-screen lg:py-12">
             <div class="w-full max-w-md my-auto" x-data="{
-                mode: 'otp',
                 step: 'email',
                 email: '{{ old('email') }}',
                 otp: ['', '', '', ''],
@@ -134,12 +133,7 @@
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-8">
                     <div>
                         <h2 class="text-2xl font-black text-slate-900">Sign in to Family Payments</h2>
-                        <p class="mt-2 text-sm leading-6 text-slate-500">Use a one-time email code or your account password.</p>
-                    </div>
-
-                    <div class="mt-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-sm font-bold">
-                        <button type="button" @click="mode='otp';step='email';error='';success=''" :class="mode==='otp' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-500'" class="rounded-lg px-3 py-2.5 transition">Email code</button>
-                        <button type="button" @click="mode='password';error='';success=''" :class="mode==='password' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-500'" class="rounded-lg px-3 py-2.5 transition">Password</button>
+                        <p class="mt-2 text-sm leading-6 text-slate-500">Use a one-time email code to securely access your family's payment account.</p>
                     </div>
 
                     @if ($errors->any())
@@ -148,8 +142,9 @@
                     <div x-show="error" x-cloak x-text="error" class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800"></div>
                     <div x-show="success" x-cloak x-text="success" class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800"></div>
 
-                    <!-- OTP Mode -->
-                    <div x-show="mode==='otp'" x-cloak class="mt-5">
+                    <!-- Email Code / OTP Flow -->
+                    <div class="mt-6">
+                        <!-- Step 1: Email Input -->
                         <div x-show="step==='email'">
                             <label for="otp-email" class="text-sm font-bold text-slate-700">Parent email address</label>
                             <input id="otp-email" x-model.trim="email" @keydown.enter.prevent="sendOtp()" type="email" autocomplete="email" placeholder="name@school.edu.ph" class="mt-2 w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 text-sm focus:border-emerald-600 focus:ring-emerald-600">
@@ -158,6 +153,8 @@
                                 <span x-show="loading">Sending securely…</span>
                             </button>
                         </div>
+
+                        <!-- Step 2: 4-digit Code Input -->
                         <div x-show="step==='code'" x-cloak>
                             <p class="text-sm text-slate-600">Enter the 4-digit code sent to <strong class="break-all text-slate-900" x-text="email"></strong>.</p>
                             <div class="mt-5 grid grid-cols-4 gap-3" @paste="pasteOtp($event)">
@@ -176,21 +173,15 @@
                         </div>
                     </div>
 
-                    <!-- Password Mode -->
-                    <form x-show="mode==='password'" x-cloak method="POST" action="{{ route('login.store') }}" class="mt-5 space-y-4">
-                        @csrf
-                        <label class="block text-sm font-bold text-slate-700">Email<input name="email" type="email" value="{{ old('email') }}" required autocomplete="email" class="mt-2 w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 text-sm focus:border-emerald-600 focus:ring-emerald-600"></label>
-                        <label class="block text-sm font-bold text-slate-700">Password<input name="password" type="password" required autocomplete="current-password" class="mt-2 w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 text-sm focus:border-emerald-600 focus:ring-emerald-600"></label>
-                        <button class="w-full rounded-xl bg-slate-900 px-5 py-3.5 text-sm font-extrabold text-white hover:bg-slate-800 transition">Sign in with password</button>
-                    </form>
-
-                    <div class="my-5 flex items-center gap-3">
+                    <!-- Divider OR -->
+                    <div class="my-6 flex items-center gap-3">
                         <div class="h-px flex-1 bg-slate-200"></div>
                         <span class="text-[11px] font-bold uppercase text-slate-400">or</span>
                         <div class="h-px flex-1 bg-slate-200"></div>
                     </div>
 
-                    <div class="space-y-2.5">
+                    <!-- Google SSO -->
+                    <div>
                         <a href="{{ route('auth.google') }}" class="flex w-full items-center justify-center gap-2.5 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition">
                             <svg class="h-4 w-4" viewBox="0 0 24 24">
                                 <path fill="#EA4335" d="M12 5.04c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 1.76 14.94 1 12 1 7.35 1 3.39 3.65 1.44 7.5l3.8 2.94c.9-2.7 3.4-4.4 6.76-4.4z"/>
@@ -199,16 +190,6 @@
                                 <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.92l-3.69-2.87c-1.02.68-2.33 1.09-3.97 1.09-3.36 0-5.86-1.7-6.76-4.4l-3.8 2.94C3.39 20.35 7.35 23 12 23z"/>
                             </svg>
                             Sign in with Google
-                        </a>
-
-                        <a href="{{ route('auth.microsoft') }}" class="flex w-full items-center justify-center gap-2.5 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition">
-                            <svg class="h-4 w-4" viewBox="0 0 23 23">
-                                <rect width="11" height="11" fill="#F25022"/>
-                                <rect x="12" width="11" height="11" fill="#7FBA00"/>
-                                <rect y="12" width="11" height="11" fill="#00A4EF"/>
-                                <rect x="12" y="12" width="11" height="11" fill="#FFB900"/>
-                            </svg>
-                            Sign in with Microsoft
                         </a>
                     </div>
                 </div>
