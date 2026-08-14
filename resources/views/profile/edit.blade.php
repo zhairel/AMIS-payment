@@ -7,7 +7,32 @@
         $allChildrenList = $students->isNotEmpty() ? $students : $demoChildren;
     @endphp
 
-    <div class="min-h-screen bg-slate-100/70 py-8 sm:py-12" x-data="{ activeTab: 'personal' }">
+    <div class="min-h-screen bg-slate-100/70 py-10 sm:py-14" x-data="{ 
+        activeTab: 'personal',
+        showAddChildModal: false,
+        childForm: {
+            name: '',
+            student_id: '',
+            grade_level: 'Grade 1',
+            relationship: 'Parent / Guardian',
+            notes: ''
+        },
+        childRequestSubmitted: false,
+        childRequestLoading: false,
+        submitChildRequest() {
+            if (!this.childForm.name) return;
+            this.childRequestLoading = true;
+            setTimeout(() => {
+                this.childRequestLoading = false;
+                this.childRequestSubmitted = true;
+            }, 700);
+        },
+        resetChildModal() {
+            this.showAddChildModal = false;
+            this.childRequestSubmitted = false;
+            this.childForm = { name: '', student_id: '', grade_level: 'Grade 1', relationship: 'Parent / Guardian', notes: '' };
+        }
+    }">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <!-- Top Navigation & Header -->
@@ -32,7 +57,7 @@
             </div>
 
             <!-- Parent Identity Hero Banner -->
-            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#065f46] via-[#054e3a] to-[#033b2c] p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/10">
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#065f46] via-[#054e3a] to-[#033b2c] p-8 sm:p-12 text-white shadow-xl shadow-emerald-950/10">
                 <!-- Subtle background decorative shapes -->
                 <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full border border-white/10 bg-white/[0.03] pointer-events-none"></div>
                 <div class="absolute -bottom-24 -left-16 h-72 w-72 rounded-full border border-white/10 bg-white/[0.03] pointer-events-none"></div>
@@ -107,11 +132,9 @@
             <!-- TAB 1: PERSONAL INFORMATION -->
             <div x-show="activeTab === 'personal'" x-cloak class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
-                <!-- LEFT COLUMN: Profile Form & Password Form (Span 2) -->
-                <div class="lg:col-span-2 space-y-8">
-                    
-                    <!-- Card 1: Profile Information -->
-                    <div class="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
+                <!-- LEFT COLUMN: Profile Form (Span 2) -->
+                <div class="lg:col-span-2">
+                    <div class="rounded-3xl border border-slate-200/80 bg-white p-8 sm:p-12 shadow-sm">
                         <div class="flex items-center gap-3 border-b border-slate-100 pb-5">
                             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,32 +151,11 @@
                             @include('profile.partials.update-profile-information-form')
                         </div>
                     </div>
-
-                    <!-- Card 2: Update Password -->
-                    <div class="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
-                        <div class="flex items-center gap-3 border-b border-slate-100 pb-5">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h2 class="text-lg font-black text-slate-900">Update Password</h2>
-                                <p class="text-xs text-slate-500">Ensure your account uses a secure password if you sign in with password.</p>
-                            </div>
-                        </div>
-
-                        <div class="mt-6">
-                            @include('profile.partials.update-password-form')
-                        </div>
-                    </div>
                 </div>
 
                 <!-- RIGHT COLUMN: Sign-In Security (Span 1) -->
                 <div class="space-y-6">
-                    
-                    <!-- Security Summary Card -->
-                    <div class="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+                    <div class="rounded-3xl border border-slate-200/80 bg-white p-8 shadow-sm">
                         <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-900">Sign-In Security</h3>
                         <p class="mt-1 text-xs text-slate-500">Authentication methods connected to your account.</p>
 
@@ -202,12 +204,12 @@
                             </div>
                         </div>
 
-                        <!-- Clean Security Note (No emojis, SVG icon only) -->
+                        <!-- Clean Security Note (SVG icon only) -->
                         <div class="mt-5 rounded-xl border border-slate-100 bg-slate-50/70 p-3 flex items-start gap-2.5 text-[11px] text-slate-600 leading-relaxed">
                             <svg class="h-4 w-4 text-emerald-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                             </svg>
-                            <span>All sign-in attempts and password changes are rate-limited and logged in the official AMIS audit trail.</span>
+                            <span>All sign-in attempts are rate-limited and logged in the official AMIS audit trail.</span>
                         </div>
                     </div>
                 </div>
@@ -215,28 +217,43 @@
 
             <!-- TAB 2: STUDENTS' OR CHILDREN INFORMATION -->
             <div x-show="activeTab === 'children'" x-cloak class="space-y-6">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h2 class="text-xl font-black text-slate-900">Linked Students / Children</h2>
-                        <p class="text-xs text-slate-500">Review your children's enrollment status, student records, and school levels.</p>
+                        <p class="text-xs text-slate-500">Review your children's enrollment status and student records, or request to add another child.</p>
                     </div>
-                    <a href="{{ route('payment.dashboard') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-800 transition">
-                        <span>Go to Payment Dashboard</span>
-                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                        </svg>
-                    </a>
+
+                    <div class="flex items-center gap-3">
+                        <button type="button"
+                                @click="showAddChildModal = true"
+                                class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-800 shadow-sm transition">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            <span>Add Child / Link Student</span>
+                        </button>
+
+                        <a href="{{ route('payment.dashboard') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition">
+                            <span>Payment Dashboard</span>
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            </svg>
+                        </a>
+                    </div>
                 </div>
 
                 @if($allChildrenList->isEmpty())
-                    <div class="rounded-3xl border border-slate-200 bg-white p-8 text-center">
+                    <div class="rounded-3xl border border-slate-200 bg-white p-12 text-center">
                         <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
                             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                             </svg>
                         </div>
                         <h3 class="mt-3 text-base font-extrabold text-slate-900">No linked students found</h3>
-                        <p class="mt-1 text-xs text-slate-500">Link your child using their AMIS student account in the Payment Dashboard.</p>
+                        <p class="mt-1 text-xs text-slate-500">Click "Add Child / Link Student" to request adding your child.</p>
+                        <button type="button" @click="showAddChildModal = true" class="mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-800">
+                            Add Child
+                        </button>
                     </div>
                 @else
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -250,7 +267,7 @@
                                 $cAccentBg = str_contains(strtoupper($cName), 'MARYAM') ? 'bg-blue-50 text-blue-700 border-blue-200' : (str_contains(strtoupper($cName), 'YUSUF') ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200');
                             @endphp
 
-                            <div class="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                            <div class="rounded-3xl border border-slate-200/80 bg-white p-8 shadow-sm flex flex-col justify-between hover:shadow-md transition">
                                 <div>
                                     <div class="flex items-center justify-between gap-3">
                                         <div class="flex h-12 w-12 items-center justify-center rounded-2xl border {{ $cAccentBg }} text-lg font-black shadow-inner">
@@ -275,10 +292,6 @@
                                             <span class="text-slate-400 font-medium">School Year:</span>
                                             <span class="font-bold text-slate-800">2026–2027</span>
                                         </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-slate-400 font-medium">Institution:</span>
-                                            <span class="font-bold text-slate-800">Al Munawwara</span>
-                                        </div>
                                     </div>
                                 </div>
 
@@ -294,6 +307,113 @@
                         @endforeach
                     </div>
                 @endif
+            </div>
+        </div>
+
+        <!-- MODAL: Request to Add / Link Another Child (Admin Approval Required) -->
+        <div x-show="showAddChildModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4" @click.self="resetChildModal()">
+            <div class="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl" role="dialog" aria-modal="true">
+                <div class="h-2 bg-gradient-to-r from-[#065f46] via-emerald-600 to-teal-500"></div>
+
+                <div class="p-8 sm:p-10">
+                    <!-- Modal Header -->
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-800">
+                                Admin Verification Required
+                            </span>
+                            <h3 class="mt-2 text-xl font-black text-slate-900">Request to Add / Link Child</h3>
+                        </div>
+                        <button type="button" @click="resetChildModal()" class="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- Informational Notice: Only Admin Can Approve -->
+                    <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 flex items-start gap-3 text-xs text-amber-900 leading-relaxed">
+                        <svg class="h-5 w-5 text-amber-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div>
+                            <strong class="font-bold block text-amber-950">Administrative Verification</strong>
+                            To protect student records, newly requested children must be reviewed and approved by AMIS Finance & Registrar administrators before appearing on your payment dashboard.
+                        </div>
+                    </div>
+
+                    <!-- Submitted Success State -->
+                    <div x-show="childRequestSubmitted" x-cloak class="mt-6 text-center py-6">
+                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-800">
+                            <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <h4 class="mt-4 text-lg font-black text-slate-900">Link Request Submitted</h4>
+                        <p class="mt-1 text-xs text-slate-600 max-w-sm mx-auto">
+                            Your request to link <strong class="text-slate-900" x-text="childForm.name"></strong> has been forwarded to the school administrator. You will be notified once verified.
+                        </p>
+                        <button type="button" @click="resetChildModal()" class="mt-6 rounded-xl bg-emerald-700 px-6 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-800">
+                            Done
+                        </button>
+                    </div>
+
+                    <!-- Request Form -->
+                    <form x-show="!childRequestSubmitted" class="mt-6 space-y-4" @submit.prevent="submitChildRequest()">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Child's Full Name <span class="text-rose-500">*</span></label>
+                            <input type="text" x-model.trim="childForm.name" required placeholder="e.g. Fatima Lingasa" class="mt-1.5 w-full rounded-xl border-slate-300 bg-slate-50/50 px-4 py-3 text-sm focus:border-emerald-600 focus:bg-white focus:ring-emerald-600">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Student ID / LRN (Optional)</label>
+                                <input type="text" x-model.trim="childForm.student_id" placeholder="e.g. 260012" class="mt-1.5 w-full rounded-xl border-slate-300 bg-slate-50/50 px-4 py-3 text-sm focus:border-emerald-600 focus:bg-white focus:ring-emerald-600">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Grade Level <span class="text-rose-500">*</span></label>
+                                <select x-model="childForm.grade_level" class="mt-1.5 w-full rounded-xl border-slate-300 bg-slate-50/50 px-4 py-3 text-sm focus:border-emerald-600 focus:bg-white focus:ring-emerald-600">
+                                    <option value="Kindergarten">Kindergarten</option>
+                                    <option value="Grade 1">Grade 1</option>
+                                    <option value="Grade 2">Grade 2</option>
+                                    <option value="Grade 3">Grade 3</option>
+                                    <option value="Grade 4">Grade 4</option>
+                                    <option value="Grade 5">Grade 5</option>
+                                    <option value="Grade 6">Grade 6</option>
+                                    <option value="Grade 7">Grade 7 (JHS)</option>
+                                    <option value="Grade 8">Grade 8 (JHS)</option>
+                                    <option value="Grade 9">Grade 9 (JHS)</option>
+                                    <option value="Grade 10">Grade 10 (JHS)</option>
+                                    <option value="Grade 11">Grade 11 (SHS)</option>
+                                    <option value="Grade 12">Grade 12 (SHS)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Relationship to Student</label>
+                            <select x-model="childForm.relationship" class="mt-1.5 w-full rounded-xl border-slate-300 bg-slate-50/50 px-4 py-3 text-sm focus:border-emerald-600 focus:bg-white focus:ring-emerald-600">
+                                <option value="Parent / Mother">Mother</option>
+                                <option value="Parent / Father">Father</option>
+                                <option value="Legal Guardian">Legal Guardian</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Notes / Remarks for Admin (Optional)</label>
+                            <textarea x-model.trim="childForm.notes" rows="2" placeholder="Additional details to assist administrator approval..." class="mt-1.5 w-full rounded-xl border-slate-300 bg-slate-50/50 px-4 py-2.5 text-sm focus:border-emerald-600 focus:bg-white focus:ring-emerald-600"></textarea>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                            <button type="button" @click="resetChildModal()" class="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition">
+                                Cancel
+                            </button>
+                            <button type="submit" :disabled="childRequestLoading || !childForm.name" class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-6 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-800 disabled:opacity-50 transition">
+                                <span x-show="!childRequestLoading">Submit Request to Admin</span>
+                                <span x-show="childRequestLoading">Submitting...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
