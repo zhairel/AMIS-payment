@@ -154,21 +154,21 @@
         }
         .upper-left {
             display: table-cell;
-            width: 30%;
+            width: 29%;
             vertical-align: top;
-            padding-right: 12px;
+            padding-right: 14px;
             font-size: 10px;
         }
         .upper-mid {
             display: table-cell;
             width: 37%;
             vertical-align: top;
-            padding-right: 10px;
+            padding-right: 12px;
             font-size: 10.5px;
         }
         .upper-right {
             display: table-cell;
-            width: 33%;
+            width: 34%;
             vertical-align: top;
         }
 
@@ -189,6 +189,8 @@
             margin-bottom: 6px;
             padding-bottom: 4px;
             border-bottom: 1px solid #cbd5e1;
+            margin-right: -12px;
+            width: calc(100% + 12px);
         }
         .student-header-label {
             font-size: 9.5px;
