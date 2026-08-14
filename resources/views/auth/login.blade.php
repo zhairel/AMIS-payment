@@ -1,32 +1,33 @@
 <x-guest-layout title="Family Payments Login" :show-loader="false">
     <div class="min-h-screen bg-slate-950 flex flex-col lg:grid lg:grid-cols-[1.05fr_.95fr]">
-        <!-- LEFT / TOP BRANDING PANEL: Clean, Elegant, Centered School Identity Panel -->
-        <section class="relative overflow-hidden bg-emerald-950 px-6 py-12 text-white flex flex-col items-center justify-center lg:min-h-screen lg:p-12">
-            <div class="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-emerald-400/10 pointer-events-none"></div>
-            <div class="absolute -bottom-40 -left-24 h-[30rem] w-[30rem] rounded-full bg-teal-300/10 pointer-events-none"></div>
-            <div class="absolute inset-0 bg-gradient-to-b from-emerald-900/15 via-transparent to-black/25 pointer-events-none"></div>
+        <!-- LEFT / TOP BRANDING PANEL: Rich AMIS Logo Green, Larger Typography & Generous Spacing -->
+        <section class="relative overflow-hidden bg-gradient-to-br from-[#065f46] via-[#054e3a] to-[#033b2c] px-6 py-14 text-white flex flex-col items-center justify-center lg:min-h-screen lg:p-14">
+            <!-- Subtle Tonal Background Shapes (Harmonized with Logo Green Palette) -->
+            <div class="absolute -right-28 -top-28 h-96 w-96 rounded-full bg-emerald-400/20 blur-2xl pointer-events-none"></div>
+            <div class="absolute -bottom-36 -left-20 h-[30rem] w-[30rem] rounded-full bg-teal-300/15 blur-2xl pointer-events-none"></div>
+            <div class="absolute inset-0 bg-radial-at-c from-emerald-500/10 via-transparent to-black/20 pointer-events-none"></div>
             
-            <div class="relative z-10 flex flex-col items-center justify-center text-center max-w-lg mx-auto">
+            <div class="relative z-10 flex flex-col items-center justify-center text-center max-w-xl mx-auto">
                 <!-- 1. AMIS Official Logo -->
-                <img src="{{ asset('images/AMIS_Logo.png') }}" class="h-28 w-28 sm:h-32 sm:w-32 lg:h-40 lg:w-40 object-contain drop-shadow-2xl" alt="AL MUNAWWARA ISLAMIC SCHOOL Logo">
+                <img src="{{ asset('images/AMIS_Logo.png') }}" class="h-32 w-32 sm:h-36 sm:w-36 lg:h-44 lg:w-44 object-contain drop-shadow-2xl" alt="AL MUNAWWARA ISLAMIC SCHOOL Logo">
 
-                <!-- 2. Arabic School Name -->
-                <h1 class="mt-6 lg:mt-8 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-wide text-white font-serif leading-relaxed" dir="rtl" style="font-family: 'Amiri', 'Tajawal', serif;">
+                <!-- 2. Arabic School Name (+8px larger, generous spacing) -->
+                <h1 class="mt-8 sm:mt-10 lg:mt-12 text-3xl sm:text-4xl lg:text-[40px] xl:text-[44px] font-bold tracking-wide text-white font-serif leading-snug drop-shadow" dir="rtl" style="font-family: 'Amiri', 'Tajawal', serif;">
                     المدرسة المنورة الإسلامية
                 </h1>
 
-                <!-- 3. English School Name -->
-                <p class="mt-2.5 lg:mt-3 text-sm sm:text-base lg:text-lg font-bold uppercase tracking-[0.2em] text-white/95 leading-normal">
+                <!-- 3. English School Name (+8px larger, generous spacing) -->
+                <p class="mt-4 lg:mt-5 text-lg sm:text-xl lg:text-2xl font-bold uppercase tracking-[0.22em] text-white/95 leading-normal drop-shadow-sm">
                     AL MUNAWWARA ISLAMIC SCHOOL
                 </p>
 
-                <!-- 4. System Name -->
-                <p class="mt-1.5 lg:mt-2 text-xs sm:text-sm lg:text-base font-semibold tracking-wider text-emerald-200/90">
+                <!-- 4. System Name (+8px larger, generous spacing) -->
+                <p class="mt-2.5 lg:mt-3 text-base sm:text-lg lg:text-xl font-semibold tracking-wider text-emerald-100/90">
                     Family Payment System
                 </p>
 
-                <!-- 5. Description -->
-                <p class="mt-4 sm:mt-5 max-w-[460px] text-xs sm:text-sm lg:text-sm leading-relaxed text-emerald-100/75">
+                <!-- 5. Description (+8px larger, generous spacing, max-width ~480px) -->
+                <p class="mt-6 lg:mt-8 max-w-[480px] text-sm sm:text-base lg:text-base leading-relaxed text-emerald-50/85">
                     Access your children's balances, monthly tuition fees, official statements of account, and payment receipts in one secure portal.
                 </p>
             </div>
