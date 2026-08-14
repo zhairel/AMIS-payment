@@ -110,7 +110,7 @@ Route::middleware(['auth', 'verified', 'finance'])->prefix('finance')->name('fin
     Route::post('/receipts/{receipt}/action', [FinanceReceiptController::class, 'action'])->name('receipts.action');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::get('/admin/ai-receipt-test', [\App\Http\Controllers\AdminReceiptTestController::class, 'index'])->name('admin.receipt_test');
     Route::get('/admin/ai-receipt-test/env', [\App\Http\Controllers\AdminReceiptTestController::class, 'checkEnv'])->name('admin.receipt_test.env');
     Route::post('/admin/ai-receipt-test/process', [\App\Http\Controllers\AdminReceiptTestController::class, 'process'])->name('admin.receipt_test.process');

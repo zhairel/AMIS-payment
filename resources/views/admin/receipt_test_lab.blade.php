@@ -672,7 +672,7 @@
                     formData.append('receipt', item.file);
 
                     try {
-                        const response = await fetch('/admin/ai-receipt-test/scan', {
+                        const response = await fetch('/admin/ai-receipt-test/process', {
                             method: 'POST',
                             headers: {
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')

@@ -36,7 +36,8 @@ class SendOtpCode extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Your AMIS Verification Code: ' . $this->code)
+            ->from(config('mail.from.address'), 'AMIS OTP')
+            ->subject('AMIS OTP Code: ' . $this->code)
             ->replyTo('noreply@amis.edu.ph', 'AMIS Support')
             ->view('emails.verify-code', [
                 'user' => $notifiable,

@@ -28,7 +28,7 @@ class AdminReceiptTestController extends Controller
         $request->validate([
             'image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png', 'max:10240'],
             'receipt' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png', 'max:10240'],
-            'test_id' => ['nullable', 'string'],
+            'test_id' => ['nullable', 'uuid'],
             'expected_provider' => ['nullable', 'string'],
             'expected_reference' => ['nullable', 'string'],
             'expected_date' => ['nullable', 'string'],
@@ -45,7 +45,7 @@ class AdminReceiptTestController extends Controller
             $testPath = $file->storeAs("private/receipt-tests/{$testId}", "test.{$extension}", 'local');
             $fullPath = Storage::disk('local')->path($testPath);
         } elseif ($request->filled('test_id')) {
-            $files = Storage::disk('local')->files("private/receipt-tests/" . $request->input('test_id'));
+            $files = Storage::disk('local')->files('private/receipt-tests/'.$request->input('test_id'));
             if (! empty($files)) {
                 $fullPath = Storage::disk('local')->path($files[0]);
             }
@@ -101,28 +101,29 @@ class AdminReceiptTestController extends Controller
             $fullPath = Storage::disk('local')->path($testPath);
 
             if (! file_exists($fullPath)) {
-                return $this->failureResponse('PREPROCESSING', 'Uploaded test image file could not be stored in test storage.', 'File missing at path: ' . $testPath, $startTime, $originalFilename ?? 'image.png', $sizeBytes ?? 0);
+                return $this->failureResponse('PREPROCESSING', 'Uploaded test image file could not be stored in test storage.', 'File missing at path: '.$testPath, $startTime, $originalFilename ?? 'image.png', $sizeBytes ?? 0);
             }
 
-            $ocrResult = $pipeline->processReceipt($fullPath);
+            $ocrResult = $pipeline->analyzeFile($fullPath);
+            $fields = $ocrResult['fields'] ?? [];
             $durationMs = (int) round((microtime(true) - $startTime) * 1000);
 
-            if (($ocrResult['status'] ?? '') === 'SUCCESS') {
+            if (($ocrResult['ocr_status'] ?? 'OCR_FAILED') !== 'OCR_FAILED') {
                 return response()->json([
                     'status' => 'SUCCESS',
                     'message' => 'Receipt verification completed successfully.',
                     'verification' => [
-                        'provider' => $ocrResult['provider'] ?? 'Other / Unknown',
-                        'mode' => $ocrResult['mode'] ?? null,
-                        'reference_number' => $ocrResult['reference_number'] ?? null,
-                        'normalized_reference' => $ocrResult['normalized_reference'] ?? null,
-                        'amount' => $ocrResult['amount'] ?? null,
-                        'currency' => $ocrResult['currency'] ?? 'PHP',
-                        'transaction_date' => $ocrResult['transaction_date'] ?? null,
-                        'transaction_time' => $ocrResult['transaction_time'] ?? null,
-                        'sender_name' => $ocrResult['sender_name'] ?? null,
-                        'receiver_name' => $ocrResult['receiver_name'] ?? null,
-                        'transaction_status' => $ocrResult['transaction_status'] ?? 'SUCCESS',
+                        'provider' => $fields['provider'] ?? 'Other / Unknown',
+                        'mode' => $fields['mode'] ?? null,
+                        'reference_number' => $fields['reference_number'] ?? null,
+                        'normalized_reference' => $fields['normalized_reference'] ?? null,
+                        'amount' => $fields['amount'] ?? null,
+                        'currency' => $fields['currency'] ?? 'PHP',
+                        'transaction_date' => $fields['transaction_date'] ?? null,
+                        'transaction_time' => $fields['transaction_time'] ?? null,
+                        'sender_name' => $fields['sender_name'] ?? null,
+                        'receiver_name' => $fields['receiver_name'] ?? null,
+                        'transaction_status' => $fields['transaction_status'] ?? null,
                     ],
                     'technical_details' => [
                         'test_id' => $testId,
@@ -131,8 +132,8 @@ class AdminReceiptTestController extends Controller
                         'total_processing_time_ms' => $durationMs,
                         'pipeline_stage' => 'COMPLETED',
                         'raw_ocr_length' => mb_strlen($ocrResult['raw_text'] ?? ''),
-                        'extraction_method' => $ocrResult['extraction_method'] ?? 'Standard Pipeline',
-                        'parsed_fields' => $ocrResult,
+                        'extraction_method' => $ocrResult['fallback_used'] ? 'Tesseract + docTR field consensus' : 'Tesseract fast path',
+                        'parsed_fields' => $fields,
                     ],
                 ]);
             }
@@ -150,7 +151,7 @@ class AdminReceiptTestController extends Controller
 
             return response()->json([
                 'status' => 'FAILED',
-                'message' => 'Receipt parsing failed during ' . $stage,
+                'message' => 'Receipt parsing failed during '.$stage,
                 'technical_details' => [
                     'pipeline_stage' => $stage,
                     'error_type' => get_class($e),
@@ -159,6 +160,21 @@ class AdminReceiptTestController extends Controller
                 ],
             ], 500);
         }
+    }
+
+    public function preview(string $testId)
+    {
+        abort_unless(Str::isUuid($testId), 404);
+        $files = Storage::disk('local')->files("private/receipt-tests/{$testId}");
+        abort_if($files === [], 404);
+
+        $path = $files[0];
+        $mime = Storage::disk('local')->mimeType($path) ?: 'application/octet-stream';
+
+        return Storage::disk('local')->response($path, basename($path), [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, no-store',
+        ]);
     }
 
     private function failureResponse(string $stage, string $message, string $debugError, float $startTime, string $filename, int $sizeBytes): JsonResponse

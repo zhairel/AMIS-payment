@@ -63,3 +63,25 @@ To run the server locally on port `8050`, execute:
 php artisan serve --port=8050
 ```
 Then visit: `http://127.0.0.1:8050`
+
+## Receipt OCR worker
+
+Receipt uploads are stored unchanged on the private disk and processed asynchronously. The worker creates a separate cleanup copy, runs PaddleOCR first, and invokes Tesseract only when critical fields are missing, uncertain, or invalid.
+
+Install the OCR environment:
+
+```bash
+python3 -m venv .venv-ocr
+.venv-ocr/bin/pip install -r requirements-ocr.txt
+# Debian/Ubuntu system packages used for Tesseract and image processing:
+sudo apt-get install tesseract-ocr imagemagick
+```
+
+Set `PADDLE_OCR_PYTHON` to the virtual environment's Python executable, migrate the database, and keep a dedicated worker running:
+
+```bash
+php artisan migrate --force
+php artisan queue:work database --queue=receipts,default --tries=2 --timeout=180
+```
+
+Finance users (`admin` or `staff`) review receipts at `/finance/receipts`. Receipt approval is deliberately separate from posting a payment to a student balance.

@@ -65,6 +65,7 @@
 }
 
 .auth-hero-panel {
+    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -73,6 +74,35 @@
     overflow: hidden;
     background: linear-gradient(160deg, #059669 0%, #065f46 68%);
     color: #ffffff;
+}
+
+.auth-hero-panel::before,
+.auth-hero-panel::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    border-radius: 999px;
+}
+
+.auth-hero-panel::before {
+    width: 420px;
+    height: 420px;
+    right: -210px;
+    top: -170px;
+    border: 70px solid rgba(255, 255, 255, 0.055);
+}
+
+.auth-hero-panel::after {
+    width: 300px;
+    height: 300px;
+    left: -190px;
+    bottom: -160px;
+    border: 54px solid rgba(255, 255, 255, 0.045);
+}
+
+.auth-hero-panel > * {
+    position: relative;
+    z-index: 1;
 }
 
 .auth-hero-brand {
@@ -362,6 +392,19 @@
     border-radius: 10px;
     background: #f8fafc;
     color: #64748b;
+}
+
+.auth-coming-soon-option.auth-microsoft-soon {
+    margin: 0 0 1.25rem;
+    border-style: solid;
+    background: #f8fafc;
+    cursor: not-allowed;
+    user-select: none;
+}
+
+.auth-coming-soon-option.auth-microsoft-soon .auth-microsoft-logo {
+    justify-self: center;
+    opacity: 0.72;
 }
 
 .auth-coming-soon-option.auth-google-soon {
@@ -1002,5 +1045,4 @@ input:-webkit-autofill:active {
         margin: 2px 0;
     }
 }
-
 

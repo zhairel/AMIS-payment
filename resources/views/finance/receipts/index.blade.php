@@ -13,7 +13,7 @@
                 <tbody class="divide-y divide-slate-100">
                 @forelse($receipts as $receipt)
                     <tr class="hover:bg-slate-50">
-                        <td class="px-5 py-4"><a class="font-semibold text-emerald-700" href="{{ route('finance.receipts.show', $receipt) }}">{{ $receipt->submission_id }}</a><div class="text-xs text-slate-500">{{ $receipt->created_at->format('M d, Y H:i') }}</div></td>
+                        <td class="px-5 py-4"><a class="font-semibold text-emerald-700" href="{{ route('finance.receipts.show', $receipt) }}">{{ $receipt->submission_id }}</a><div class="text-xs text-slate-500">{{ strtoupper($receipt->created_at->format('M d, Y H:i')) }}</div></td>
                         <td class="px-5 py-4">{{ $receipt->user?->name }}<div class="text-xs text-slate-500">{{ $receipt->original_filename }}</div></td>
                         <td class="px-5 py-4"><div>{{ $receipt->provider ?: 'Unknown provider' }}</div><div class="font-mono text-xs">{{ $receipt->reference_number ?: 'Reference unreadable' }}</div><div>{{ $receipt->currency }} {{ $receipt->amount }}</div></td>
                         <td class="px-5 py-4">{{ $receipt->quality_score ?? '—' }}/100<div class="text-xs text-slate-500">{{ data_get($receipt->quality_assessment, 'readability', 'not assessed') }}</div></td>

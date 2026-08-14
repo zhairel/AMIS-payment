@@ -26,7 +26,7 @@
                                 Al Munawwara Islamic School
                             </div>
                             <div style="font-size:13px;line-height:1.5;color:#a7f3d0;margin-top:6px;">
-                                AMIS Payment Portal
+                                AMIS Family Payment System
                             </div>
                         </td>
                     </tr>

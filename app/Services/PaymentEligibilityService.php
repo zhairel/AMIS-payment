@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\SoaMonthlyBilling;
 use App\Models\Student;
-use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
 class PaymentEligibilityService
@@ -13,7 +12,7 @@ class PaymentEligibilityService
     {
         $account = $student->account;
 
-        if (!$account || $billing->student_id !== $student->id || $billing->student_account_id !== $account->id) {
+        if (! $account || $billing->student_id !== $student->id || $billing->student_account_id !== $account->id) {
             throw new InvalidArgumentException('The billing period does not belong to this student account.');
         }
 
@@ -21,7 +20,7 @@ class PaymentEligibilityService
             ? $account->monthlyBillings
             : $account->monthlyBillings()->with('payments')->get();
 
-        if ($billings->contains(fn (SoaMonthlyBilling $item) => !$item->relationLoaded('payments'))) {
+        if ($billings->contains(fn (SoaMonthlyBilling $item) => ! $item->relationLoaded('payments'))) {
             $billings->loadMissing('payments');
         }
         $currentBilling = $billings->firstWhere('id', $billing->id) ?? $billing->loadMissing('payments');
@@ -38,8 +37,8 @@ class PaymentEligibilityService
             : 0.0;
 
         $paymentAllowed = $currentRemaining > 0
-            && !$hasPendingPayment
-            && !$oldestOutstanding;
+            && ! $hasPendingPayment
+            && ! $oldestOutstanding;
 
         $reason = null;
         if ($currentRemaining <= 0) {
@@ -57,7 +56,9 @@ class PaymentEligibilityService
             'has_pending_payment' => $hasPendingPayment,
             'oldest_outstanding_billing_id' => $oldestOutstanding?->id,
             'oldest_outstanding_month_number' => $oldestOutstanding?->month_number,
-            'oldest_outstanding_month' => $oldestOutstanding?->due_date?->format('F Y'),
+            'oldest_outstanding_month' => $oldestOutstanding?->due_date
+                ? strtoupper($oldestOutstanding->due_date->format('F Y'))
+                : null,
             'oldest_outstanding_amount' => $oldestRemaining,
         ];
     }

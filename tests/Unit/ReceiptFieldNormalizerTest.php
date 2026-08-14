@@ -40,6 +40,27 @@ class ReceiptFieldNormalizerTest extends TestCase
         $this->assertNotEquals('NURHASAN', $parsed['reference_number']);
     }
 
+    public function test_rejects_transaction_label_ocr_typo_and_uses_real_reference(): void
+    {
+        $ocrText = "Transaction Receipt\nReference Number\n400857439\nTransaction Date\n08/08/2026";
+        $parsed = $this->normalizer->fromOcr([
+            'raw_text' => $ocrText,
+            'detected_ref' => 'TRANSACION',
+        ]);
+
+        $this->assertSame('400857439', $parsed['reference_number']);
+    }
+
+    public function test_leaves_reference_blank_when_ocr_only_detects_a_label(): void
+    {
+        $parsed = $this->normalizer->fromOcr([
+            'raw_text' => "Transaction\nTransfer service\nTransaction Date\n08/08/2026",
+            'detected_ref' => 'TRANSACION',
+        ]);
+
+        $this->assertNull($parsed['reference_number']);
+    }
+
     public function test_extracts_amount_prioritizing_transfer_amount_over_fees(): void
     {
         $ocrText = "Transfer Amount: ₱4,000.00\nFee Amount: ₱10.00\nTotal Amount: ₱4,010.00";
@@ -74,6 +95,15 @@ class ReceiptFieldNormalizerTest extends TestCase
 
         $this->assertEquals('GCash', $parsed['provider']);
         $this->assertEquals('BDO Unibank', $parsed['receiving_bank']);
+    }
+
+    public function test_recognizes_enjaz_as_a_remittance_provider(): void
+    {
+        $ocrText = "Success\n10 Aug 2026 11:15 PM\nEnjaz Easy Transfer\nPHP 8,200.00\nReference No. FT26222662202746";
+        $parsed = $this->normalizer->fromOcr(['raw_text' => $ocrText]);
+
+        $this->assertEquals('Enjaz Easy Transfer', $parsed['provider']);
+        $this->assertEquals('Remittance / transfer service', $parsed['mode']);
     }
 
     public function test_builds_field_level_multi_engine_consensus(): void

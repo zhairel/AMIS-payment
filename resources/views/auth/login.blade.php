@@ -6,7 +6,7 @@
             <div>
                 <div class="auth-hero-arabic" lang="ar" dir="rtl">المدرسة المنورة الإسلامية</div>
                 <div class="auth-hero-school">AL MUNAWWARA ISLAMIC SCHOOL</div>
-                <div class="auth-hero-subtitle">AMIS Payment Portal</div>
+                <div class="auth-hero-subtitle">AMIS Family Payment System</div>
             </div>
         </div>
 
@@ -15,19 +15,19 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
                     <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                 </svg>
-                AMIS e-Payment Portal
+                Secure family payment access
             </span>
-            <h1>Online Payment Portal</h1>
-            <p>Enter your parent email address to check your children's balances, review statements of account, and upload payment receipts.</p>
+            <h1>AMIS Family<br>Payment System</h1>
+            <p>One secure place for parents to review every linked child's balance, monitor monthly fees, and submit payment receipts.</p>
         </div>
 
         <div class="auth-hero-flow">
             @php
                 $steps = [
-                    ['Email verification', 'Enter your email and verify using the 4-digit code we send.'],
-                    ['Select child', 'Select from the list of your enrolled children to review accounts.'],
-                    ['Review balances', 'Check current monthly tuition, miscellaneous fees, and remaining balances.'],
-                    ['Upload payments', 'Submit GCash, Maya, or BDO receipts to settle remaining balances.'],
+                    ['Secure sign in', 'Continue with Google or verify your parent email using a 4-digit code.'],
+                    ['Linked children', 'See all student accounts securely connected to your family.'],
+                    ['Clear balances', 'Review monthly fees, payment history, and remaining balances.'],
+                    ['Easy payments', 'Upload GCash, Maya, BDO, or remittance receipts for Finance review.'],
                 ];
             @endphp
             @foreach ($steps as $index => [$title, $copy])
@@ -172,11 +172,15 @@
                     });
                 }
             }">
+                <div class="auth-entry-mobile-brand">
+                    <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS" class="auth-entry-mobile-logo">
+                    <div class="auth-entry-mobile-school">AMIS Family Payment System</div>
+                </div>
                 <div class="auth-entry-heading">
-                    <span class="auth-entry-kicker">AMIS e-Payment</span>
-                    <h2 x-show="step === 'email'">e-Payment Log In</h2>
-                    <h2 x-show="step === 'otp'">Verify email</h2>
-                    <p x-show="step === 'email'">Enter your parent email to verify and open your online payment dashboard.</p>
+                    <span class="auth-entry-kicker">AMIS Family Payments</span>
+                    <h2 x-show="step === 'email'">Welcome, Parent</h2>
+                    <h2 x-show="step === 'otp'">Verify your email</h2>
+                    <p x-show="step === 'email'">Sign in securely to open your family's payment dashboard.</p>
                     <p x-show="step === 'otp'">We sent a 4-digit verification code to <strong x-text="email" style="color:#0f172a; word-break:break-all;"></strong>. Enter the code to continue.</p>
                 </div>
 
@@ -197,18 +201,22 @@
                         <span>Sign in with Google</span>
                     </a>
 
-                    <!-- Microsoft Sign In Button -->
-                    <a href="{{ route('auth.microsoft') }}" class="btn-microsoft-auth-premium" style="margin-bottom: 1.25rem;">
-                        <svg class="auth-microsoft-logo" width="18" height="18" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 12px; flex-shrink: 0;">
+                    <!-- Microsoft is intentionally unavailable until tenant setup is complete. -->
+                    <div class="auth-coming-soon-option auth-microsoft-soon" aria-disabled="true">
+                        <svg class="auth-microsoft-logo" width="18" height="18" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                             <rect width="10.5" height="10.5" fill="#F25022"/>
                             <rect x="12.5" width="10.5" height="10.5" fill="#7FBA00"/>
                             <rect y="12.5" width="10.5" height="10.5" fill="#00A4EF"/>
                             <rect x="12.5" y="12.5" width="10.5" height="10.5" fill="#FFB900"/>
                         </svg>
-                        <span>Sign in with Microsoft</span>
-                    </a>
+                        <div>
+                            <strong>Microsoft sign in</strong>
+                            <span>School account access</span>
+                        </div>
+                        <em>Coming soon</em>
+                    </div>
 
-                    <div class="auth-option-divider"><span>or</span></div>
+                    <div class="auth-option-divider"><span>or continue with email</span></div>
 
                     <div class="form-group">
                         <label for="email" class="premium-input-label">Email address</label>
@@ -252,7 +260,7 @@
                 </div>
 
                 <p class="auth-entry-note" style="margin-top: 1.5rem; text-align: center; color: #64748b; font-size: 0.8rem;">
-                    Sign in options are protected by AMIS security policies.
+                    Your sign-in and family payment information are protected by AMIS security controls.
                 </p>
             </div>
         </div>

@@ -6,7 +6,7 @@ class ReceiptClassificationService
 {
     /**
      * Classify OCR output without treating an OCR failure as a failed payment.
-     * Only documents that clearly look like an SOA or fee schedule are blocked.
+     * Clearly identified reminders, SOAs, and fee schedules are blocked.
      */
     public function classify(array $ocr): array
     {
@@ -25,6 +25,10 @@ class ReceiptClassificationService
             'schedule of fees',
             'tuition fees',
             'monthly installments',
+            'payment reminder',
+            'monthly payment is due',
+            'payment is due soon',
+            'due soon',
             'required payment monthly',
             'due monthly payment',
             'total amount to pay',
@@ -35,11 +39,17 @@ class ReceiptClassificationService
             ->filter(fn (string $phrase) => str_contains($text, $phrase))
             ->count();
 
-        if (str_contains($text, 'statement of account') || str_contains($text, 'schedule of fees') || $nonReceiptHits >= 2) {
+        $isPaymentReminder = str_contains($text, 'reminder')
+            && (str_contains($text, 'monthly payment')
+                || str_contains($text, 'payment is due')
+                || str_contains($text, 'due soon')
+                || str_contains($text, 'have not yet settled'));
+
+        if ($isPaymentReminder || str_contains($text, 'statement of account') || str_contains($text, 'schedule of fees') || $nonReceiptHits >= 2) {
             return [
                 'type' => 'not_receipt',
                 'score' => -10,
-                'message' => 'This looks like a statement of account or fee document, not a payment receipt.',
+                'message' => 'This looks like a payment reminder, statement of account, or fee document—not proof of a completed payment.',
             ];
         }
 

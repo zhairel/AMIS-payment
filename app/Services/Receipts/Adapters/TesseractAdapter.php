@@ -67,13 +67,37 @@ class TesseractAdapter implements OcrEngineAdapterInterface
             }
         }
 
-        $python = config('services.receipt_ocr.python', config('services.paddle_ocr.python', 'python3'));
-        $script = base_path('scripts/ocr_engine_runner.py');
+        try {
+            $python = config('services.receipt_ocr.python', config('services.paddle_ocr.python', 'python3'));
+            $script = base_path('scripts/ocr_engine_runner.py');
 
-        $process = new Process([$python, $script, 'tesseract', $filePath]);
-        $process->setTimeout(60)->run();
+            $process = new Process([$python, $script, 'tesseract', $filePath]);
+            $process->setTimeout(60)->run();
 
-        if (! $process->isSuccessful()) {
+            if (! $process->isSuccessful()) {
+                return [
+                    'engine' => 'Tesseract',
+                    'status' => 'FAILED',
+                    'raw_text' => '',
+                    'regions' => 0,
+                    'confidence' => null,
+                    'duration_ms' => 0,
+                    'error' => 'Process error: '.$process->getErrorOutput(),
+                ];
+            }
+
+            $result = json_decode($process->getOutput(), true);
+
+            return is_array($result) ? $result : [
+                'engine' => 'Tesseract',
+                'status' => 'FAILED',
+                'raw_text' => '',
+                'regions' => 0,
+                'confidence' => null,
+                'duration_ms' => 0,
+                'error' => 'Invalid JSON returned from python runner',
+            ];
+        } catch (Throwable $e) {
             return [
                 'engine' => 'Tesseract',
                 'status' => 'FAILED',
@@ -81,20 +105,8 @@ class TesseractAdapter implements OcrEngineAdapterInterface
                 'regions' => 0,
                 'confidence' => null,
                 'duration_ms' => 0,
-                'error' => 'Process error: '.$process->getErrorOutput(),
+                'error' => 'Tesseract unavailable: '.$e->getMessage(),
             ];
         }
-
-        $result = json_decode($process->getOutput(), true);
-
-        return is_array($result) ? $result : [
-            'engine' => 'Tesseract',
-            'status' => 'FAILED',
-            'raw_text' => '',
-            'regions' => 0,
-            'confidence' => null,
-            'duration_ms' => 0,
-            'error' => 'Invalid JSON returned from python runner',
-        ];
     }
 }

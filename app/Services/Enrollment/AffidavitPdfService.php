@@ -179,7 +179,7 @@ class AffidavitPdfService
     {
         $templatePath = public_path('docs/Affidavit_enrollee.pdf');
 
-        $pdf = new Fpdi();
+        $pdf = new Fpdi;
         $pdf->setSourceFile($templatePath);
         $tplId = $pdf->importPage(1);
         $size = $pdf->getTemplateSize($tplId);
@@ -216,7 +216,7 @@ class AffidavitPdfService
         }
 
         if (($field['default'] ?? null) === 'current_month' && $value === '') {
-            return now()->format('F');
+            return strtoupper(now()->format('F'));
         }
 
         if (($field['format'] ?? null) === 'date') {
@@ -233,11 +233,11 @@ class AffidavitPdfService
     private function writeField(Fpdi $pdf, float $pageWidth, float $pageHeight, array $field, string $value): void
     {
         $fontPointSize = max(6, ((float) $field['font_size']) * 0.75);
-        $text = !($field['no_caps'] ?? false)
+        $text = ! ($field['no_caps'] ?? false)
             ? strtoupper(trim($value))
             : trim($value);
 
-        $pdf->SetFont('Helvetica', !empty($field['bold']) ? 'B' : '', $fontPointSize);
+        $pdf->SetFont('Helvetica', ! empty($field['bold']) ? 'B' : '', $fontPointSize);
         $pdf->SetXY(($field['left'] / 100) * $pageWidth, ($field['top'] / 100) * $pageHeight);
         $pdf->Cell(
             ($field['width'] / 100) * $pageWidth,
@@ -251,13 +251,13 @@ class AffidavitPdfService
 
     private function writeSignature(Fpdi $pdf, float $pageWidth, float $pageHeight, array $data): void
     {
-        if (empty($data['signature_data']) || !str_starts_with($data['signature_data'], 'data:image/png;base64,')) {
+        if (empty($data['signature_data']) || ! str_starts_with($data['signature_data'], 'data:image/png;base64,')) {
             return;
         }
 
         $sigBase64 = str_replace('data:image/png;base64,', '', $data['signature_data']);
         $sigBinary = base64_decode($sigBase64);
-        $tmpFile = tempnam(sys_get_temp_dir(), 'sig_') . '.png';
+        $tmpFile = tempnam(sys_get_temp_dir(), 'sig_').'.png';
 
         file_put_contents($tmpFile, $sigBinary);
         $pdf->Image(
@@ -280,6 +280,8 @@ class AffidavitPdfService
 
         $timestamp = strtotime($value);
 
-        return $timestamp ? date('F j, Y', $timestamp) : $value;
+        return $timestamp
+            ? strtoupper(date('F', $timestamp)).date(' j, Y', $timestamp)
+            : $value;
     }
 }

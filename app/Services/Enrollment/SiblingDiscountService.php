@@ -23,6 +23,7 @@ class SiblingDiscountService
     {
         if (in_array($applicant->status, self::ELIGIBLE_STATUSES, true)) {
             $this->syncFamily($user);
+
             return;
         }
 
@@ -113,9 +114,11 @@ class SiblingDiscountService
             + (float) $account->books_fee,
             2
         );
-        $verifiedPayments = (float) $account->payments()->where('status', 'verified')->sum('amount');
-        $amountPaid = min($totalBalance, (float) $account->enrollment_fee_paid + $verifiedPayments);
-        $remaining = max(0, round($totalBalance - $amountPaid, 2));
+        $billings = $account->monthlyBillings()->with('payments')->get();
+        $enrollmentBilling = $billings->firstWhere('month_number', 0);
+        $installmentBillings = $billings->where('month_number', '>', 0)->values();
+        $enrollmentCharge = min($totalBalance, (float) $account->enrollment_fee_paid);
+        $installmentTotal = max(0, round($totalBalance - $enrollmentCharge, 2));
 
         $account->update([
             'sibling_order' => $order,
@@ -124,40 +127,73 @@ class SiblingDiscountService
             'discount_amount' => $discountAmount,
             'gross_total' => $totalBalance,
             'total_balance' => $totalBalance,
-            'amount_paid' => $amountPaid,
-            'remaining_balance' => $remaining,
-            'status' => $remaining <= 0 ? 'paid' : ($amountPaid > 0 ? 'partial' : 'unpaid'),
+            'monthly_tuition' => $installmentBillings->isNotEmpty()
+                ? round($installmentTotal / $installmentBillings->count(), 2)
+                : 0,
         ]);
 
-        $enrollmentBilling = $account->monthlyBillings->firstWhere('month_number', 0);
         if ($enrollmentBilling) {
             $enrollmentBilling->update([
-                'amount_due' => (float) $account->enrollment_fee_paid,
+                'amount_due' => $enrollmentCharge,
                 'status' => 'paid',
                 'paid_at' => $enrollmentBilling->paid_at ?? $account->created_at,
             ]);
         }
 
-        $unpaidBillings = $account->monthlyBillings
-            ->where('month_number', '>', 0)
-            ->where('status', '!=', 'paid')
-            ->values();
+        if ($installmentBillings->isEmpty()) {
+            $account->recalculate();
 
-        if ($unpaidBillings->isEmpty()) {
             return;
         }
 
-        $installment = round($remaining / $unpaidBillings->count(), 2);
-        $allocated = 0.0;
+        $verifiedByBilling = $installmentBillings->mapWithKeys(fn ($billing) => [
+            $billing->id => round((float) $billing->payments
+                ->where('status', 'verified')
+                ->sum(fn ($payment) => (float) $payment->amount), 2),
+        ]);
+        $verifiedTotal = round((float) $verifiedByBilling->sum(), 2);
+        $remainingToSchedule = max(0, round($installmentTotal - $verifiedTotal, 2));
+        $openBillings = $installmentBillings
+            ->filter(fn ($billing) => $billing->status !== 'paid'
+                || (float) $verifiedByBilling->get($billing->id, 0) + .01 < (float) $billing->amount_due)
+            ->values();
 
-        foreach ($unpaidBillings as $index => $billing) {
-            $amount = $index === $unpaidBillings->count() - 1
-                ? round($remaining - $allocated, 2)
-                : $installment;
-            $billing->update(['amount_due' => $amount]);
-            $allocated += $amount;
+        // A later policy change may add a balance back to a completed plan.
+        if ($openBillings->isEmpty() && $remainingToSchedule > 0) {
+            $openBillings = $installmentBillings;
         }
 
-        $account->update(['monthly_tuition' => $installment]);
+        $baseRemaining = $openBillings->isNotEmpty()
+            ? round($remainingToSchedule / $openBillings->count(), 2)
+            : 0;
+        $allocatedRemaining = 0.0;
+
+        foreach ($installmentBillings as $billing) {
+            $verified = (float) $verifiedByBilling->get($billing->id, 0);
+            $openIndex = $openBillings->search(fn ($openBilling) => $openBilling->id === $billing->id);
+            $remainingForBilling = 0.0;
+
+            if ($openIndex !== false) {
+                $remainingForBilling = $openIndex === $openBillings->count() - 1
+                    ? round($remainingToSchedule - $allocatedRemaining, 2)
+                    : $baseRemaining;
+                $allocatedRemaining += $remainingForBilling;
+            }
+
+            $amountDue = round($verified + $remainingForBilling, 2);
+            $remaining = max(0, round($amountDue - $verified, 2));
+            $status = $remaining <= .01
+                ? 'paid'
+                : ($billing->due_date->isPast() ? 'overdue' : 'unpaid');
+
+            $billing->update([
+                'amount_due' => $amountDue,
+                'status' => $status,
+                'paid_at' => $status === 'paid' ? ($billing->paid_at ?? now()) : null,
+            ]);
+        }
+
+        // Avoid double-counting enrollment or previously verified payments.
+        $account->recalculate();
     }
 }

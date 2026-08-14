@@ -54,7 +54,7 @@
                                         </span>
                                     </div>
                                     <p class="text-xs text-slate-500">
-                                        Provider: <strong>{{ $receipt->provider ?: 'GCash / Bank' }}</strong> · Ref: <strong>{{ $receipt->reference_number ?: 'PAY-'.$receipt->id }}</strong> · Date: <strong>{{ $receipt->transaction_date ? $receipt->transaction_date->format('M d, Y') : $receipt->created_at->format('M d, Y') }}</strong> · Amount: <strong>₱{{ number_format($receipt->amount ?? 0, 2) }}</strong>
+                                        Provider: <strong>{{ $receipt->provider ?: 'GCash / Bank' }}</strong> · Ref: <strong>{{ $receipt->reference_number ?: 'PAY-'.$receipt->id }}</strong> · Date: <strong>{{ strtoupper(($receipt->transaction_date ?: $receipt->created_at)->format('M d, Y')) }}</strong> · Amount: <strong>₱{{ number_format($receipt->amount ?? 0, 2) }}</strong>
                                     </p>
                                 </div>
 

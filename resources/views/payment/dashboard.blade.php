@@ -201,8 +201,10 @@
                                 $demoAvatarUrl = asset($demoChild->gender === 'Female'
                                     ? 'images/avatars/student-female-avatar.png'
                                     : 'images/avatars/student-male-avatar.png');
-                                $demoPlanTotal = max(0, round((float) $demoChild->total_balance - (float) $demoChild->enrollment_fee_paid, 2));
-                                $demoInstallmentBreakdown = app(\App\Services\DemoPaymentScheduleService::class)->installmentsFor($demoChild);
+                                $demoInstallmentBreakdown = app(\App\Services\DemoPaymentScheduleService::class)->installmentsFor($demoChild, $demoChildren);
+                                $demoRemainingBalance = (float) collect($demoInstallmentBreakdown)->sum('remaining');
+                                $demoVerifiedPaid = (float) collect($demoInstallmentBreakdown)->sum('verified');
+                                $demoPlanTotal = (float) collect($demoInstallmentBreakdown)->sum('original');
                                 $demoFinalInstallment = (float) (collect($demoInstallmentBreakdown)->last()['original'] ?? $demoChild->monthly_tuition);
                                 $demoNextPayment = collect($demoInstallmentBreakdown)
                                     ->first(fn ($installment) => (float) $installment['remaining'] > 0.01);
@@ -218,13 +220,13 @@
                                     'sibling_order' => $loop->iteration,
                                     'total' => (float) $demoChild->total_balance,
                                     'enrollment' => (float) $demoChild->enrollment_fee_paid,
-                                    'remaining' => (float) $demoChild->remaining_balance,
+                                    'remaining' => $demoRemainingBalance,
                                     'installments' => (int) $demoChild->installment_months,
                                     'monthly' => (float) $demoChild->monthly_tuition,
                                     'final_installment' => $demoFinalInstallment,
                                     'installment_plan_total' => $demoPlanTotal,
-                                    'installment_verified' => 0,
-                                    'installment_remaining' => $demoPlanTotal,
+                                    'installment_verified' => $demoVerifiedPaid,
+                                    'installment_remaining' => $demoRemainingBalance,
                                     'installment_breakdown' => $demoInstallmentBreakdown,
                                     'next_payment' => $demoNextPayment,
                                 ];
@@ -243,12 +245,12 @@
                                     <span class="payment-student-meta">{{ $demoChild->grade_level }} · ID {{ $demoChild->demo_student_number }}</span>
                                     <span class="payment-student-demo-badge">AFPS DEMO · NOT AN OFFICIAL RECORD</span>
                                     @if((float) $demoChild->discount_percentage > 0)
-                                        <span class="payment-student-discount">{{ number_format((float) $demoChild->discount_percentage, 0) }}% SIBLINGS DISCOUNT</span>
+                                         <span class="payment-student-discount">{{ number_format((float) $demoChild->discount_percentage, 0) }}% SIBLINGS DISCOUNT</span>
                                     @endif
                                 </span>
                                 <span class="payment-student-balance">
                                     <span>Demo Balance</span>
-                                    <strong>₱{{ number_format((float) $demoChild->remaining_balance, 2) }}</strong>
+                                    <strong>₱{{ number_format($demoRemainingBalance, 2) }}</strong>
                                 </span>
                             </button>
                         @endforeach

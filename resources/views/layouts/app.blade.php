@@ -17,8 +17,7 @@
     <!-- Prevent FOUC -->
     <style>
         [x-cloak] { display: none !important; }
-        .page-content { opacity: 0; transition: opacity 0.2s; }
-        .page-content.show { opacity: 1; }
+        .page-content { opacity: 1; transition: opacity 0.2s; }
     </style>
 
     <!-- Scripts & Styles -->
@@ -26,27 +25,7 @@
 
     @stack('styles')
 </head>
-<body class="font-sans antialiased" x-data="{ pageLoaded: false }" x-init="
-    const shown = sessionStorage.getItem('amis_loaded');
-    if (shown) { 
-        pageLoaded = true; 
-        document.querySelector('.page-content').classList.add('show');
-    } else { 
-        setTimeout(() => { 
-            pageLoaded = true; 
-            sessionStorage.setItem('amis_loaded', '1');
-            document.querySelector('.page-content').classList.add('show');
-        }, 800); 
-    }
-">
-    <!-- Initial Loading Screen (only on F5 / first visit) -->
-    <x-page-loader
-        x-show="!pageLoaded"
-        x-cloak
-        x-transition:leave="transition ease-in duration-300"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-    />
+<body class="font-sans antialiased">
 
     @php
         $toastError = session('error') ?: ($errors->any() ? $errors->first() : null);
@@ -69,10 +48,7 @@
     @endif
 
     <!-- Page Content -->
-    <div class="page-content min-h-screen bg-gray-100" x-show="pageLoaded" x-cloak 
-         x-transition:enter="transition ease-out duration-200" 
-         x-transition:enter-start="opacity-0" 
-         x-transition:enter-end="opacity-100">
+    <div class="page-content min-h-screen bg-gray-100">
         @auth
             @include('layouts.navigation')
         @endauth

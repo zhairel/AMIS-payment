@@ -49,12 +49,12 @@ class PaymentSubmission extends Model
 
     public function getEffectiveStatusAttribute(): string
     {
-        if (in_array($this->status, ['verified', 'rejected'], true)) {
-            return $this->status;
+        if (in_array($this->status, ['verified', 'approved', 'rejected'], true)) {
+            return $this->status === 'approved' ? 'verified' : $this->status;
         }
 
         $payments = $this->relationLoaded('payments') ? $this->payments : $this->payments()->get();
-        if ($payments->isNotEmpty() && $payments->every(fn ($payment) => $payment->status === 'verified')) {
+        if ($payments->isNotEmpty() && $payments->every(fn ($payment) => in_array($payment->status, ['verified', 'approved'], true))) {
             return 'verified';
         }
         if ($payments->contains('status', 'rejected')) {

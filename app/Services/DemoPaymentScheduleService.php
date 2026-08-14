@@ -46,14 +46,20 @@ class DemoPaymentScheduleService
         }
 
         // Fetch cumulative approved payments for this user from shared payment_submissions
-        $userId = $user?->id ?? ($children->first()->user_id ?? 2);
+        $userId = $user?->id ?? ($children->first()->user_id ?? null);
         $approvedPaymentsTotal = 0.0;
 
-        if ($userId && Schema::hasTable('payment_submissions')) {
-            $approvedPaymentsTotal = (float) DB::table('payment_submissions')
-                ->where('user_id', $userId)
-                ->whereIn('status', ['approved', 'verified'])
-                ->sum('total_amount');
+        if ($userId) {
+            try {
+                if (Schema::hasTable('payment_submissions')) {
+                    $approvedPaymentsTotal = (float) DB::table('payment_submissions')
+                        ->where('user_id', $userId)
+                        ->whereIn('status', ['approved', 'verified'])
+                        ->sum('total_amount');
+                }
+            } catch (\Throwable $e) {
+                $approvedPaymentsTotal = 0.0;
+            }
         }
 
         $remainingPaymentPool = $approvedPaymentsTotal;
@@ -117,51 +123,57 @@ class DemoPaymentScheduleService
      * This is intentionally independent of enrollment date so late students
      * still receive a complete JULY-MARCH Statement of Account.
      */
-    public function installmentsFor(object $child): array
+    public function installmentsFor(object $child, ?Collection $allChildren = null): array
     {
-        $schoolYear = (string) ($child->school_year ?: now()->format('Y').'-'.now()->addYear()->format('Y'));
-        $startYear = (int) substr($schoolYear, 0, 4);
-        $startYear = $startYear > 2000 ? $startYear : (int) now()->format('Y');
-        $installmentCount = max(1, (int) $child->installment_months);
-        $monthlyStart = Carbon::create($startYear, 7, 15)->startOfDay();
+        $userId = $child->user_id ?? null;
+        if (! $allChildren) {
+            try {
+                $allChildren = $userId && Schema::hasTable('payment_demo_children')
+                    ? \App\Models\PaymentDemoChild::where('user_id', $userId)->orderBy('id')->get()
+                    : collect([$child]);
+            } catch (\Throwable $e) {
+                $allChildren = collect([$child]);
+            }
+            if ($allChildren->isEmpty()) {
+                $allChildren = collect([$child]);
+            }
+        }
+        $groups = $this->build($allChildren);
+        $childId = $child->id ?? null;
 
-        $userId = $child->user_id ?? 2;
-        $approvedPaymentsTotal = 0.0;
-        if ($userId && Schema::hasTable('payment_submissions')) {
-            $approvedPaymentsTotal = (float) DB::table('payment_submissions')
-                ->where('user_id', $userId)
-                ->whereIn('status', ['approved', 'verified'])
-                ->sum('total_amount');
+        $installments = [];
+        foreach ($groups as $group) {
+            if ($group['month_number'] === 0) {
+                continue;
+            }
+            foreach ($group['children'] as $cRow) {
+                $matchesChild = ($childId && ($cRow['student_id'] ?? null) === 'demo-'.$childId)
+                    || (($cRow['full_name'] ?? null) === ($child->display_name ?? null))
+                    || ($allChildren->count() === 1);
+
+                if ($matchesChild) {
+                    $dueDate = $group['due_date'];
+                    $originalAmount = (float) ($cRow['original_amount'] ?? 0);
+                    $verifiedPaid = (float) ($cRow['verified_paid'] ?? 0);
+                    $remainingAmount = (float) ($cRow['remaining_amount'] ?? 0);
+                    $status = $remainingAmount <= 0.01
+                        ? 'Paid'
+                        : ($verifiedPaid > 0.01 ? 'Partial' : ($dueDate->isCurrentMonth() ? 'Current' : ($dueDate->isPast() ? 'Overdue' : 'Upcoming')));
+
+                    $installments[] = [
+                        'month' => strtoupper($dueDate->format('F Y')),
+                        'due_date' => strtoupper($dueDate->format('M d, Y')),
+                        'original' => $originalAmount,
+                        'verified' => $verifiedPaid,
+                        'remaining' => $remainingAmount,
+                        'status' => $status,
+                    ];
+                    break;
+                }
+            }
         }
 
-        $remainingPaymentPool = $approvedPaymentsTotal;
-
-        return collect(range(1, $installmentCount))
-            ->map(function (int $installment) use ($child, $installmentCount, $monthlyStart, &$remainingPaymentPool) {
-                $dueDate = $monthlyStart->copy()->addMonthsNoOverflow($installment - 1);
-                $originalAmount = $this->installmentAmount($child, $installment, $installmentCount);
-
-                $verifiedPaid = 0.0;
-                if ($remainingPaymentPool > 0) {
-                    $verifiedPaid = min($remainingPaymentPool, $originalAmount);
-                    $remainingPaymentPool = max(0.0, round($remainingPaymentPool - $verifiedPaid, 2));
-                }
-
-                $remainingAmount = max(0.0, round($originalAmount - $verifiedPaid, 2));
-                $status = $remainingAmount <= 0
-                    ? 'Paid'
-                    : ($dueDate->isCurrentMonth() ? 'Current' : ($dueDate->isPast() ? 'Overdue' : 'Upcoming'));
-
-                return [
-                    'month' => strtoupper($dueDate->format('F Y')),
-                    'due_date' => strtoupper($dueDate->format('M d, Y')),
-                    'original' => $originalAmount,
-                    'verified' => $verifiedPaid,
-                    'remaining' => $remainingAmount,
-                    'status' => $status,
-                ];
-            })
-            ->all();
+        return $installments;
     }
 
     private function installmentAmount(object $child, int $installment, int $installmentCount): float
@@ -181,16 +193,17 @@ class DemoPaymentScheduleService
             'month_name' => $monthName,
             'month_label' => $monthNumber === 0 ? $monthName : strtoupper($dueDate->format('F Y')),
             'due_date' => $dueDate,
+            'due_date_formatted' => strtoupper($dueDate->format('M d, Y')),
             'year' => $dueDate->year,
             'is_first_month' => $isFirstMonth,
-            'children' => [],
-            'total_due' => 0,
-            'total_paid' => 0,
-            'total_remaining' => 0,
-            'unpaid_count' => 0,
-            'paid_count' => 0,
-            'pending_count' => 0,
             'is_overdue' => false,
+            'total_due' => 0.0,
+            'total_paid' => 0.0,
+            'total_remaining' => 0.0,
+            'paid_count' => 0,
+            'unpaid_count' => 0,
+            'pending_count' => 0,
+            'children' => [],
         ];
     }
 
@@ -213,7 +226,7 @@ class DemoPaymentScheduleService
             'original_amount' => $originalAmount,
             'verified_paid' => $verifiedPaid,
             'remaining_amount' => $remainingAmount,
-            'status' => $isPaid ? 'paid' : 'unpaid',
+            'status' => $isPaid ? 'paid' : ($verifiedPaid > 0 ? 'partial' : 'unpaid'),
             'is_paid' => $isPaid,
             'is_overdue' => ! $isPaid,
             'paid_at' => null,

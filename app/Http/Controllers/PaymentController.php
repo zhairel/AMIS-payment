@@ -68,107 +68,104 @@ class PaymentController extends Controller
         // ────────────────────────────────────────────────────────────────────
 
         // Fetch all students associated with the parent user
-        $students = $user->students()
-            ->with(['applicant', 'account.monthlyBillings.payments'])
-            ->get();
+        $students = $demoChildren->isNotEmpty()
+            ? collect()
+            : $user->students()->with(['applicant', 'account.monthlyBillings.payments'])->get();
 
         // ── BUILD MONTHLY GROUPS (Month → Children) ──────────────────────────
         $monthlyGroups = [];
         $familyTotalRemaining = 0;
         $familyTotalBalance = 0;
 
-        foreach ($students as $student) {
-            $account = $student->account;
-            if ($account) {
-                $familyTotalRemaining += (float) $account->remaining_balance;
-                $familyTotalBalance += (float) $account->total_balance;
-            }
-        }
-
-        if ($students->isEmpty() && $demoChildren->isNotEmpty()) {
-            $familyTotalRemaining = round((float) $demoChildren->sum('remaining_balance'), 2);
-            $familyTotalBalance = round((float) $demoChildren->sum('total_balance'), 2);
-        }
-
-        foreach ($students as $student) {
-            $applicant = $student->applicant;
-            $account = $student->account;
-            if (! $account) {
-                continue;
-            }
-
-            $fullName = $applicant
-                ? mb_strtoupper(trim($applicant->first_name.' '.($applicant->middle_name ? $applicant->middle_name.' ' : '').$applicant->last_name.($applicant->suffix ? ' '.$applicant->suffix : '')))
-                : ($student->user->name ?? 'Student');
-
-            foreach ($account->monthlyBillings as $billing) {
-                $key = $billing->month_number;
-
-                if (! isset($monthlyGroups[$key])) {
-                    $monthlyGroups[$key] = [
-                        'month_number' => $billing->month_number,
-                        'month_name' => $billing->month_name,
-                        'month_label' => strtoupper($billing->month_name).' '.$billing->due_date->year,
-                        'due_date' => $billing->due_date,
-                        'year' => $billing->due_date->year,
-                        'is_first_month' => $billing->month_number === 1,
-                        'children' => [],
-                        'total_due' => 0,
-                        'total_paid' => 0,
-                        'total_remaining' => 0,
-                        'unpaid_count' => 0,
-                        'paid_count' => 0,
-                        'pending_count' => 0,
-                        'is_overdue' => false,
-                    ];
-                }
-
-                $eligibility = $paymentEligibility->check($student, $billing);
-                $remainingAmount = $eligibility['remaining_amount'];
-                $isPaid = $remainingAmount <= 0;
-                $isOverdue = ! $isPaid && $billing->due_date->isPast();
-
-                $monthlyGroups[$key]['children'][] = [
-                    'student_id' => $student->id,
-                    'billing_id' => $billing->id,
-                    'full_name' => $fullName,
-                    'grade_level' => $student->grade_level,
-                    'student_number' => $student->student_number,
-                    'amount_due' => $remainingAmount,
-                    'original_amount' => (float) $billing->amount_due,
-                    'verified_paid' => max(0, round((float) $billing->amount_due - $remainingAmount, 2)),
-                    'remaining_amount' => $remainingAmount,
-                    'status' => $billing->status,
-                    'is_paid' => $isPaid,
-                    'is_overdue' => $isOverdue,
-                    'paid_at' => $billing->paid_at,
-                    'payment_allowed' => $eligibility['payment_allowed'],
-                    'lock_reason' => $eligibility['reason'],
-                    'has_pending_payment' => $eligibility['has_pending_payment'],
-                    'oldest_outstanding_month' => $eligibility['oldest_outstanding_month'],
-                    'oldest_outstanding_month_number' => $eligibility['oldest_outstanding_month_number'],
-                    'oldest_outstanding_amount' => $eligibility['oldest_outstanding_amount'],
-                ];
-
-                $monthlyGroups[$key]['total_due'] += (float) $billing->amount_due;
-                $monthlyGroups[$key]['total_paid'] += max(0, (float) $billing->amount_due - $remainingAmount);
-
-                if ($isPaid) {
-                    $monthlyGroups[$key]['paid_count']++;
-                } else {
-                    $monthlyGroups[$key]['unpaid_count']++;
-                    if ($eligibility['has_pending_payment']) {
-                        $monthlyGroups[$key]['pending_count']++;
-                    }
-                    if ($isOverdue) {
-                        $monthlyGroups[$key]['is_overdue'] = true;
-                    }
-                }
-            }
-        }
-
-        if ($students->isEmpty() && $demoChildren->isNotEmpty()) {
+        if ($demoChildren->isNotEmpty()) {
             $monthlyGroups = app(DemoPaymentScheduleService::class)->build($demoChildren, $user);
+            $familyTotalRemaining = round((float) collect($monthlyGroups)->where('month_number', '>', 0)->sum('total_remaining'), 2);
+            $familyTotalBalance = round((float) collect($monthlyGroups)->where('month_number', '>', 0)->sum('total_due'), 2);
+        } else {
+            foreach ($students as $student) {
+                $account = $student->account;
+                if ($account) {
+                    $familyTotalRemaining += (float) $account->remaining_balance;
+                    $familyTotalBalance += (float) $account->total_balance;
+                }
+            }
+
+            foreach ($students as $student) {
+                $applicant = $student->applicant;
+                $account = $student->account;
+                if (! $account) {
+                    continue;
+                }
+
+                $fullName = $applicant
+                    ? mb_strtoupper(trim($applicant->first_name.' '.($applicant->middle_name ? $applicant->middle_name.' ' : '').$applicant->last_name.($applicant->suffix ? ' '.$applicant->suffix : '')))
+                    : ($student->user->name ?? 'Student');
+
+                foreach ($account->monthlyBillings as $billing) {
+                    $key = $billing->month_number;
+
+                    if (! isset($monthlyGroups[$key])) {
+                        $monthlyGroups[$key] = [
+                            'month_number' => $billing->month_number,
+                            'month_name' => $billing->month_name,
+                            'month_label' => strtoupper($billing->month_name).' '.$billing->due_date->year,
+                            'due_date' => $billing->due_date,
+                            'year' => $billing->due_date->year,
+                            'is_first_month' => $billing->month_number === 1,
+                            'children' => [],
+                            'total_due' => 0,
+                            'total_paid' => 0,
+                            'total_remaining' => 0,
+                            'unpaid_count' => 0,
+                            'paid_count' => 0,
+                            'pending_count' => 0,
+                            'is_overdue' => false,
+                        ];
+                    }
+
+                    $eligibility = $paymentEligibility->check($student, $billing);
+                    $remainingAmount = $eligibility['remaining_amount'];
+                    $isPaid = $remainingAmount <= 0;
+                    $isOverdue = ! $isPaid && $billing->due_date->isPast();
+
+                    $monthlyGroups[$key]['children'][] = [
+                        'student_id' => $student->id,
+                        'billing_id' => $billing->id,
+                        'full_name' => $fullName,
+                        'grade_level' => $student->grade_level,
+                        'student_number' => $student->student_number,
+                        'amount_due' => $remainingAmount,
+                        'original_amount' => (float) $billing->amount_due,
+                        'verified_paid' => max(0, round((float) $billing->amount_due - $remainingAmount, 2)),
+                        'remaining_amount' => $remainingAmount,
+                        'status' => $billing->status,
+                        'is_paid' => $isPaid,
+                        'is_overdue' => $isOverdue,
+                        'paid_at' => $billing->paid_at,
+                        'payment_allowed' => $eligibility['payment_allowed'],
+                        'lock_reason' => $eligibility['reason'],
+                        'has_pending_payment' => $eligibility['has_pending_payment'],
+                        'oldest_outstanding_month' => $eligibility['oldest_outstanding_month'],
+                        'oldest_outstanding_month_number' => $eligibility['oldest_outstanding_month_number'],
+                        'oldest_outstanding_amount' => $eligibility['oldest_outstanding_amount'],
+                    ];
+
+                    $monthlyGroups[$key]['total_due'] += (float) $billing->amount_due;
+                    $monthlyGroups[$key]['total_paid'] += max(0, (float) $billing->amount_due - $remainingAmount);
+
+                    if ($isPaid) {
+                        $monthlyGroups[$key]['paid_count']++;
+                    } else {
+                        $monthlyGroups[$key]['unpaid_count']++;
+                        if ($eligibility['has_pending_payment']) {
+                            $monthlyGroups[$key]['pending_count']++;
+                        }
+                        if ($isOverdue) {
+                            $monthlyGroups[$key]['is_overdue'] = true;
+                        }
+                    }
+                }
+            }
         }
 
         ksort($monthlyGroups);
@@ -299,7 +296,7 @@ class PaymentController extends Controller
                     'submissions.submission_number',
                     'submissions.receipt_url as submission_receipt_url',
                     'receipt_files.submission_id as receipt_submission_number',
-                    'official_receipts.official_receipt_number',
+                    DB::raw('COALESCE(official_receipts.official_receipt_number, transactions.official_receipt_number) as official_receipt_number'),
                 ]);
 
             $financeBillingIds = $approvedFinanceTransactions
@@ -936,9 +933,9 @@ class PaymentController extends Controller
                 ? strtoupper($oldestOutstanding['billing']->due_date->format('F Y'))
                 : null)
             : null;
-        if (! $oldestOutstandingMonth && $students->isEmpty() && $demoChildren->isNotEmpty()) {
+        if ($demoChildren->isNotEmpty()) {
             $currentMonthEnd = now(config('finance.timezone', 'Asia/Manila'))->endOfMonth();
-            $oldestOutstandingMonth = collect(app(DemoPaymentScheduleService::class)->build($demoChildren))
+            $oldestOutstandingMonth = collect(app(DemoPaymentScheduleService::class)->build($demoChildren, $user))
                 ->filter(fn ($group) => $group['month_number'] > 0
                     && $group['due_date']->lte($currentMonthEnd)
                     && (float) $group['total_remaining'] > 0.01)
@@ -1764,18 +1761,16 @@ class PaymentController extends Controller
         $paymentEligibility ??= app(PaymentEligibilityService::class);
         $currentMonthStart = now(config('finance.timezone', 'Asia/Manila'))->startOfMonth();
         $currentMonthEnd = $currentMonthStart->copy()->endOfMonth();
-        $studentIds = $user->students()->pluck('students.id');
+        $demoChildren = $user->paymentDemoChildren()->orderBy('id')->get();
+        if ($demoChildren->isNotEmpty()) {
+            $outstandingThroughCurrentMonth = collect(app(DemoPaymentScheduleService::class)->build($demoChildren, $user))
+                ->filter(fn ($group) => $group['month_number'] > 0 && $group['due_date']->lte($currentMonthEnd))
+                ->sum(fn ($group) => (float) $group['total_remaining']);
 
-        if ($studentIds->isEmpty()) {
-            $demoChildren = $user->paymentDemoChildren()->orderBy('id')->get();
-            if ($demoChildren->isNotEmpty()) {
-                $outstandingThroughCurrentMonth = collect(app(DemoPaymentScheduleService::class)->build($demoChildren))
-                    ->filter(fn ($group) => $group['month_number'] > 0 && $group['due_date']->lte($currentMonthEnd))
-                    ->sum(fn ($group) => (float) $group['total_remaining']);
-
-                return $this->remainingAfterActivePendingPayments($user, (float) $outstandingThroughCurrentMonth);
-            }
+            return $this->remainingAfterActivePendingPayments($user, (float) $outstandingThroughCurrentMonth);
         }
+
+        $studentIds = $user->students()->pluck('students.id');
 
         $hasCurrentBilling = SoaMonthlyBilling::query()
             ->whereIn('student_id', $studentIds)

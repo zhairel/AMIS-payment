@@ -10,7 +10,7 @@
             </div>
             <div>
                 <div style="font-weight:700;font-size:1rem;color:#111827;">{{ $applicant->last_name }}, {{ $applicant->first_name }} {{ $applicant->middle_name }}</div>
-                <div style="font-size:0.8125rem;color:#6b7280;">Prepared {{ $applicant->updated_at->format('F j, Y') }}</div>
+                <div style="font-size:0.8125rem;color:#6b7280;">Prepared {{ strtoupper($applicant->updated_at->format('F j, Y')) }}</div>
             </div>
         </div>
         @php
@@ -46,7 +46,7 @@
                 'School Year' => $applicant->school_year,
                 'LRN' => $applicant->lrn,
                 'Gender' => $applicant->gender,
-                'Date of Birth' => $applicant->date_of_birth?->format('M j, Y'),
+                'Date of Birth' => $applicant->date_of_birth ? strtoupper($applicant->date_of_birth->format('M j, Y')) : null,
                 'Place of Birth' => $applicant->place_of_birth,
                 'Religion' => $applicant->religion,
                 'Ethnicity' => $applicant->ethnicity,

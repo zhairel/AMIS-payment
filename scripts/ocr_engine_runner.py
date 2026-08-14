@@ -148,15 +148,37 @@ def run_tesseract(image_path):
         }
     try:
         import pytesseract
-        text = pytesseract.image_to_string(Image.open(image_path))
-        lines = [l.strip() for l in text.splitlines() if l.strip()]
+        data = pytesseract.image_to_data(
+            Image.open(image_path),
+            config="--psm 6",
+            output_type=pytesseract.Output.DICT,
+        )
+        grouped_lines = {}
+        scores = []
+        for index, word in enumerate(data.get("text", [])):
+            word = str(word).strip()
+            if not word:
+                continue
+            key = (
+                data.get("block_num", [0])[index],
+                data.get("par_num", [0])[index],
+                data.get("line_num", [0])[index],
+            )
+            grouped_lines.setdefault(key, []).append(word)
+            try:
+                confidence = float(data.get("conf", [-1])[index])
+                if confidence >= 0:
+                    scores.append(confidence / 100.0)
+            except (TypeError, ValueError):
+                pass
+        lines = [" ".join(words) for words in grouped_lines.values() if words]
         duration = int((time.time() - start) * 1000)
         return {
             "engine": "Tesseract",
             "status": "SUCCESS",
             "raw_text": "\n".join(lines),
             "regions": len(lines),
-            "confidence": 0.85 if lines else None,
+            "confidence": round(sum(scores) / len(scores), 3) if scores else None,
             "duration_ms": duration,
             "error": None
         }

@@ -15,9 +15,16 @@
         }
 
         .page {
-            width: 800px;
+            width: min(100%, 800px);
             margin: 0 auto;
             padding: 28px 36px 36px;
+        }
+
+        .soa-table-scroll {
+            width: 100%;
+            overflow-x: auto;
+            overscroll-behavior-inline: contain;
+            -webkit-overflow-scrolling: touch;
         }
 
         /* ── TOP BORDER LINES ── */
@@ -187,10 +194,103 @@
         }
         .print-btn:hover { background: #065f46; }
 
+        @media screen and (max-width: 700px) {
+            body {
+                background: #f3f7f5;
+                font-size: 12px;
+                overflow-x: hidden;
+            }
+
+            .page {
+                width: 100%;
+                padding: 78px 14px 28px;
+                background: #fff;
+            }
+
+            .print-btn {
+                top: 12px;
+                right: 12px;
+                left: 12px;
+                width: calc(100% - 24px);
+                min-height: 48px;
+            }
+
+            .header {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 8px 12px;
+                align-items: center;
+            }
+
+            .logo {
+                grid-column: 2;
+                grid-row: 1 / span 2;
+            }
+
+            .logo img {
+                width: 52px;
+                height: 52px;
+            }
+
+            .school-name-en,
+            .school-name-ar {
+                font-size: 13px;
+                line-height: 1.25;
+                overflow-wrap: anywhere;
+            }
+
+            .school-name-ar {
+                grid-column: 1;
+                text-align: left;
+            }
+
+            .soa-title {
+                font-size: 12px;
+                line-height: 1.4;
+            }
+
+            .info-section {
+                display: grid;
+                gap: 16px;
+            }
+
+            .info-left,
+            .info-right {
+                min-width: 0;
+                padding: 0;
+                border: 0;
+            }
+
+            .info-left {
+                padding-bottom: 14px;
+                border-bottom: 1px solid #ccc;
+            }
+
+            .info-right td:first-child {
+                width: 112px;
+                white-space: normal;
+            }
+
+            .fee-table,
+            .schedule-table {
+                min-width: 660px;
+            }
+
+            .footer-note {
+                display: grid;
+                gap: 8px;
+            }
+
+            .footer-thanks .yellow-bar {
+                padding-inline: 28px;
+            }
+        }
+
         @media print {
             .print-btn { display: none !important; }
             body { margin: 0; }
-            .page { padding: 12px 20px; }
+            .page { width: 800px; padding: 12px 20px; }
+            .soa-table-scroll { overflow: visible; }
         }
     </style>
 </head>
@@ -267,7 +367,8 @@
             </table>
 
             {{-- Fee Breakdown --}}
-            <table class="fee-table" style="margin-top: 12px;">
+            <div class="soa-table-scroll" style="margin-top: 12px;">
+            <table class="fee-table">
                 <thead>
                     <tr>
                         <th style="text-align:left;">DESCRIPTION</th>
@@ -310,6 +411,7 @@
                     </tr>
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 
@@ -320,6 +422,7 @@
         $year2027months = $billings->filter(fn($b) => $b->due_date->year == $startYear + 1);
     @endphp
 
+    <div class="soa-table-scroll">
     <table class="schedule-table">
         <thead>
             <tr>
@@ -370,9 +473,9 @@
             <tr class="year-label">
                 <td>Year: {{ $startYear }}</td>
                 @php $first2026 = $year2026months->first(); @endphp
-                <td class="center">{{ $first2026->month_name }}</td>
+                <td class="center">{{ mb_strtoupper($first2026->month_name) }}</td>
                 <td class="num">{{ number_format($first2026->amount_due, 2) }}</td>
-                <td class="center">{{ $first2026->paid_at ? $first2026->paid_at->format('d-M-y') : '' }}</td>
+                <td class="center">{{ $first2026->paid_at ? strtoupper($first2026->paid_at->format('d-M-y')) : '' }}</td>
                 <td class="center {{ $first2026->status === 'paid' ? 'paid-highlight' : '' }}">{{ $first2026->status === 'paid' ? number_format($first2026->amount_due, 2) : '' }}</td>
                 <td class="center">—</td>
                 <td class="num balance-col">{{ $first2026->status === 'paid' ? '—' : '-' }}</td>
@@ -380,9 +483,9 @@
             @foreach($year2026months->skip(1) as $billing)
             <tr>
                 <td></td>
-                <td class="center">{{ $billing->month_name }}</td>
+                <td class="center">{{ mb_strtoupper($billing->month_name) }}</td>
                 <td class="num">{{ number_format($billing->amount_due, 2) }}</td>
-                <td class="center">{{ $billing->paid_at ? $billing->paid_at->format('d-M-y') : '' }}</td>
+                <td class="center">{{ $billing->paid_at ? strtoupper($billing->paid_at->format('d-M-y')) : '' }}</td>
                 <td class="center {{ $billing->status === 'paid' ? 'paid-highlight' : '' }}">{{ $billing->status === 'paid' ? number_format($billing->amount_due, 2) : '' }}</td>
                 <td class="center">—</td>
                 <td class="num balance-col">{{ $billing->status === 'paid' ? '—' : '-' }}</td>
@@ -395,9 +498,9 @@
             <tr class="year-label">
                 <td>Year: {{ $startYear + 1 }}</td>
                 @php $first2027 = $year2027months->first(); @endphp
-                <td class="center">{{ $first2027->month_name }}</td>
+                <td class="center">{{ mb_strtoupper($first2027->month_name) }}</td>
                 <td class="num">{{ number_format($first2027->amount_due, 2) }}</td>
-                <td class="center">{{ $first2027->paid_at ? $first2027->paid_at->format('d-M-y') : '' }}</td>
+                <td class="center">{{ $first2027->paid_at ? strtoupper($first2027->paid_at->format('d-M-y')) : '' }}</td>
                 <td class="center {{ $first2027->status === 'paid' ? 'paid-highlight' : '' }}">{{ $first2027->status === 'paid' ? number_format($first2027->amount_due, 2) : '' }}</td>
                 <td class="center">—</td>
                 <td class="num balance-col">{{ $first2027->status === 'paid' ? '—' : '-' }}</td>
@@ -405,9 +508,9 @@
             @foreach($year2027months->skip(1) as $billing)
             <tr>
                 <td></td>
-                <td class="center">{{ $billing->month_name }}</td>
+                <td class="center">{{ mb_strtoupper($billing->month_name) }}</td>
                 <td class="num">{{ number_format($billing->amount_due, 2) }}</td>
-                <td class="center">{{ $billing->paid_at ? $billing->paid_at->format('d-M-y') : '' }}</td>
+                <td class="center">{{ $billing->paid_at ? strtoupper($billing->paid_at->format('d-M-y')) : '' }}</td>
                 <td class="center {{ $billing->status === 'paid' ? 'paid-highlight' : '' }}">{{ $billing->status === 'paid' ? number_format($billing->amount_due, 2) : '' }}</td>
                 <td class="center">—</td>
                 <td class="num balance-col">{{ $billing->status === 'paid' ? '—' : '-' }}</td>
@@ -439,6 +542,7 @@
             </tr>
         </tbody>
     </table>
+    </div>
 
     {{-- FOOTER --}}
     <div class="footer-note">

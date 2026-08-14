@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'applicant' => \App\Http\Middleware\ApplicantOnly::class,
+            'admin' => \App\Http\Middleware\AdminOnly::class,
+            'finance' => \App\Http\Middleware\FinanceOnly::class,
         ]);
 
         // Trust all proxies (cPanel shared hosting / CloudFlare).

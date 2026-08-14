@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProcessReceiptSubmission;
+use App\Models\PaymentSubmission;
 use App\Models\ReceiptSubmission;
 use App\Services\ReceiptFingerprintService;
 use App\Services\Receipts\ReceiptFieldNormalizer;
@@ -20,11 +21,19 @@ class ReceiptSubmissionController extends Controller
         $validated = $request->validate([
             'receipt' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png', 'mimetypes:image/jpeg,image/png', 'max:10240'],
             'student_id' => ['nullable', 'integer', 'exists:students,id'],
+            'retry_submission_id' => ['nullable', 'integer', 'exists:payment_submissions,id'],
         ]);
         $user = $request->user();
         if (! empty($validated['student_id']) && ! $user->students()->whereKey($validated['student_id'])->exists()) {
             abort(403);
         }
+        $retrySubmission = filled($validated['retry_submission_id'] ?? null)
+            ? PaymentSubmission::query()
+                ->whereKey($validated['retry_submission_id'])
+                ->where('user_id', $user->id)
+                ->where('status', 'rejected')
+                ->firstOrFail()
+            : null;
 
         $file = $request->file('receipt');
         $id = (string) Str::uuid();
@@ -51,7 +60,7 @@ class ReceiptSubmissionController extends Controller
             'changes' => ['filename' => $receipt->original_filename, 'mime' => $receipt->original_mime, 'size' => $receipt->original_size],
             'ip_address' => $request->ip(), 'user_agent' => $request->userAgent(),
         ]);
-        ProcessReceiptSubmission::dispatch($receipt->id)->afterResponse();
+        ProcessReceiptSubmission::dispatch($receipt->id, $retrySubmission?->id)->afterResponse();
 
         return response()->json([
             'submission_id' => $receipt->submission_id,
@@ -62,10 +71,13 @@ class ReceiptSubmissionController extends Controller
 
     public function show(Request $request, ReceiptSubmission $receipt): JsonResponse
     {
-        abort_unless($receipt->user_id === $request->user()->id || in_array($request->user()->role, ['admin', 'staff'], true), 403);
-        $receipt->load('ocrResults');
+        $canSeeDiagnostics = in_array($request->user()->role, ['admin', 'staff'], true);
+        abort_unless($receipt->user_id === $request->user()->id || $canSeeDiagnostics, 403);
+        if ($canSeeDiagnostics) {
+            $receipt->load('ocrResults');
+        }
 
-        return response()->json([
+        $response = [
             'submission_id' => $receipt->submission_id,
             'status' => $receipt->status,
             'processing' => in_array($receipt->status, [ReceiptSubmission::UPLOADED, ReceiptSubmission::PROCESSING, ReceiptSubmission::OCR_COMPLETED], true),
@@ -78,17 +90,28 @@ class ReceiptSubmissionController extends Controller
             'detected_sender' => $receipt->sender_name,
             'detected_receiver' => $receipt->receiver_name,
             'transaction_status' => $receipt->transaction_status,
-            'confidence' => $receipt->ocr_confidence !== null ? (float) $receipt->ocr_confidence : null,
-            'quality' => $receipt->quality_assessment,
+            'document_type' => data_get($receipt->validation_results, 'classification.type', 'uncertain'),
+            'document_message' => data_get($receipt->validation_results, 'classification.message') ?: $receipt->review_reason,
             'duplicate_status' => $receipt->duplicate_status,
-            'validation' => $receipt->validation_results,
-            'uncertain_fields' => $receipt->uncertain_fields ?? [],
             'review_reason' => $receipt->review_reason,
-            'ocr_attempts' => $receipt->ocrResults->map(fn ($result) => [
+            'quality' => [
+                'readability' => data_get($receipt->quality_assessment, 'readability'),
+                'message' => data_get($receipt->quality_assessment, 'user_message'),
+            ],
+        ];
+
+        if ($canSeeDiagnostics) {
+            $response['confidence'] = $receipt->ocr_confidence !== null ? (float) $receipt->ocr_confidence : null;
+            $response['quality'] = $receipt->quality_assessment;
+            $response['validation'] = $receipt->validation_results;
+            $response['uncertain_fields'] = $receipt->uncertain_fields ?? [];
+            $response['ocr_attempts'] = $receipt->ocrResults->map(fn ($result) => [
                 'engine' => $result->engine, 'status' => $result->status,
                 'confidence' => $result->confidence !== null ? (float) $result->confidence : null,
-            ]),
-        ]);
+            ]);
+        }
+
+        return response()->json($response);
     }
 
     public function original(Request $request, ReceiptSubmission $receipt)
@@ -245,7 +268,9 @@ class ReceiptSubmissionController extends Controller
             'transaction_date', 'transaction_time', 'sender_name', 'receiver_name', 'transaction_status',
         ])->all()))->save();
         $criticalReadable = filled($current['normalized_reference'] ?? null) && is_numeric($current['amount'] ?? null);
-        if ($criticalReadable && data_get($receipt->quality_assessment, 'readability') !== 'unreadable') {
+        if ($criticalReadable
+            && data_get($receipt->quality_assessment, 'readability') !== 'unreadable'
+            && ! data_get($receipt->quality_assessment, 'reupload_required', false)) {
             $receipt->transitionTo(ReceiptSubmission::NEEDS_REVIEW, 'browser_tesseract_recorded', $request->user()->id, [
                 'confidence' => $validated['confidence'] ?? null, 'uncertain_fields' => $uncertain,
             ], 'Browser Tesseract recovered fields that require Finance confirmation.');
