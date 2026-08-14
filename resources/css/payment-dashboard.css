@@ -108,42 +108,26 @@
 }
 
 /* ==========================================================================
-   FAMILY OVERVIEW HUB (Parent-Friendly Design)
+   FAMILY OVERVIEW HUB (Clean, Minimal, Spacing-Driven Parent Hub)
    ========================================================================== */
 .family-overview-hub {
     margin-bottom: 2rem;
-    padding: 1.75rem;
+    padding: 1.85rem 2rem;
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 24px;
-    box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.04), 0 4px 6px -2px rgba(15, 23, 42, 0.02);
+    border-radius: 20px;
+    box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.04);
 }
 
-/* 1. HERO CURRENT MONTH DUE CARD */
-.family-due-hero-card {
+/* 1. TOP HERO ROW (Main Current Due + Secondary Annual Remaining) */
+.family-hero-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 2rem;
-    padding: 1.85rem 2rem;
-    background: linear-gradient(135deg, #f0fdf4 0%, #fafffc 60%, #ffffff 100%);
-    border: 1px solid #bbf7d0;
-    border-radius: 18px;
-    position: relative;
-    overflow: hidden;
 }
 
-.family-due-hero-card .hero-watermark {
-    position: absolute;
-    top: -20px;
-    right: -20px;
-    width: 220px;
-    height: 220px;
-    opacity: 0.5;
-    pointer-events: none;
-}
-
-.due-hero-content {
+.family-hero-main {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -151,33 +135,20 @@
     min-width: 0;
 }
 
-.due-month-header {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin-bottom: 0.4rem;
-}
-
-.due-month-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.25rem 0.65rem;
-    border-radius: 9999px;
-    background: #059669;
-    color: #ffffff;
-    font-size: 0.75rem;
+.due-month-kicker {
+    color: #047857;
+    font-size: 0.8rem;
     font-weight: 800;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
+    margin-bottom: 0.2rem;
 }
 
-.due-kicker {
+.due-sub-label {
     color: #475569;
-    font-size: 0.85rem;
-    font-weight: 750;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
+    font-size: 0.92rem;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
 }
 
 .due-amount-hero {
@@ -185,12 +156,12 @@
     align-items: baseline;
     gap: 0.25rem;
     color: #064e3b;
-    font-size: clamp(2.1rem, 3.8vw, 3.15rem);
+    font-size: clamp(2.35rem, 4.5vw, 3.4rem);
     font-weight: 900;
-    letter-spacing: -0.035em;
+    letter-spacing: -0.04em;
     line-height: 1.1;
     font-feature-settings: "tnum";
-    margin: 0.3rem 0 0.45rem;
+    margin: 0.15rem 0 0.4rem;
     white-space: nowrap;
     max-width: 100%;
 }
@@ -207,293 +178,169 @@
     flex-shrink: 0;
 }
 
-.due-hero-meta {
+.due-meta-row {
     display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    flex-wrap: wrap;
-}
-
-.due-students-count {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    color: #334155;
-    font-size: 0.88rem;
-    font-weight: 650;
-}
-
-.due-students-count svg {
-    width: 16px;
-    height: 16px;
-    color: #059669;
-}
-
-.due-demo-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.15rem 0.5rem;
-    border-radius: 6px;
-    background: #e0f2fe;
-    border: 1px solid #bae6fd;
-    color: #0284c7;
-    font-size: 0.72rem;
-    font-weight: 750;
-}
-
-.due-hero-actions {
-    margin-top: 1.15rem;
-}
-
-.btn-view-breakdown {
-    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.6rem 1.15rem;
-    background: #059669;
-    color: #ffffff;
+    color: #64748b;
     font-size: 0.88rem;
-    font-weight: 750;
-    border-radius: 12px;
+    font-weight: 500;
+}
+
+.due-meta-row .meta-dot {
+    color: #94a3b8;
+}
+
+.link-view-breakdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: none;
     border: none;
+    padding: 0;
+    margin: 0;
+    color: #059669;
+    font-size: 0.88rem;
+    font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
-    transition: background 0.18s, transform 0.18s, box-shadow 0.18s;
+    text-decoration: none;
+    transition: color 0.15s;
 }
 
-.btn-view-breakdown:hover {
-    background: #047857;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(5, 150, 105, 0.28);
+.link-view-breakdown:hover {
+    color: #047857;
+    text-decoration: underline;
 }
 
-.btn-view-breakdown svg {
-    transition: transform 0.18s ease;
-}
-
-.btn-view-breakdown:hover svg {
-    transform: translateY(1px);
-}
-
-/* HERO SECONDARY: ANNUAL CONTEXT (Subtle, Calm) */
-.due-hero-secondary {
+/* RIGHT HERO SECONDARY: ANNUAL BALANCE */
+.family-hero-secondary {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    flex: 0 0 280px;
-    max-width: 320px;
+    align-items: flex-end;
+    flex: 0 0 auto;
+    text-align: right;
+    padding-top: 0.2rem;
 }
 
-.secondary-annual-box {
-    padding: 1.25rem 1.4rem;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
-}
-
-.secondary-annual-box .annual-label {
+.annual-balance-block .annual-label {
     display: block;
     color: #64748b;
-    font-size: 0.75rem;
-    font-weight: 750;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.2rem;
 }
 
-.secondary-annual-box .annual-amount {
+.annual-balance-block .annual-amount {
     display: block;
-    margin: 0.25rem 0 0.35rem;
     color: #1e293b;
-    font-size: 1.45rem;
+    font-size: 1.55rem;
     font-weight: 850;
     letter-spacing: -0.02em;
     font-feature-settings: "tnum";
+    line-height: 1.2;
 }
 
-.secondary-annual-box .annual-help {
-    margin: 0;
-    color: #64748b;
-    font-size: 0.78rem;
-    line-height: 1.45;
+.advance-credit-line {
+    margin-top: 0.35rem;
+    color: #059669;
+    font-size: 0.82rem;
+    font-weight: 650;
 }
 
-.advance-credit-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.35rem 0.7rem;
-    background: #ecfdf5;
-    border: 1px solid #a7f3d0;
-    border-radius: 8px;
-    color: #065f46;
-    font-size: 0.78rem;
-    font-weight: 750;
-    width: fit-content;
+/* SUBTLE DIVIDERS */
+.hub-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 1.5rem 0;
 }
 
-/* 2. HORIZONTAL SUMMARY ROW */
-.family-summary-strip {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 1.25rem;
-    padding: 1.15rem 1.5rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
+/* 2. PLAIN STATISTICS ROW (Amount on top, label below, no heavy boxes) */
+.family-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.5rem;
 }
 
-.strip-item {
+.family-stats-grid .stat-item {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
     min-width: 0;
 }
 
-.strip-label {
-    color: #64748b;
-    font-size: 0.72rem;
-    font-weight: 750;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-
-.strip-value {
+.family-stats-grid .stat-amount {
+    display: block;
     color: #0f172a;
-    font-size: 1.15rem;
-    font-weight: 850;
+    font-size: 1.3rem;
+    font-weight: 800;
     line-height: 1.2;
+    letter-spacing: -0.02em;
     font-feature-settings: "tnum";
 }
 
-.strip-item.is-paid .strip-value {
+.family-stats-grid .stat-caption {
+    display: block;
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
+.family-stats-grid .stat-item.is-paid .stat-amount {
     color: #059669;
 }
 
-.strip-item.is-still-due .strip-value {
+.family-stats-grid .stat-item.is-still-due .stat-amount {
     color: #047857;
 }
 
-.strip-item.is-past-due.has-due .strip-value {
+.family-stats-grid .stat-item.is-past-due.has-due .stat-amount {
     color: #dc2626;
 }
 
-.strip-item.is-future .strip-value {
+.family-stats-grid .stat-item.is-future .stat-amount {
     color: #475569;
 }
 
-.strip-divider {
-    width: 1px;
-    height: 34px;
-    background: #e2e8f0;
-    flex-shrink: 0;
-}
-
-/* 3. QUICK CHILDREN PREVIEW */
-.family-children-preview {
+/* 3. CHILDREN PLAIN TEXT ROW */
+.family-children-row {
     display: flex;
-    align-items: center;
+    align-items: baseline;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+    color: #475569;
     flex-wrap: wrap;
-    gap: 0.85rem;
-    margin-top: 1.25rem;
-    padding-top: 1.15rem;
-    border-top: 1px solid #f1f5f9;
-}
-
-.children-preview-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    color: #475569;
-    font-size: 0.8rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-
-.children-preview-label svg {
-    color: #059669;
-}
-
-.children-chips-list {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.child-quick-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.3rem 0.75rem;
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-radius: 9999px;
-    font-size: 0.82rem;
-    transition: background 0.15s, border-color 0.15s;
-}
-
-.child-quick-chip:hover {
-    background: #dcfce7;
-    border-color: #86efac;
-}
-
-.child-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #10b981;
-    flex-shrink: 0;
-}
-
-.child-name {
-    font-weight: 750;
-    color: #14532d;
-}
-
-.child-sep {
-    color: #86efac;
-    font-weight: 400;
-}
-
-.child-grade {
-    font-weight: 600;
-    color: #166534;
-}
-
-/* 4. SOFT DEMO NOTICE */
-.family-demo-soft-notice {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-top: 1.15rem;
-    padding: 0.75rem 1.15rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    color: #475569;
-    font-size: 0.82rem;
     line-height: 1.5;
 }
 
-.demo-soft-icon {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: #e0f2fe;
-    color: #0284c7;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+.family-children-row .children-label {
+    font-weight: 700;
+    color: #1e293b;
 }
 
-.demo-soft-content strong {
-    font-weight: 750;
+.family-children-row .children-list-text {
+    display: inline-flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.family-children-row .child-entry strong {
+    font-weight: 700;
     color: #0f172a;
-    margin-right: 0.25rem;
+}
+
+.family-children-row .child-pipe {
+    color: #cbd5e1;
+    margin: 0 0.35rem;
+}
+
+/* 4. MUTED ONE-LINE DEMO NOTICE */
+.family-demo-muted-notice {
+    margin-top: 0.85rem;
+    color: #64748b;
+    font-size: 0.82rem;
+    line-height: 1.45;
 }
 
 .payment-section {
@@ -7543,16 +7390,20 @@
 }
 
 @media (max-width: 980px) {
-    .family-due-hero-card {
+    .family-hero-row {
         flex-direction: column;
-        align-items: stretch;
-        gap: 1.5rem;
+        align-items: flex-start;
+        gap: 1.25rem;
     }
 
-    .due-hero-secondary {
-        flex: 1 1 auto;
-        width: 100%;
-        max-width: 100%;
+    .family-hero-secondary {
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .family-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.25rem;
     }
 
     .payment-modal .modal-body-container {
@@ -7819,23 +7670,12 @@
 
     .family-overview-hub {
         padding: 1.25rem;
-        border-radius: 18px;
+        border-radius: 16px;
     }
 
-    .family-due-hero-card {
-        padding: 1.4rem;
-        gap: 1.25rem;
-    }
-
-    .family-summary-strip {
-        display: grid;
+    .family-stats-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 1rem;
-        padding: 1rem 1.15rem;
-    }
-
-    .strip-divider {
-        display: none;
     }
 
     .payment-student-grid,

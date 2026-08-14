@@ -54,126 +54,95 @@
                     $allChildrenList = $students->isNotEmpty() ? $students : $demoChildren;
                 @endphp
 
-                <!-- PARENT-FRIENDLY OVERVIEW HUB -->
+                <!-- PARENT-FRIENDLY OVERVIEW HUB (Clean, Uncluttered, Spacing & Typography-Driven) -->
                 <section class="family-overview-hub" aria-labelledby="family-overview-heading">
                     <h2 id="family-overview-heading" class="sr-only">Family Payment Overview</h2>
 
-                    <!-- 1. HERO CURRENT MONTH CARD -->
-                    <div class="family-due-hero-card">
-                        <div class="due-hero-content">
-                            <div class="due-month-header">
-                                <span class="due-month-pill">{{ $currentPaymentMonth }} {{ now()->format('Y') }}</span>
-                                <span class="due-kicker">Amount due this month</span>
-                            </div>
+                    <!-- 1. TOP HERO ROW (Current Month Due + Secondary Annual Remaining) -->
+                    <div class="family-hero-row">
+                        <div class="family-hero-main">
+                            <div class="due-month-kicker">{{ $currentPaymentMonth }} {{ now()->format('Y') }}</div>
+                            <div class="due-sub-label">Amount due this month</div>
 
                             <div class="due-amount-hero">
                                 <span class="due-currency">₱</span>
                                 <strong class="due-value">{{ number_format($familyAmountDueNow, 2) }}</strong>
                             </div>
 
-                            <div class="due-hero-meta">
-                                <span class="due-students-count">
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                    <span>Across {{ $allChildrenList->count() }} {{ $allChildrenList->count() === 1 ? 'student' : 'students' }}</span>
-                                </span>
-
-                                @if($demoChildren->isNotEmpty() && $students->isEmpty())
-                                    <span class="due-demo-badge">Schedule preview</span>
-                                @endif
-                            </div>
-
-                            <div class="due-hero-actions">
+                            <div class="due-meta-row">
+                                <span>Across {{ $allChildrenList->count() }} {{ $allChildrenList->count() === 1 ? 'student' : 'students' }}</span>
+                                <span class="meta-dot" aria-hidden="true">·</span>
                                 <button type="button" 
-                                        class="btn-view-breakdown"
+                                        class="link-view-breakdown"
                                         @click="activeTab = 'monthly'; $nextTick(() => document.getElementById('schedule-heading')?.scrollIntoView({ behavior: 'smooth' }))">
-                                    <span>View {{ ucfirst(strtolower($currentPaymentMonth)) }} Breakdown</span>
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    <span>View breakdown →</span>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- RIGHT: Secondary Full School Year Context (Calm, Secondary) -->
-                        <div class="due-hero-secondary">
-                            <div class="secondary-annual-box">
-                                <span class="annual-label">{{ $demoChildren->isNotEmpty() && $students->isEmpty() ? 'Demo Remaining for School Year' : 'Remaining for School Year' }}</span>
+                        <div class="family-hero-secondary">
+                            <div class="annual-balance-block">
+                                <span class="annual-label">{{ $demoChildren->isNotEmpty() && $students->isEmpty() ? 'Demo Remaining for school year' : 'Remaining for school year' }}</span>
                                 <strong class="annual-amount">₱{{ number_format($familyRemainingBalance, 2) }}</strong>
-                                <p class="annual-help">Combined remaining tuition & fees for all monthly installments.</p>
                             </div>
 
                             @if($familyAdvanceCredit > 0)
-                                <div class="advance-credit-badge">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <div class="advance-credit-line">
                                     <span>Advance credit: ₱{{ number_format($familyAdvanceCredit, 2) }}</span>
                                 </div>
                             @endif
                         </div>
                     </div>
 
-                    <!-- 2. HORIZONTAL SUMMARY ROW -->
-                    <div class="family-summary-strip">
-                        <div class="strip-item is-paid">
-                            <span class="strip-label">Paid this month</span>
-                            <strong class="strip-value">₱{{ number_format($currentMonthPaid, 2) }}</strong>
+                    <div class="hub-divider" aria-hidden="true"></div>
+
+                    <!-- 2. PLAIN STATISTICS ROW (Amount on top, label below, no heavy boxes) -->
+                    <div class="family-stats-grid">
+                        <div class="stat-item is-paid">
+                            <strong class="stat-amount">₱{{ number_format($currentMonthPaid, 2) }}</strong>
+                            <span class="stat-caption">Paid this month</span>
                         </div>
 
-                        <div class="strip-divider" aria-hidden="true"></div>
-
-                        <div class="strip-item is-still-due">
-                            <span class="strip-label">Still to pay</span>
-                            <strong class="strip-value">₱{{ number_format($currentMonthDueNow, 2) }}</strong>
+                        <div class="stat-item is-still-due">
+                            <strong class="stat-amount">₱{{ number_format($currentMonthDueNow, 2) }}</strong>
+                            <span class="stat-caption">Still to pay</span>
                         </div>
 
-                        <div class="strip-divider" aria-hidden="true"></div>
-
-                        <div class="strip-item is-past-due {{ $pastDueNow > 0 ? 'has-due' : '' }}">
-                            <span class="strip-label">Past due</span>
-                            <strong class="strip-value">₱{{ number_format($pastDueNow, 2) }}</strong>
+                        <div class="stat-item is-past-due {{ $pastDueNow > 0 ? 'has-due' : '' }}">
+                            <strong class="stat-amount">₱{{ number_format($pastDueNow, 2) }}</strong>
+                            <span class="stat-caption">Past due</span>
                         </div>
 
-                        <div class="strip-divider" aria-hidden="true"></div>
-
-                        <div class="strip-item is-future">
-                            <span class="strip-label">Future scheduled</span>
-                            <strong class="strip-value">₱{{ number_format($futureScheduledBalance, 2) }}</strong>
+                        <div class="stat-item is-future">
+                            <strong class="stat-amount">₱{{ number_format($futureScheduledBalance, 2) }}</strong>
+                            <span class="stat-caption">Future scheduled</span>
                         </div>
                     </div>
 
-                    <!-- 3. QUICK CHILDREN PREVIEW -->
+                    <!-- 3. CHILDREN PLAIN TEXT ROW -->
                     @if($allChildrenList->isNotEmpty())
-                        <div class="family-children-preview">
-                            <div class="children-preview-label">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                                <span>{{ $allChildrenList->count() }} {{ $allChildrenList->count() === 1 ? 'Child' : 'Children' }}</span>
-                            </div>
-                            <div class="children-chips-list">
+                        <div class="hub-divider" aria-hidden="true"></div>
+
+                        <div class="family-children-row">
+                            <span class="children-label">Children:</span>
+                            <span class="children-list-text">
                                 @foreach($allChildrenList as $child)
                                     @php
                                         $cName = $child->first_name ?? explode(' ', $child->display_name ?? $child->name ?? 'Student')[0];
                                         $cGrade = $child->grade_level ?? $child->account?->grade_level ?? 'Grade';
                                     @endphp
-                                    <div class="child-quick-chip">
-                                        <span class="child-dot"></span>
-                                        <strong class="child-name">{{ $cName }}</strong>
-                                        <span class="child-sep">—</span>
-                                        <span class="child-grade">{{ $cGrade }}</span>
-                                    </div>
+                                    <span class="child-entry"><strong>{{ $cName }}</strong> · {{ $cGrade }}</span>@if(!$loop->last) <span class="child-pipe" aria-hidden="true">|</span> @endif
                                 @endforeach
-                            </div>
+                            </span>
                         </div>
                     @endif
                 </section>
 
-                <!-- 4. DEMO NOTICE -->
+                <!-- 4. MUTED ONE-LINE DEMO NOTICE -->
                 @if($demoChildren->isNotEmpty() && $students->isEmpty())
-                    <aside class="family-demo-soft-notice" role="status">
-                        <div class="demo-soft-icon">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </div>
-                        <div class="demo-soft-content">
-                            <strong>Demo account:</strong>
-                            <span>These sample students are for preview only. No official AMIS records will be changed.</span>
-                        </div>
-                    </aside>
+                    <div class="family-demo-muted-notice" role="status">
+                        <span>Demo account: These sample students are for preview only. No official AMIS records will be changed.</span>
+                    </div>
                 @endif
 
                 <section class="payment-section" aria-labelledby="students-heading">
