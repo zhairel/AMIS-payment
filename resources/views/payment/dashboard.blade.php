@@ -318,52 +318,80 @@
                     </div>
                 </div>
 
-                <!-- MODERN TAB NAVIGATION SWITCHER -->
+                <!-- MODERN FULL-WIDTH TAB NAVIGATION SWITCHER -->
                 @php
                     $familyTransactionCount = $familyFinanceTransactions->count() + $unpostedPaymentSubmissions->count();
                 @endphp
-                <div class="flex items-center border-b border-slate-200 gap-1 sm:gap-4">
+                <div class="grid grid-cols-3 w-full border-b border-slate-200 gap-1 sm:gap-4" role="tablist">
                     <button type="button"
                             role="tab"
                             aria-label="Notifications"
-                            title="Notifications"
                             @click="activeTab = 'notifications'"
-                            :class="activeTab === 'notifications' ? 'border-emerald-700 text-emerald-800 font-extrabold border-b-2' : 'border-transparent text-slate-500 hover:text-slate-800 font-semibold'"
-                            class="flex-1 sm:flex-initial inline-flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap transition pb-3.5 -mb-px">
-                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                        </svg>
-                        <span class="hidden sm:inline">Notifications</span>
-                        @if($paymentNotifications->isNotEmpty())
-                            <span class="rounded-full bg-emerald-100 text-emerald-800 px-1.5 py-0.5 text-[11px] sm:text-xs font-bold">{{ $paymentNotifications->count() }}</span>
-                        @endif
+                            :class="activeTab === 'notifications'
+                                ? 'border-emerald-700 text-emerald-950 font-black'
+                                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50/50 font-semibold'"
+                            class="group flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 py-3 px-1 sm:px-4 min-h-[78px] sm:min-h-[64px] border-b-[3px] transition -mb-[1px] min-w-0">
+                        <div :class="activeTab === 'notifications' ? 'bg-emerald-100/80 text-emerald-800 ring-1 ring-emerald-300/60' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80 group-hover:text-slate-700'"
+                             class="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 transition">
+                            <svg class="w-6 h-6 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-center sm:text-left min-w-0">
+                            <span class="text-xs sm:text-sm leading-tight">Notifications</span>
+                            @if($paymentNotifications->isNotEmpty())
+                                <span :class="activeTab === 'notifications' ? 'bg-emerald-700 text-white' : 'bg-slate-200 text-slate-700'"
+                                      class="inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] sm:text-xs font-black min-w-[20px] transition">
+                                    {{ $paymentNotifications->count() }}
+                                </span>
+                            @endif
+                        </div>
                     </button>
 
                     <button type="button"
                             role="tab"
                             aria-label="Monthly Payments"
-                            title="Monthly Payments"
                             @click="activeTab = 'monthly'"
-                            :class="activeTab === 'monthly' ? 'border-emerald-700 text-emerald-800 font-extrabold border-b-2' : 'border-transparent text-slate-500 hover:text-slate-800 font-semibold'"
-                            class="flex-1 sm:flex-initial inline-flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap transition pb-3.5 -mb-px">
-                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                        <span class="hidden sm:inline">Monthly Payments</span>
+                            :class="activeTab === 'monthly'
+                                ? 'border-emerald-700 text-emerald-950 font-black'
+                                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50/50 font-semibold'"
+                            class="group flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 py-3 px-1 sm:px-4 min-h-[78px] sm:min-h-[64px] border-b-[3px] transition -mb-[1px] min-w-0">
+                        <div :class="activeTab === 'monthly' ? 'bg-emerald-100/80 text-emerald-800 ring-1 ring-emerald-300/60' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80 group-hover:text-slate-700'"
+                             class="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 transition">
+                            <svg class="w-6 h-6 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-center sm:text-left min-w-0">
+                            <span class="text-xs sm:text-sm leading-tight">
+                                <span class="block sm:inline">Monthly</span> <span class="block sm:inline">Payments</span>
+                            </span>
+                        </div>
                     </button>
 
                     <button type="button"
                             role="tab"
                             aria-label="Transactions & Receipts"
-                            title="Transactions & Receipts"
                             @click="activeTab = 'transactions'"
-                            :class="activeTab === 'transactions' ? 'border-emerald-700 text-emerald-800 font-extrabold border-b-2' : 'border-transparent text-slate-500 hover:text-slate-800 font-semibold'"
-                            class="flex-1 sm:flex-initial inline-flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap transition pb-3.5 -mb-px">
-                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                        </svg>
-                        <span class="hidden sm:inline">Transactions & Receipts</span>
-                        <span class="rounded-full bg-slate-100 text-slate-700 px-1.5 py-0.5 text-[11px] sm:text-xs font-bold">{{ $familyTransactionCount }}</span>
+                            :class="activeTab === 'transactions'
+                                ? 'border-emerald-700 text-emerald-950 font-black'
+                                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50/50 font-semibold'"
+                            class="group flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 py-3 px-1 sm:px-4 min-h-[78px] sm:min-h-[64px] border-b-[3px] transition -mb-[1px] min-w-0">
+                        <div :class="activeTab === 'transactions' ? 'bg-emerald-100/80 text-emerald-800 ring-1 ring-emerald-300/60' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80 group-hover:text-slate-700'"
+                             class="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 transition">
+                            <svg class="w-6 h-6 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                            </svg>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-center sm:text-left min-w-0">
+                            <span class="text-xs sm:text-sm leading-tight">
+                                <span class="block sm:inline">Transactions</span> <span class="block sm:inline">&amp; Receipts</span>
+                            </span>
+                            <span :class="activeTab === 'transactions' ? 'bg-emerald-700 text-white' : 'bg-slate-200 text-slate-700'"
+                                  class="inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] sm:text-xs font-black min-w-[20px] transition">
+                                {{ $familyTransactionCount }}
+                            </span>
+                        </div>
                     </button>
                 </div>
 
