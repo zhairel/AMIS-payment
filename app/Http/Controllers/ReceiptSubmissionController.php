@@ -36,6 +36,43 @@ class ReceiptSubmissionController extends Controller
             : null;
 
         $file = $request->file('receipt');
+        $receiptHash = hash_file('sha256', $file->getRealPath());
+
+        // Anti-spam / duplicate upload safeguard: If the user uploaded the identical receipt in the last 2 minutes, return existing submission.
+        if (! $retrySubmission) {
+            $existing = ReceiptSubmission::query()
+                ->where('user_id', $user->id)
+                ->where('receipt_hash', $receiptHash)
+                ->where('created_at', '>=', now()->subMinutes(2))
+                ->whereDoesntHave('paymentSubmission')
+                ->latest('id')
+                ->first();
+
+            if ($existing) {
+                return response()->json([
+                    'submission_id' => $existing->submission_id,
+                    'status' => $existing->status,
+                    'status_url' => route('payment.receipts.show', $existing->submission_id),
+                    'processing' => in_array($existing->status, [ReceiptSubmission::UPLOADED, ReceiptSubmission::PROCESSING], true),
+                    'provider' => $existing->provider,
+                    'detected_method' => $existing->provider,
+                    'payment_mode' => $existing->provider,
+                    'reference_number' => $existing->reference_number,
+                    'detected_ref' => $existing->reference_number,
+                    'amount' => $existing->amount !== null ? (float) $existing->amount : null,
+                    'detected_amount' => $existing->amount !== null ? (float) $existing->amount : null,
+                    'currency' => $existing->currency,
+                    'transaction_date' => $existing->transaction_date?->format('Y-m-d'),
+                    'detected_date' => $existing->transaction_date?->format('Y-m-d'),
+                    'transaction_time' => $existing->transaction_time,
+                    'detected_time' => $existing->transaction_time,
+                    'detected_sender' => $existing->sender_name,
+                    'detected_receiver' => $existing->receiver_name,
+                    'duplicate_detected' => true,
+                ]);
+            }
+        }
+
         $id = (string) Str::uuid();
         $extension = strtolower($file->guessExtension() ?: $file->getClientOriginalExtension() ?: 'bin');
         $path = $file->storeAs("receipts/original/{$id}", "original.{$extension}", 'local');

@@ -1012,14 +1012,55 @@
                         this.goToStep(3);
                     },
                     async submitPayment() {
-                        if (!this.securityReady || !this.selectedAccount) return;
-                        this.paymentLoading = true; this.paymentError = '';
-                        const formData = new FormData(); formData.append('client_token', this.clientToken); formData.append('method', this.paymentMethod); formData.append('payment_mode', this.paymentMode); formData.append('account_received', this.selectedAccount.number); formData.append('reference_no', this.paymentReference); formData.append('transaction_date', this.transactionDate); if (this.transactionTime) formData.append('transaction_time', this.transactionTime); formData.append('receipt_amount', this.transactionAmount); if (this.receiptSubmissionId) formData.append('receipt_submission_id', this.receiptSubmissionId); if (this.retryPayment?.id) formData.append('retry_submission_id', this.retryPayment.id); if (this.detectedReceipt.method) formData.append('local_detected_method', this.detectedReceipt.method); if (this.detectedReceipt.account) formData.append('local_detected_account', this.detectedReceipt.account); if (this.detectedReceipt.receiver) formData.append('local_detected_receiver', this.detectedReceipt.receiver); formData.append('receipt', this.receiptFile);
+                        if (this.paymentLoading || !this.securityReady || !this.selectedAccount) return;
+                        this.paymentLoading = true;
+                        this.paymentError = '';
+                        if (window.amisShowLoadingOverlay) {
+                            window.amisShowLoadingOverlay('Submitting payment…\nPlease do not close this page.');
+                        }
+                        const formData = new FormData();
+                        formData.append('client_token', this.clientToken);
+                        formData.append('method', this.paymentMethod);
+                        formData.append('payment_mode', this.paymentMode);
+                        formData.append('account_received', this.selectedAccount.number);
+                        formData.append('reference_no', this.paymentReference);
+                        formData.append('transaction_date', this.transactionDate);
+                        if (this.transactionTime) formData.append('transaction_time', this.transactionTime);
+                        formData.append('receipt_amount', this.transactionAmount);
+                        if (this.receiptSubmissionId) formData.append('receipt_submission_id', this.receiptSubmissionId);
+                        if (this.retryPayment?.id) formData.append('retry_submission_id', this.retryPayment.id);
+                        if (this.detectedReceipt.method) formData.append('local_detected_method', this.detectedReceipt.method);
+                        if (this.detectedReceipt.account) formData.append('local_detected_account', this.detectedReceipt.account);
+                        if (this.detectedReceipt.receiver) formData.append('local_detected_receiver', this.detectedReceipt.receiver);
+                        formData.append('receipt', this.receiptFile);
+
                         try {
-                            const response = await fetch(@json(route('payment.submit')), {method: 'POST', headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json'}, body: formData}); const data = await response.json();
-                            if (!response.ok) { const validationMessage = data.errors ? Object.values(data.errors).flat()[0] : null; throw new Error(validationMessage || data.message || 'Payment could not be submitted.'); }
-                            this.submissionNumber = data.submission_number; this.showSubmitConfirmation = false; this.submissionComplete = true; window.scrollTo({top: 0, behavior: 'smooth'});
-                        } catch (error) { this.showSubmitConfirmation = false; this.paymentError = error.message; } finally { this.paymentLoading = false; }
+                            const response = await fetch(@json(route('payment.submit')), {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'Accept': 'application/json'
+                                },
+                                body: formData
+                            });
+                            const data = await response.json();
+                            if (!response.ok) {
+                                const validationMessage = data.errors ? Object.values(data.errors).flat()[0] : null;
+                                throw new Error(validationMessage || data.message || 'Payment could not be submitted.');
+                            }
+                            this.submissionNumber = data.submission_number;
+                            this.showSubmitConfirmation = false;
+                            this.submissionComplete = true;
+                            window.scrollTo({top: 0, behavior: 'smooth'});
+                        } catch (error) {
+                            this.showSubmitConfirmation = false;
+                            this.paymentError = error.message;
+                        } finally {
+                            this.paymentLoading = false;
+                            if (window.amisHideLoadingOverlay) {
+                                window.amisHideLoadingOverlay();
+                            }
+                        }
                     }
                 };
             }

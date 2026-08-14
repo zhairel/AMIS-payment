@@ -81,11 +81,16 @@ Route::post('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/payment/dashboard', [PaymentController::class, 'showDashboard'])->name('payment.dashboard');
     Route::get('/payment/checkout', [PaymentController::class, 'showCheckout'])->name('payment.checkout');
-    Route::post('/payment/link-student', [PaymentController::class, 'linkStudent'])->name('payment.link-student');
-    Route::post('/payment/submit', [PaymentController::class, 'submitPayment'])->name('payment.submit');
-    Route::post('/payment/ocr-scan', [PaymentController::class, 'ocrScan'])->name('payment.ocr-scan');
-    Route::post('/payment/ocr-scan-log', [PaymentController::class, 'recordReceiptScan'])->name('payment.ocr-scan-log');
-    Route::post('/payment/check-duplicate', [PaymentController::class, 'checkDuplicate'])->name('payment.check-duplicate');
+    Route::post('/payment/link-student', [PaymentController::class, 'linkStudent'])
+        ->middleware('throttle:30,1')->name('payment.link-student');
+    Route::post('/payment/submit', [PaymentController::class, 'submitPayment'])
+        ->middleware('throttle:30,1')->name('payment.submit');
+    Route::post('/payment/ocr-scan', [PaymentController::class, 'ocrScan'])
+        ->middleware('throttle:30,1')->name('payment.ocr-scan');
+    Route::post('/payment/ocr-scan-log', [PaymentController::class, 'recordReceiptScan'])
+        ->middleware('throttle:30,1')->name('payment.ocr-scan-log');
+    Route::post('/payment/check-duplicate', [PaymentController::class, 'checkDuplicate'])
+        ->middleware('throttle:60,1')->name('payment.check-duplicate');
     Route::post('/payment/receipts', [ReceiptSubmissionController::class, 'store'])
         ->middleware('throttle:20,1')->name('payment.receipts.store');
     Route::get('/payment/receipts/{receipt}', [ReceiptSubmissionController::class, 'show'])
@@ -103,7 +108,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/payment/manual-soa/{soa}/download', [\App\Http\Controllers\StudentManualSoaController::class, 'download'])
         ->name('payment.manual-soa.download');
     Route::get('/payment/students/{studentIdentifier}/official-soa', [\App\Http\Controllers\StudentManualSoaController::class, 'officialStudentSoa'])
-        ->name('payment.students.official-soa');
+        ->middleware('throttle:60,1')->name('payment.students.official-soa');
     Route::get('/students/{student}', [\App\Http\Controllers\StudentController::class, 'show'])
         ->name('students.show');
     Route::post('/activity/offline', [AuthController::class, 'setOffline'])->name('activity.offline');

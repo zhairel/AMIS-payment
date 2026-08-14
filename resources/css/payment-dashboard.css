@@ -9954,3 +9954,292 @@
         border-left: 0;
     }
 }
+
+/* ==========================================================================
+   GLOBAL SKELETON LOADING & SHIMMER SYSTEM
+   ========================================================================== */
+
+.skeleton {
+    position: relative;
+    overflow: hidden;
+    background: #edf2f0;
+    border-radius: var(--fp-radius-sm);
+}
+
+.skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.65),
+        transparent
+    );
+    animation: skeleton-shimmer 1.4s infinite;
+}
+
+@keyframes skeleton-shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .skeleton::after {
+        animation: none;
+    }
+}
+
+.skeleton-pill {
+    border-radius: 9999px !important;
+}
+
+.skeleton-circle {
+    border-radius: 50% !important;
+}
+
+.skeleton-text {
+    height: 14px;
+    border-radius: 4px;
+}
+
+.skeleton-title {
+    height: 20px;
+    border-radius: 6px;
+}
+
+.skeleton-amount-large {
+    height: 48px;
+    border-radius: 8px;
+}
+
+.skeleton-amount-medium {
+    height: 32px;
+    border-radius: 8px;
+}
+
+.skeleton-amount-sm {
+    height: 22px;
+    border-radius: 6px;
+}
+
+/* Skeleton Hero Row */
+.skeleton-hero-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(270px, 1fr);
+    gap: 1.35rem;
+    align-items: stretch;
+}
+
+.skeleton-hero-due-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1.6rem 1.85rem;
+    background: var(--fp-green-soft);
+    border: 1px solid var(--fp-green-border);
+    border-left: 4px solid var(--fp-green);
+    border-radius: var(--fp-radius-lg);
+}
+
+.skeleton-hero-annual-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1.5rem 1.65rem;
+    background: var(--fp-surface);
+    border: 1px solid var(--fp-border);
+    border-radius: var(--fp-radius-lg);
+}
+
+/* Skeleton Stats Grid */
+.skeleton-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.skeleton-stat-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.15rem;
+    background: var(--fp-surface-muted);
+    border: 1px solid var(--fp-border-light);
+    border-radius: var(--fp-radius-md);
+}
+
+/* Skeleton Student Grid */
+.skeleton-student-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+}
+
+.skeleton-student-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.35rem 1.5rem;
+    background: var(--fp-surface);
+    border: 1px solid var(--fp-border);
+    border-radius: var(--fp-radius-lg);
+    box-shadow: var(--fp-shadow-sm);
+}
+
+/* Skeleton Tabs Strip */
+.skeleton-tabs-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+    padding: 0.4rem;
+    background: #f1f5f9;
+    border: 1px solid var(--fp-border);
+    border-radius: var(--fp-radius-lg);
+}
+
+.skeleton-tab-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.95rem 1.25rem;
+    background: var(--fp-surface);
+    border: 1px solid var(--fp-border);
+    border-radius: var(--fp-radius-md);
+}
+
+/* Skeleton Notification List */
+.skeleton-notification-list {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.skeleton-notification-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--fp-surface);
+    border: 1px solid var(--fp-border);
+    border-radius: var(--fp-radius-md);
+}
+
+/* Skeleton Table Wrapper */
+.skeleton-table-wrapper {
+    background: var(--fp-surface);
+    border: 1px solid var(--fp-border);
+    border-radius: var(--fp-radius-md);
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   BUTTON SPINNERS & PROCESSING STATES
+   ========================================================================== */
+
+.btn-inline-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    border-top-color: currentColor;
+    animation: btn-spin 0.6s linear infinite;
+    vertical-align: -2px;
+    margin-right: 0.35rem;
+}
+
+@keyframes btn-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+button[data-processing="true"],
+.btn[data-processing="true"] {
+    opacity: 0.75 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
+/* ==========================================================================
+   GLOBAL BLOCKING LOADING OVERLAY
+   ========================================================================== */
+
+.amis-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.amis-loading-overlay.is-visible {
+    opacity: 1;
+}
+
+.amis-loading-modal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 2rem 2.5rem;
+    background: var(--fp-surface);
+    border: 1px solid var(--fp-border);
+    border-radius: var(--fp-radius-lg);
+    box-shadow: var(--fp-shadow-lg);
+    max-width: 360px;
+    text-align: center;
+    transform: scale(0.95);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.amis-loading-overlay.is-visible .amis-loading-modal {
+    transform: scale(1);
+}
+
+.amis-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3.5px solid var(--fp-green-soft);
+    border-top-color: var(--fp-green);
+    border-radius: 50%;
+    animation: btn-spin 0.75s linear infinite;
+}
+
+.amis-loading-text {
+    color: var(--fp-text);
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: pre-line;
+}
+
+/* ==========================================================================
+   PRINT MEDIA EXCLUSIONS
+   ========================================================================== */
+
+@media print {
+    .skeleton,
+    .skeleton-hero-row,
+    .skeleton-stats-grid,
+    .skeleton-student-grid,
+    .skeleton-tabs-strip,
+    .skeleton-notification-list,
+    .skeleton-table-wrapper,
+    .family-overview-skeleton,
+    .amis-loading-overlay,
+    .loading-overlay,
+    .loading-indicator,
+    .toast-stack {
+        display: none !important;
+    }
+}
+

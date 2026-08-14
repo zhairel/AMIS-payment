@@ -404,7 +404,12 @@
                 background: #ffffff !important;
             }
 
-            .no-print-bar {
+            .no-print-bar,
+            .skeleton,
+            .loading-overlay,
+            .loading-indicator,
+            .toast-stack,
+            .amis-loading-overlay {
                 display: none !important;
             }
 
