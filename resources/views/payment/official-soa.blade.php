@@ -154,16 +154,16 @@
         }
         .upper-left {
             display: table-cell;
-            width: 29%;
+            width: 30%;
             vertical-align: top;
-            padding-right: 10px;
+            padding-right: 12px;
             font-size: 10px;
         }
         .upper-mid {
             display: table-cell;
-            width: 38%;
+            width: 37%;
             vertical-align: top;
-            padding-right: 8px;
+            padding-right: 10px;
             font-size: 10.5px;
         }
         .upper-right {
@@ -185,23 +185,25 @@
             margin-top: 4px;
         }
 
-        .student-name-row {
-            display: flex;
-            align-items: baseline;
-            gap: 6px;
-            white-space: nowrap;
-            margin-bottom: 2px;
+        .student-header-block {
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #cbd5e1;
         }
-        .student-name-label {
-            font-size: 10.5px;
-            color: #374151;
-            font-weight: 600;
-            white-space: nowrap;
-            flex-shrink: 0;
+        .student-header-label {
+            font-size: 9.5px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            line-height: 1;
         }
-        .student-name-value {
+        .student-header-name {
+            font-size: 12.5px;
             font-weight: 900;
             color: #0f172a;
+            line-height: 1.25;
+            margin-top: 2px;
             white-space: nowrap;
         }
 
@@ -214,14 +216,14 @@
             font-size: 10.5px;
         }
         .info-lbl {
-            color: #374151;
-            width: 100px;
-            font-weight: 600;
+            color: #64748b;
+            width: 110px;
+            font-weight: 500;
             white-space: nowrap;
         }
         .info-val {
-            font-weight: bold;
-            color: #111827;
+            font-weight: 700;
+            color: #0f172a;
         }
 
         /* FEE SUMMARY TABLE */
@@ -414,13 +416,15 @@
                 @php
                     $sName = strtoupper($soaData['student_name'] ?? '');
                     $sLen = mb_strlen($sName);
-                    $nameSize = $sLen > 32 ? '9px' : ($sLen > 25 ? '10px' : ($sLen > 18 ? '10.5px' : '11.5px'));
+                    $nameSize = $sLen > 32 ? '9.5px' : ($sLen > 25 ? '11px' : ($sLen > 18 ? '12px' : '13px'));
                     $nameSpacing = $sLen > 28 ? '-0.2px' : '0px';
                 @endphp
                 
-                <div class="student-name-row">
-                    <span class="student-name-label">NAME OF STUDENT:</span>
-                    <strong class="student-name-value" style="font-size: {{ $nameSize }}; letter-spacing: {{ $nameSpacing }};">{{ $sName }}</strong>
+                <div class="student-header-block">
+                    <div class="student-header-label">NAME OF STUDENT:</div>
+                    <div class="student-header-name" style="font-size: {{ $nameSize }}; letter-spacing: {{ $nameSpacing }};">
+                        {{ $sName }}
+                    </div>
                 </div>
 
                 <table class="student-info-table">
