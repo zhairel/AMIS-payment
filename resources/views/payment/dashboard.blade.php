@@ -1,43 +1,60 @@
 <x-app-layout>
     @php
         $demoChildren = $demoChildren ?? collect();
+        $allChildrenList = $students->isNotEmpty() ? $students : $demoChildren;
+        $schoolYearLabel = $students->first()?->account?->school_year ?? $demoChildren->first()?->school_year ?? '2026–2027';
     @endphp
     <x-slot name="title">Family Payments</x-slot>
 
     <div
-        class="payment-dashboard-page"
+        class="min-h-screen bg-slate-100/70 py-8 sm:py-12"
         x-data="paymentDashboard()"
         @keydown.escape.window="closeTopModal()"
     >
-        <div class="payment-shell">
-            <header class="payment-page-header">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            
+            <!-- Top Breadcrumb & Page Kicker -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <div class="payment-page-eyebrow-wrapper">
-                        <span class="welcome-sy-badge">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-800">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
-                            <span>School Year {{ $students->first()?->account?->school_year ?? $demoChildren->first()?->school_year ?? '2026–2027' }}</span>
+                            <span>School Year {{ $schoolYearLabel }}</span>
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-800">
+                            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Family Portal Active
                         </span>
                     </div>
-                    <h1 class="payment-page-title">Family Payments</h1>
-                    <p class="payment-page-subtitle">Manage your children's school payments in one place.</p>
+                    <h1 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Family Payments</h1>
+                    <p class="mt-1 text-sm text-slate-600">Manage your children's balances, monthly tuition fees, official statements of account, and payment receipts.</p>
                 </div>
-            </header>
+
+                <div class="flex items-center gap-3">
+                    <a href="{{ route('profile.edit') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        <span>Account Profile</span>
+                    </a>
+                </div>
+            </div>
 
             @if($students->isEmpty() && $demoChildren->isEmpty())
-                <section class="payment-empty-state" aria-labelledby="empty-students-title">
-                    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                        <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M18 18.72a9.1 9.1 0 003.74-.48 3 3 0 00-4.68-2.72m.94 3.2v-.01c0-1.09-.28-2.11-.77-3M18 18.72v.78c0 .41-.34.75-.75.75H6.75A.75.75 0 016 19.5v-.78m12 0a9.72 9.72 0 00-6-1.97 9.72 9.72 0 00-6 1.97m0 0a5.98 5.98 0 00-.77-3m0 0a3 3 0 00-4.68 2.72 9.1 9.1 0 003.74.48m.94-3a5.97 5.97 0 0113.54 0M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/>
+                <div class="rounded-3xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                        <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18 18.72a9.1 9.1 0 003.74-.48 3 3 0 00-4.68-2.72m.94 3.2v-.01c0-1.09-.28-2.11-.77-3M18 18.72v.78c0 .41-.34.75-.75.75H6.75A.75.75 0 016 19.5v-.78m12 0a9.72 9.72 0 00-6-1.97 9.72 9.72 0 00-6 1.97m0 0a5.98 5.98 0 00-.77-3m0 0a3 3 0 00-4.68 2.72 9.1 9.1 0 003.74.48m.94-3a5.97 5.97 0 0113.54 0M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/>
                         </svg>
                     </div>
-                    <h2 id="empty-students-title" class="text-xl font-extrabold text-slate-900">No students linked yet</h2>
-                    <p class="mx-auto mb-5 mt-2 max-w-md text-sm leading-6 text-slate-600">Link an existing student using their school ID. AMIS securely matches the parent email recorded in enrollment.</p>
-                    <button type="button" class="inline-flex min-h-11 items-center rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-800" @click="showAddStudent = true">
-                        Link student account
+                    <h2 class="mt-4 text-xl font-black text-slate-900">No students linked yet</h2>
+                    <p class="mx-auto mb-6 mt-2 max-w-md text-sm leading-relaxed text-slate-600">Link an existing student using their school ID. AMIS securely matches the parent email recorded in enrollment.</p>
+                    <button type="button" class="inline-flex items-center rounded-xl bg-emerald-700 px-6 py-3 text-sm font-extrabold text-white hover:bg-emerald-800 shadow-sm transition" @click="showAddStudent = true">
+                        Link Student Account
                     </button>
-                </section>
+                </div>
             @else
                 @php
                     $pastDueNow = (float) $currentPaymentSummary['previous_balance'];
@@ -51,543 +68,411 @@
                         ? ($monthlyGroups[$currentPaymentSummary['month_key']]['month_name'] ?? null)
                         : null;
                     $currentPaymentMonth = mb_strtoupper($currentPaymentMonth ?: now(config('finance.timezone', 'Asia/Manila'))->format('F'));
-                    $allChildrenList = $students->isNotEmpty() ? $students : $demoChildren;
                 @endphp
 
-                <!-- PARENT-FRIENDLY OVERVIEW HUB (Modern School Payment Portal Vibe) -->
-                <section class="family-overview-hub" aria-labelledby="family-overview-heading">
-                    <h2 id="family-overview-heading" class="sr-only">Family Payment Overview</h2>
+                <!-- PARENT-FRIENDLY OVERVIEW HERO BANNER (Official AMIS Emerald) -->
+                <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#065f46] via-[#054e3a] to-[#033b2c] p-8 sm:p-12 text-white shadow-xl shadow-emerald-950/10">
+                    <!-- Decorative background circles -->
+                    <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full border border-white/10 bg-white/[0.03] pointer-events-none"></div>
+                    <div class="absolute -bottom-24 -left-16 h-72 w-72 rounded-full border border-white/10 bg-white/[0.03] pointer-events-none"></div>
 
-                    <!-- 1. TOP HERO ROW (Soft green-tinted hero panel + soft neutral annual panel) -->
-                    <div class="family-hero-row">
-                        <div class="family-hero-due-panel">
-                            <div class="due-month-kicker">{{ $currentPaymentMonth }} {{ now()->format('Y') }}</div>
-                            <div class="due-sub-label">Amount due this month</div>
-
-                            <div class="due-amount-hero">
-                                <span class="due-currency">₱</span>
-                                <strong class="due-value">{{ number_format($familyAmountDueNow, 2) }}</strong>
+                    <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                        <!-- Left Hero: Amount Due This Month -->
+                        <div class="lg:col-span-7 space-y-3">
+                            <div class="inline-flex items-center gap-2 rounded-full bg-emerald-400/20 border border-emerald-300/30 px-3 py-1 text-xs font-black tracking-wider text-emerald-100 uppercase">
+                                <span>{{ $currentPaymentMonth }} {{ now()->format('Y') }}</span>
                             </div>
+
+                            <div class="text-xs sm:text-sm font-semibold uppercase tracking-wider text-emerald-200">
+                                Amount Due This Month
+                            </div>
+
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-3xl sm:text-4xl font-extrabold text-emerald-300">₱</span>
+                                <span class="text-4xl sm:text-6xl font-black text-white tracking-tight">
+                                    {{ number_format($familyAmountDueNow, 2) }}
+                                </span>
+                            </div>
+
+                            <p class="text-xs sm:text-sm text-emerald-100/80 leading-relaxed pt-1">
+                                Total outstanding monthly installment and any overdue balances for your family.
+                            </p>
                         </div>
 
-                        <div class="family-hero-annual-panel">
-                            <div class="annual-balance-block">
-                                <span class="annual-label">{{ $demoChildren->isNotEmpty() && $students->isEmpty() ? 'Demo Remaining for School Year' : 'Remaining for School Year' }}</span>
-                                <strong class="annual-amount">₱{{ number_format($familyRemainingBalance, 2) }}</strong>
-                                <p class="annual-sub">Total balance across all school months</p>
+                        <!-- Right Hero: Remaining for School Year & Advance Credit -->
+                        <div class="lg:col-span-5 rounded-2xl bg-white/10 border border-white/15 p-6 sm:p-8 backdrop-blur-sm space-y-3">
+                            <div class="text-xs font-bold uppercase tracking-wider text-emerald-200">
+                                {{ $demoChildren->isNotEmpty() && $students->isEmpty() ? 'Demo Remaining for School Year' : 'Remaining for School Year' }}
                             </div>
 
+                            <div class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                                ₱{{ number_format($familyRemainingBalance, 2) }}
+                            </div>
+
+                            <p class="text-xs text-emerald-100/70">
+                                Total balance across all school months.
+                            </p>
+
                             @if($familyAdvanceCredit > 0)
-                                <div class="advance-credit-line">
-                                    <svg class="w-3.5 h-3.5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <div class="pt-3 border-t border-white/15 flex items-center gap-2 text-xs font-bold text-emerald-300">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
                                     <span>Advance credit: ₱{{ number_format($familyAdvanceCredit, 2) }}</span>
                                 </div>
                             @endif
                         </div>
                     </div>
+                </div>
 
-                    <div class="hub-divider" aria-hidden="true"></div>
-
-                    <!-- 2. STATS GRID (One clean horizontal premium statistics bar) -->
-                    <div class="family-stats-grid">
-                        <div class="stat-card is-paid">
-                            <div class="stat-head">
-                                <span class="stat-icon-circle">
-                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <!-- 4-METRIC STATISTICS GRID -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                    <!-- Metric 1: Total Paid This Month -->
+                    <div class="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                        <div>
+                            <div class="flex items-center gap-2.5">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shrink-0">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
-                                </span>
-                                <span class="stat-caption">TOTAL PAID THIS MONTH</span>
+                                </div>
+                                <span class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Total Paid This Month</span>
                             </div>
-                            <strong class="stat-amount">₱{{ number_format($currentMonthPaid, 2) }}</strong>
-                            <span class="stat-sub">Payments received</span>
+                            <div class="mt-4 text-2xl font-black text-slate-900">₱{{ number_format($currentMonthPaid, 2) }}</div>
                         </div>
+                        <div class="mt-2 text-xs text-slate-500 font-medium">Payments received</div>
+                    </div>
 
-                        <div class="stat-card is-still-due">
-                            <div class="stat-head">
-                                <span class="stat-icon-circle">
-                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <!-- Metric 2: Current Balance -->
+                    <div class="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                        <div>
+                            <div class="flex items-center gap-2.5">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shrink-0">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                     </svg>
-                                </span>
-                                <span class="stat-caption">CURRENT BALANCE</span>
+                                </div>
+                                <span class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Current Balance</span>
                             </div>
-                            <strong class="stat-amount">₱{{ number_format($currentMonthDueNow, 2) }}</strong>
-                            <span class="stat-sub">Amount to be paid</span>
+                            <div class="mt-4 text-2xl font-black text-slate-900">₱{{ number_format($currentMonthDueNow, 2) }}</div>
                         </div>
+                        <div class="mt-2 text-xs text-slate-500 font-medium">Amount to be paid</div>
+                    </div>
 
-                        <div class="stat-card is-past-due {{ $pastDueNow > 0 ? 'has-due' : '' }}">
-                            <div class="stat-head">
-                                <span class="stat-icon-circle">
-                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <!-- Metric 3: Past Due -->
+                    <div class="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition {{ $pastDueNow > 0 ? 'ring-2 ring-rose-500/20' : '' }}">
+                        <div>
+                            <div class="flex items-center gap-2.5">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-xl {{ $pastDueNow > 0 ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-600' }} shrink-0">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
-                                </span>
-                                <span class="stat-caption">PAST DUE</span>
+                                </div>
+                                <span class="text-xs font-extrabold uppercase tracking-wider {{ $pastDueNow > 0 ? 'text-rose-700' : 'text-slate-500' }}">Past Due</span>
                             </div>
-                            <strong class="stat-amount">₱{{ number_format($pastDueNow, 2) }}</strong>
-                            <span class="stat-sub">{{ $pastDueNow > 0 ? 'Action needed' : 'No overdue payments' }}</span>
+                            <div class="mt-4 text-2xl font-black {{ $pastDueNow > 0 ? 'text-rose-700' : 'text-slate-900' }}">₱{{ number_format($pastDueNow, 2) }}</div>
                         </div>
+                        <div class="mt-2 text-xs font-medium {{ $pastDueNow > 0 ? 'text-rose-600 font-bold' : 'text-slate-500' }}">{{ $pastDueNow > 0 ? 'Action needed' : 'No overdue payments' }}</div>
+                    </div>
 
-                        <div class="stat-card is-future">
-                            <div class="stat-head">
-                                <span class="stat-icon-circle">
-                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <!-- Metric 4: Upcoming Balance -->
+                    <div class="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                        <div>
+                            <div class="flex items-center gap-2.5">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600 shrink-0">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                     </svg>
-                                </span>
-                                <span class="stat-caption">UPCOMING BALANCE</span>
+                                </div>
+                                <span class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Upcoming Balance</span>
                             </div>
-                            <strong class="stat-amount">₱{{ number_format($futureScheduledBalance, 2) }}</strong>
-                            <span class="stat-sub">Future payments</span>
+                            <div class="mt-4 text-2xl font-black text-slate-900">₱{{ number_format($futureScheduledBalance, 2) }}</div>
                         </div>
+                        <div class="mt-2 text-xs text-slate-500 font-medium">Future payments</div>
                     </div>
-                </section>
+                </div>
 
-                <!-- 4. MUTED ONE-LINE DEMO NOTICE -->
+                <!-- Muted One-Line Demo Notice -->
                 @if($demoChildren->isNotEmpty() && $students->isEmpty())
-                    <div class="family-demo-muted-notice" role="status">
-                        <svg class="demo-notice-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <div class="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 flex items-center gap-3 text-xs text-amber-900 font-medium">
+                        <svg class="h-5 w-5 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        <span>Demo account: These sample students are for preview only. No official AMIS records will be changed.</span>
+                        <span>Demo Account Preview: Sample student records for demonstration only. No official school records are modified.</span>
                     </div>
                 @endif
 
-                <section class="payment-section" aria-labelledby="students-heading">
-                    <div class="payment-section-heading">
+                <!-- LINKED STUDENTS SECTION -->
+                <div class="space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <span class="payment-section-kicker">STUDENT ACCOUNTS</span>
-                            <h2 id="students-heading" class="payment-section-title">Your linked students / children</h2>
-                            <p class="payment-section-description">Open a student account to see its fee breakdown.</p>
+                            <h2 class="text-xl font-black text-slate-900">Your Linked Students / Children</h2>
+                            <p class="text-xs text-slate-500">Open a student account to see official statements of account and tuition breakdowns.</p>
                         </div>
+
                         @if($demoChildren->isEmpty())
-                        <button type="button" class="payment-link-child" @click="showAddStudent = true">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/>
-                            </svg>
-                            Link student account
-                        </button>
+                            <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-800 shadow-sm transition" @click="showAddStudent = true">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                <span>Link Student Account</span>
+                            </button>
                         @endif
                     </div>
 
-                    <div class="payment-student-grid">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         @foreach($students as $student)
                             @php
                                 $account = $student->account;
                                 $applicant = $student->applicant;
                                 $studentName = mb_strtoupper($applicant?->full_name ?? '');
                                 $studentName = $studentName ?: 'STUDENT';
-                                $hasUploadedPhoto = filled($applicant?->photo_2x2_url);
-                                $avatarUrl = $hasUploadedPhoto
-                                    ? Storage::disk('public')->url($applicant->photo_2x2_url)
-                                    : asset(($applicant?->gender === 'Female')
-                                        ? 'images/avatars/student-female-avatar.png'
-                                        : 'images/avatars/student-male-avatar.png');
-                                $installmentBreakdown = $account?->monthlyBillings
-                                    ?->filter(fn ($billing) => (int) $billing->month_number > 0)
-                                    ->sortBy(fn ($billing) => $billing->due_date?->timestamp ?? $billing->month_number)
-                                    ->map(function ($billing) {
-                                        $originalAmount = (float) $billing->amount_due;
-                                        $verifiedPaid = $billing->status === 'paid'
-                                            ? $originalAmount
-                                            : min($originalAmount, (float) $billing->payments->where('status', 'verified')->sum('amount'));
-                                        $remainingAmount = max(0, round($originalAmount - $verifiedPaid, 2));
-                                        $dueDate = $billing->due_date;
-                                        $status = $remainingAmount <= 0.01
-                                            ? 'Paid'
-                                            : ($dueDate?->isPast()
-                                                ? 'Overdue'
-                                                : ($dueDate?->isCurrentMonth() ? 'Current' : 'Upcoming'));
-
-                                        return [
-                                            'month' => $dueDate ? strtoupper($dueDate->format('F Y')) : strtoupper((string) $billing->month_name),
-                                            'due_date' => $dueDate ? strtoupper($dueDate->format('M d, Y')) : null,
-                                            'original' => $originalAmount,
-                                            'verified' => $verifiedPaid,
-                                            'remaining' => $remainingAmount,
-                                            'status' => $status,
-                                        ];
-                                    })
-                                    ->values()
-                                    ->all() ?? [];
-                                $installmentSchedule = collect($installmentBreakdown);
-                                $installmentPlanTotal = round((float) $installmentSchedule->sum('original'), 2);
-                                $installmentVerified = round((float) $installmentSchedule->sum('verified'), 2);
-                                $installmentRemaining = round((float) $installmentSchedule->sum('remaining'), 2);
-                                $finalInstallment = (float) ($installmentSchedule->last()['original'] ?? ($account?->monthly_tuition ?? 0));
                                 $sId = (string) ($student->student_number ?: $student->id);
-                                $studentManualList = (isset($manualSoas) && $manualSoas->has($sId)) ? $manualSoas->get($sId) : collect();
-                                if ($studentManualList->isEmpty() && isset($manualSoas)) {
-                                    $studentManualList = $manualSoas->get((string) $student->id) ?? collect();
-                                }
-                                $latestManualSoa = $studentManualList->firstWhere('is_current', true) ?? $studentManualList->first();
-
-                                $studentAccentClass = str_contains(strtoupper($studentName), 'MARYAM') 
-                                    ? 'accent-blue' 
-                                    : (str_contains(strtoupper($studentName), 'YUSUF') 
-                                        ? 'accent-gold' 
-                                        : ($loop->index % 3 === 1 ? 'accent-blue' : ($loop->index % 3 === 2 ? 'accent-gold' : 'accent-green')));
-
-                                $breakdown = [
-                                    'name' => $studentName,
-                                    'avatar' => $avatarUrl,
-                                    'avatar_is_fallback' => !$hasUploadedPhoto,
-                                    'tuition' => (float) ($account?->tuition_fee ?? 0),
-                                    'misc' => (float) ($account?->miscellaneous_fee ?? 0),
-                                    'books' => (float) ($account?->books_fee ?? 0),
-                                    'discount' => (float) ($account?->discount_amount ?? 0),
-                                    'discount_percentage' => (float) ($account?->discount_percentage ?? 0),
-                                    'sibling_order' => (int) ($account?->sibling_order ?? 0),
-                                    'total' => (float) ($account?->total_balance ?? 0),
-                                    'enrollment' => (float) ($account?->enrollment_fee_paid ?? 0),
-                                    'remaining' => (float) ($account?->remaining_balance ?? 0),
-                                    'installments' => (int) ($account?->installment_months ?? 9),
-                                    'monthly' => (float) ($account?->monthly_tuition ?? 0),
-                                    'final_installment' => $finalInstallment,
-                                    'installment_plan_total' => $installmentPlanTotal,
-                                    'installment_verified' => $installmentVerified,
-                                    'installment_remaining' => $installmentRemaining,
-                                    'installment_breakdown' => $installmentBreakdown,
-                                    'next_payment' => $nextPayableByStudent[$student->id] ?? null,
-                                    'manual_soa_latest' => $latestManualSoa ? [
-                                        'id' => $latestManualSoa->id,
-                                        'billing_month' => $latestManualSoa->billing_month,
-                                        'version' => $latestManualSoa->version,
-                                        'filename' => $latestManualSoa->original_filename,
-                                        'size' => $latestManualSoa->formatted_file_size,
-                                        'uploaded_at' => $latestManualSoa->created_at->format('M d, Y h:i A'),
-                                        'uploaded_by' => $latestManualSoa->uploaded_by,
-                                        'remarks' => $latestManualSoa->remarks,
-                                        'is_pdf' => $latestManualSoa->is_pdf,
-                                        'view_url' => route('payment.manual-soa.view', $latestManualSoa),
-                                        'download_url' => route('payment.manual-soa.download', $latestManualSoa),
-                                    ] : null,
-                                    'manual_soa_history' => $studentManualList->map(fn ($soa) => [
-                                        'id' => $soa->id,
-                                        'billing_month' => $soa->billing_month,
-                                        'version' => $soa->version,
-                                        'is_current' => (bool) $soa->is_current,
-                                        'filename' => $soa->original_filename,
-                                        'size' => $soa->formatted_file_size,
-                                        'uploaded_at' => $soa->created_at->format('M d, Y h:i A'),
-                                        'uploaded_by' => $soa->uploaded_by,
-                                        'remarks' => $soa->remarks,
-                                        'is_pdf' => $soa->is_pdf,
-                                        'view_url' => route('payment.manual-soa.view', $soa),
-                                        'download_url' => route('payment.manual-soa.download', $soa),
-                                    ])->values()->all(),
-                                ];
+                                $studentInitial = mb_substr($studentName, 0, 1);
+                                $studentAccentBg = str_contains(strtoupper($studentName), 'MARYAM') ? 'bg-blue-50 text-blue-700 border-blue-200' : (str_contains(strtoupper($studentName), 'YUSUF') ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200');
                             @endphp
 
-                            <a
-                                href="{{ route('payment.students.official-soa', ['studentIdentifier' => $sId]) }}"
-                                target="_blank"
-                                class="payment-student-card {{ $studentAccentClass }}"
-                                aria-label="Open Official Statement of Account (PDF) for {{ $studentName }}"
-                            >
-                                <div class="student-card-main">
-                                    <div class="student-card-avatar">
-                                        <img
-                                            src="{{ $avatarUrl }}"
-                                            alt="Profile avatar of {{ $studentName }}"
-                                            class="{{ $hasUploadedPhoto ? '' : 'avatar-placeholder' }}"
-                                        >
+                            <div class="rounded-3xl border border-slate-200/80 bg-white p-8 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                                <div>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl border {{ $studentAccentBg }} text-lg font-black shadow-inner">
+                                            {{ $studentInitial }}
+                                        </div>
+                                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                                            Active Student
+                                        </span>
                                     </div>
-                                    <div class="student-card-details">
-                                        <h3 class="student-card-name" title="{{ $studentName }}">{{ $studentName }}</h3>
-                                        <div class="student-card-meta">{{ $student->grade_level }} · ID {{ $student->student_number }}</div>
+
+                                    <div class="mt-4">
+                                        <h3 class="text-base font-black text-slate-900" title="{{ $studentName }}">{{ $studentName }}</h3>
+                                        <div class="mt-1 flex items-center gap-2 text-xs text-slate-500 font-semibold">
+                                            <span>{{ $student->grade_level }}</span>
+                                            <span aria-hidden="true">·</span>
+                                            <span class="font-mono text-slate-400">ID {{ $student->student_number }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-5 space-y-2 border-t border-slate-100 pt-4 text-xs text-slate-600">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-slate-400 font-medium">Remaining Balance:</span>
+                                            <span class="font-black text-slate-900 text-sm">₱{{ number_format($account?->remaining_balance ?? 0, 2) }}</span>
+                                        </div>
                                         @if(($account?->discount_percentage ?? 0) > 0)
-                                            <div class="student-card-tags">
-                                                <span class="student-tag-discount">{{ number_format((float) $account->discount_percentage, 0) }}% sibling discount</span>
+                                            <div class="flex justify-between items-center text-emerald-700">
+                                                <span class="font-medium">Discount Applied:</span>
+                                                <span class="font-bold">{{ number_format((float) $account->discount_percentage, 0) }}% Sibling Discount</span>
                                             </div>
                                         @endif
                                     </div>
                                 </div>
 
-                                <div class="student-card-finance">
-                                    <div class="student-card-balance">
-                                        <span class="balance-label">BALANCE</span>
-                                        <strong class="balance-value">₱{{ number_format($account?->remaining_balance ?? 0, 2) }}</strong>
-                                    </div>
-                                    <span class="student-card-soa-btn" title="Open & Print Official School Statement of Account (PDF)">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                        <span>Official SOA (PDF)</span>
-                                    </span>
+                                <div class="mt-6 pt-4 border-t border-slate-100">
+                                    <a href="{{ route('payment.students.official-soa', ['studentIdentifier' => $sId]) }}" target="_blank" class="flex items-center justify-center gap-2 w-full rounded-xl bg-slate-50 border border-slate-200 py-3 text-xs font-extrabold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition">
+                                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        <span>Official Statement of Account (PDF)</span>
+                                    </a>
                                 </div>
-                            </a>
+                            </div>
                         @endforeach
+
                         @foreach($demoChildren as $demoChild)
                             @php
-                                $demoAvatarUrl = asset($demoChild->gender === 'Female'
-                                    ? 'images/avatars/student-female-avatar.png'
-                                    : 'images/avatars/student-male-avatar.png');
                                 $demoInstallmentBreakdown = app(\App\Services\DemoPaymentScheduleService::class)->installmentsFor($demoChild, $demoChildren);
                                 $demoRemainingBalance = (float) collect($demoInstallmentBreakdown)->sum('remaining');
-                                $demoVerifiedPaid = (float) collect($demoInstallmentBreakdown)->sum('verified');
-                                $demoPlanTotal = (float) collect($demoInstallmentBreakdown)->sum('original');
-                                $demoFinalInstallment = (float) (collect($demoInstallmentBreakdown)->last()['original'] ?? $demoChild->monthly_tuition);
-                                $demoNextPayment = collect($demoInstallmentBreakdown)
-                                    ->first(fn ($installment) => (float) $installment['remaining'] > 0.01);
-                                $demoId = (string) $demoChild->demo_student_number;
-                                $demoManualList = (isset($manualSoas) && $manualSoas->has($demoId)) ? $manualSoas->get($demoId) : collect();
-                                if ($demoManualList->isEmpty() && isset($manualSoas)) {
-                                    $demoManualList = $manualSoas->get((string) $demoChild->id) ?? collect();
-                                }
-                                $demoLatestManualSoa = $demoManualList->firstWhere('is_current', true) ?? $demoManualList->first();
-
-                                $demoAccentClass = str_contains(strtoupper($demoChild->display_name), 'MARYAM') 
-                                    ? 'accent-blue' 
-                                    : (str_contains(strtoupper($demoChild->display_name), 'YUSUF') 
-                                        ? 'accent-gold' 
-                                        : ($loop->index % 3 === 1 ? 'accent-blue' : ($loop->index % 3 === 2 ? 'accent-gold' : 'accent-green')));
-
-                                $demoBreakdown = [
-                                    'name' => mb_strtoupper($demoChild->display_name),
-                                    'avatar' => $demoAvatarUrl,
-                                    'avatar_is_fallback' => true,
-                                    'tuition' => (float) $demoChild->tuition_fee,
-                                    'misc' => (float) $demoChild->miscellaneous_fee,
-                                    'books' => (float) $demoChild->books_fee,
-                                    'discount' => (float) $demoChild->discount_amount,
-                                    'discount_percentage' => (float) $demoChild->discount_percentage,
-                                    'sibling_order' => $loop->iteration,
-                                    'total' => (float) $demoChild->total_balance,
-                                    'enrollment' => (float) $demoChild->enrollment_fee_paid,
-                                    'remaining' => $demoRemainingBalance,
-                                    'installments' => (int) $demoChild->installment_months,
-                                    'monthly' => (float) $demoChild->monthly_tuition,
-                                    'final_installment' => $demoFinalInstallment,
-                                    'installment_plan_total' => $demoPlanTotal,
-                                    'installment_verified' => $demoVerifiedPaid,
-                                    'installment_remaining' => $demoRemainingBalance,
-                                    'installment_breakdown' => $demoInstallmentBreakdown,
-                                    'next_payment' => $demoNextPayment,
-                                    'manual_soa_latest' => $demoLatestManualSoa ? [
-                                        'id' => $demoLatestManualSoa->id,
-                                        'billing_month' => $demoLatestManualSoa->billing_month,
-                                        'version' => $demoLatestManualSoa->version,
-                                        'filename' => $demoLatestManualSoa->original_filename,
-                                        'size' => $demoLatestManualSoa->formatted_file_size,
-                                        'uploaded_at' => $demoLatestManualSoa->created_at->format('M d, Y h:i A'),
-                                        'uploaded_by' => $demoLatestManualSoa->uploaded_by,
-                                        'remarks' => $demoLatestManualSoa->remarks,
-                                        'is_pdf' => $demoLatestManualSoa->is_pdf,
-                                        'view_url' => route('payment.manual-soa.view', $demoLatestManualSoa),
-                                        'download_url' => route('payment.manual-soa.download', $demoLatestManualSoa),
-                                    ] : null,
-                                    'manual_soa_history' => $demoManualList->map(fn ($soa) => [
-                                        'id' => $soa->id,
-                                        'billing_month' => $soa->billing_month,
-                                        'version' => $soa->version,
-                                        'is_current' => (bool) $soa->is_current,
-                                        'filename' => $soa->original_filename,
-                                        'size' => $soa->formatted_file_size,
-                                        'uploaded_at' => $soa->created_at->format('M d, Y h:i A'),
-                                        'uploaded_by' => $soa->uploaded_by,
-                                        'remarks' => $soa->remarks,
-                                        'is_pdf' => $soa->is_pdf,
-                                        'view_url' => route('payment.manual-soa.view', $soa),
-                                        'download_url' => route('payment.manual-soa.download', $soa),
-                                    ])->values()->all(),
-                                ];
+                                $demoInitial = mb_substr($demoChild->display_name, 0, 1);
+                                $demoAccentBg = str_contains(strtoupper($demoChild->display_name), 'MARYAM') ? 'bg-blue-50 text-blue-700 border-blue-200' : (str_contains(strtoupper($demoChild->display_name), 'YUSUF') ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200');
                             @endphp
-                            <a
-                                href="{{ route('payment.students.official-soa', ['studentIdentifier' => $demoChild->demo_student_number]) }}"
-                                target="_blank"
-                                class="payment-student-card is-demo {{ $demoAccentClass }}"
-                                aria-label="Open Official Statement of Account (PDF) for {{ $demoChild->display_name }}"
-                            >
-                                <div class="student-card-main">
-                                    <div class="student-card-avatar">
-                                        <img src="{{ $demoAvatarUrl }}" alt="Demo avatar of {{ $demoChild->display_name }}" class="avatar-placeholder">
+
+                            <div class="rounded-3xl border border-slate-200/80 bg-white p-8 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                                <div>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl border {{ $demoAccentBg }} text-lg font-black shadow-inner">
+                                            {{ $demoInitial }}
+                                        </div>
+                                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                                            Active Student
+                                        </span>
                                     </div>
-                                    <div class="student-card-details">
-                                        <h3 class="student-card-name" title="{{ $demoChild->display_name }}">{{ mb_strtoupper($demoChild->display_name) }}</h3>
-                                        <div class="student-card-meta">{{ $demoChild->grade_level }} · ID {{ $demoChild->demo_student_number }}</div>
-                                        <div class="student-card-tags">
-                                            <span class="student-tag-demo">Demo record</span>
-                                            @if((float) $demoChild->discount_percentage > 0)
-                                                <span class="tag-sep" aria-hidden="true">·</span>
-                                                <span class="student-tag-discount">{{ number_format((float) $demoChild->discount_percentage, 0) }}% sibling discount</span>
-                                            @endif
+
+                                    <div class="mt-4">
+                                        <h3 class="text-base font-black text-slate-900" title="{{ $demoChild->display_name }}">{{ mb_strtoupper($demoChild->display_name) }}</h3>
+                                        <div class="mt-1 flex items-center gap-2 text-xs text-slate-500 font-semibold">
+                                            <span>{{ $demoChild->grade_level }}</span>
+                                            <span aria-hidden="true">·</span>
+                                            <span class="font-mono text-slate-400">ID {{ $demoChild->demo_student_number }}</span>
                                         </div>
                                     </div>
+
+                                    <div class="mt-5 space-y-2 border-t border-slate-100 pt-4 text-xs text-slate-600">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-slate-400 font-medium">Remaining Balance:</span>
+                                            <span class="font-black text-slate-900 text-sm">₱{{ number_format($demoRemainingBalance, 2) }}</span>
+                                        </div>
+                                        @if((float) $demoChild->discount_percentage > 0)
+                                            <div class="flex justify-between items-center text-emerald-700">
+                                                <span class="font-medium">Discount Applied:</span>
+                                                <span class="font-bold">{{ number_format((float) $demoChild->discount_percentage, 0) }}% Sibling Discount</span>
+                                            </div>
+                                        @endif
+                                    </div>
                                 </div>
 
-                                <div class="student-card-finance">
-                                    <div class="student-card-balance">
-                                        <span class="balance-label">BALANCE</span>
-                                        <strong class="balance-value">₱{{ number_format($demoRemainingBalance, 2) }}</strong>
-                                    </div>
-                                    <span class="student-card-soa-btn" title="Open & Print Official School Statement of Account (PDF)">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                        <span>Official SOA (PDF)</span>
-                                    </span>
+                                <div class="mt-6 pt-4 border-t border-slate-100">
+                                    <a href="{{ route('payment.students.official-soa', ['studentIdentifier' => $demoChild->demo_student_number]) }}" target="_blank" class="flex items-center justify-center gap-2 w-full rounded-xl bg-slate-50 border border-slate-200 py-3 text-xs font-extrabold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition">
+                                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        <span>Official Statement of Account (PDF)</span>
+                                    </a>
                                 </div>
-                            </a>
+                            </div>
                         @endforeach
                     </div>
-                </section>
+                </div>
 
-                <nav class="payment-view-tabs" role="tablist" aria-label="Payment views">
-                    <button
-                        type="button"
-                        role="tab"
-                        class="payment-view-tab"
-                        :class="activeTab === 'notifications' ? 'is-active' : ''"
-                        :aria-selected="(activeTab === 'notifications').toString()"
-                        @click="activeTab = 'notifications'"
-                    >
-                        <span class="tab-icon-circle">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.85 23.85 0 005.454-1.31A8.97 8.97 0 0118 9.75V9A6 6 0 006 9v.75a8.97 8.97 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.26 24.26 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
-                            </svg>
-                        </span>
-                        <span class="tab-content">
-                            <strong class="tab-title">Notifications</strong>
-                            <small class="tab-sub">{{ $paymentNotifications->count() }} important {{ Str::plural('update', $paymentNotifications->count()) }}</small>
-                        </span>
-                        <svg class="tab-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                <!-- MODERN TAB NAVIGATION SWITCHER -->
+                @php
+                    $familyTransactionCount = $familyFinanceTransactions->count() + $unpostedPaymentSubmissions->count();
+                @endphp
+                <div class="flex items-center border-b border-slate-200 gap-3">
+                    <button type="button"
+                            role="tab"
+                            @click="activeTab = 'notifications'"
+                            :class="activeTab === 'notifications' ? 'border-emerald-700 text-emerald-800 font-extrabold border-b-2' : 'border-transparent text-slate-500 hover:text-slate-800 font-semibold'"
+                            class="inline-flex items-center gap-2 px-4 py-3 text-sm transition pb-3.5 -mb-px">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                         </svg>
+                        <span>Notifications</span>
+                        @if($paymentNotifications->isNotEmpty())
+                            <span class="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-xs font-bold">{{ $paymentNotifications->count() }}</span>
+                        @endif
                     </button>
-                    <button
-                        type="button"
-                        role="tab"
-                        class="payment-view-tab"
-                        :class="activeTab === 'monthly' ? 'is-active' : ''"
-                        :aria-selected="(activeTab === 'monthly').toString()"
-                        @click="activeTab = 'monthly'"
-                    >
-                        <span class="tab-icon-circle">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6.75 3v2.25M17.25 3v2.25M3.75 9h16.5m-15 12h13.5a1.5 1.5 0 001.5-1.5V6.75a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5V19.5a1.5 1.5 0 001.5 1.5z"/>
-                            </svg>
-                        </span>
-                        <span class="tab-content">
-                            <strong class="tab-title">Monthly Payments</strong>
-                            <small class="tab-sub">Balances and payment schedule</small>
-                        </span>
-                        <svg class="tab-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                    <button
-                        type="button"
-                        role="tab"
-                        class="payment-view-tab"
-                        :class="activeTab === 'transactions' ? 'is-active' : ''"
-                        :aria-selected="(activeTab === 'transactions').toString()"
-                        @click="activeTab = 'transactions'"
-                    >
-                        <span class="tab-icon-circle">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 14.25l2.25 2.25L15 12.75M6.75 3.75h10.5A2.25 2.25 0 0119.5 6v12A2.25 2.25 0 0117.25 20.25H6.75A2.25 2.25 0 014.5 18V6a2.25 2.25 0 012.25-2.25z"/>
-                            </svg>
-                        </span>
-                        @php
-                            $familyTransactionCount = $familyFinanceTransactions->count() + $unpostedPaymentSubmissions->count();
-                        @endphp
-                        <span class="tab-content">
-                            <strong class="tab-title">Transactions</strong>
-                            <small class="tab-sub">{{ $familyTransactionCount }} payment {{ Str::plural('record', $familyTransactionCount) }}</small>
-                        </span>
-                        <svg class="tab-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                </nav>
 
-                <section x-show="activeTab === 'notifications'" x-cloak class="payment-tab-panel payment-section" role="tabpanel" aria-labelledby="notifications-heading">
-                    <div class="payment-section-heading">
-                        <div>
-                            <span class="payment-section-kicker">Account updates</span>
-                            <h2 id="notifications-heading" class="payment-section-title">Notifications</h2>
-                            <p class="payment-section-description">Important reminders about balances, due months, and receipt verification.</p>
-                        </div>
-                    </div>
+                    <button type="button"
+                            role="tab"
+                            @click="activeTab = 'monthly'"
+                            :class="activeTab === 'monthly' ? 'border-emerald-700 text-emerald-800 font-extrabold border-b-2' : 'border-transparent text-slate-500 hover:text-slate-800 font-semibold'"
+                            class="inline-flex items-center gap-2 px-4 py-3 text-sm transition pb-3.5 -mb-px">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span>Monthly Payments</span>
+                    </button>
 
-                    @if($paymentNotifications->isNotEmpty())
-                        <div class="payment-notification-list">
-                            @foreach($paymentNotifications as $notification)
-                                @php
-                                    $notificationLabel = match($notification['type']) {
-                                        'overdue', 'previous' => 'Action needed',
-                                        'pending' => 'Under review',
-                                        'success' => 'Payment update',
-                                        default => 'Upcoming',
-                                    };
-                                    $notificationAmountLabel = match($notification['type']) {
-                                        'overdue', 'previous' => 'Balance due',
-                                        'pending' => 'Submitted',
-                                        'success' => 'Verified amount',
-                                        default => 'Monthly charge',
-                                    };
-                                @endphp
-                                <article
-                                    class="payment-notification-card is-{{ $notification['type'] }} w-full text-left"
-                                >
-                                    <span class="payment-notification-icon" aria-hidden="true">
-                                        @if($notification['type'] === 'overdue' || $notification['type'] === 'previous')
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-1.5a9 9 0 11-18 0 9 9 0 0118 0zM12 15.75h.008v.008H12v-.008z"/></svg>
-                                        @elseif($notification['type'] === 'pending')
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        @elseif($notification['type'] === 'success')
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12.75l2.25 2.25L15 10.5m6 1.5a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        @else
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.75 3v2.25M17.25 3v2.25M3.75 9h16.5m-15 12h13.5a1.5 1.5 0 001.5-1.5V6.75a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5V19.5a1.5 1.5 0 001.5 1.5z"/></svg>
-                                        @endif
-                                    </span>
-                                    <span class="payment-notification-copy">
-                                        <span class="payment-notification-meta"><em>{{ $notificationLabel }}</em><small>{{ $notification['date'] ? strtoupper($notification['date']->format('M d, Y')) : '' }}</small></span>
-                                        <strong>{{ $notification['title'] }}</strong>
-                                        <span>{{ $notification['message'] }}</span>
-                                    </span>
-                                    <span class="payment-notification-amount"><small>{{ $notificationAmountLabel }}</small><strong>₱{{ number_format($notification['amount'], 2) }}</strong></span>
-                                </article>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="payment-empty-state">
-                            <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                    <button type="button"
+                            role="tab"
+                            @click="activeTab = 'transactions'"
+                            :class="activeTab === 'transactions' ? 'border-emerald-700 text-emerald-800 font-extrabold border-b-2' : 'border-transparent text-slate-500 hover:text-slate-800 font-semibold'"
+                            class="inline-flex items-center gap-2 px-4 py-3 text-sm transition pb-3.5 -mb-px">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                        <span>Transactions & Receipts</span>
+                        <span class="rounded-full bg-slate-100 text-slate-700 px-2 py-0.5 text-xs font-bold">{{ $familyTransactionCount }}</span>
+                    </button>
+                </div>
+
+                <!-- TAB 1: NOTIFICATIONS & UPDATES -->
+                <div x-show="activeTab === 'notifications'" x-cloak class="space-y-6">
+                    <div class="rounded-3xl border border-slate-200/80 bg-white p-8 sm:p-12 shadow-sm">
+                        <div class="flex items-center gap-3 border-b border-slate-100 pb-5">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shrink-0">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                </svg>
                             </div>
-                            <h3 class="text-base font-bold text-slate-800">You’re all caught up</h3>
-                            <p class="mt-2 text-sm text-slate-600">New payment reminders and receipt updates will appear here.</p>
+                            <div>
+                                <h2 class="text-lg font-black text-slate-900">Account Notifications & Updates</h2>
+                                <p class="text-xs text-slate-500">Important reminders about balances, due months, and receipt verification status.</p>
+                            </div>
                         </div>
-                    @endif
-                </section>
 
-                <section x-show="activeTab === 'monthly'" x-cloak class="payment-tab-panel payment-section" role="tabpanel" aria-labelledby="schedule-heading">
-                    <div class="payment-section-heading">
-                        <div class="payment-section-heading-with-icon">
-                            <span class="payment-section-kicker">Payment schedule</span>
-                            <h2 id="schedule-heading" class="payment-section-title"><span class="payment-section-heading-icon" aria-hidden="true">₱</span>Monthly payments</h2>
-                            <p class="payment-section-description">View the family schedule, then upload one receipt. AMIS allocates verified payments automatically.</p>
-                        </div>
+                        @if($paymentNotifications->isNotEmpty())
+                            <div class="mt-6 space-y-4">
+                                @foreach($paymentNotifications as $notification)
+                                    @php
+                                        $notificationType = $notification['type'];
+                                        $badgeBg = match($notificationType) {
+                                            'overdue', 'previous' => 'bg-rose-50 border-rose-200 text-rose-800',
+                                            'pending' => 'bg-amber-50 border-amber-200 text-amber-800',
+                                            'success' => 'bg-emerald-50 border-emerald-200 text-emerald-800',
+                                            default => 'bg-slate-50 border-slate-200 text-slate-700',
+                                        };
+                                        $notificationLabel = match($notificationType) {
+                                            'overdue', 'previous' => 'Action Needed',
+                                            'pending' => 'Under Review',
+                                            'success' => 'Payment Verified',
+                                            default => 'Upcoming',
+                                        };
+                                    @endphp
+
+                                    <div class="rounded-2xl border border-slate-200 bg-slate-50/50 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                        <div class="space-y-1">
+                                            <div class="flex items-center gap-2">
+                                                <span class="rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide {{ $badgeBg }}">
+                                                    {{ $notificationLabel }}
+                                                </span>
+                                                @if($notification['date'])
+                                                    <span class="text-xs text-slate-400 font-medium">{{ $notification['date']->format('M d, Y') }}</span>
+                                                @endif
+                                            </div>
+                                            <h3 class="text-sm font-bold text-slate-900">{{ $notification['title'] }}</h3>
+                                            <p class="text-xs text-slate-600 leading-relaxed">{{ $notification['message'] }}</p>
+                                        </div>
+
+                                        <div class="sm:text-right shrink-0">
+                                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Amount</span>
+                                            <strong class="text-base font-black text-slate-900">₱{{ number_format($notification['amount'], 2) }}</strong>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="mt-8 text-center py-8">
+                                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </div>
+                                <h3 class="mt-3 text-base font-extrabold text-slate-900">You're all caught up!</h3>
+                                <p class="mt-1 text-xs text-slate-500">New payment reminders and receipt updates will appear here automatically.</p>
+                            </div>
+                        @endif
                     </div>
+                </div>
 
-                    <aside class="payment-fee-support-banner" aria-label="Tuition fee support">
-                        <span class="payment-fee-support-icon" aria-hidden="true">
-                            <svg class="h-5 w-5 flex-shrink-0" style="width:22px; height:22px; min-width:22px; min-height:22px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+                <!-- TAB 2: MONTHLY PAYMENT SCHEDULE -->
+                <div x-show="activeTab === 'monthly'" x-cloak class="space-y-8">
+                    
+                    <!-- Fee Inquiry Banner -->
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shrink-0">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-extrabold text-slate-900">Need Assistance with Tuition Balances?</h3>
+                                <p class="text-xs text-slate-500">Contact the Finance & IT Office with student name and ID for rapid balance checks.</p>
+                            </div>
+                        </div>
+
+                        <a href="mailto:zhairel.lingasa@gmail.com?subject=AMIS%20Tuition%20Fee%20or%20Balance%20Concern" class="inline-flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition shrink-0">
+                            <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                             </svg>
-                        </span>
-                        <span class="payment-fee-support-copy">
-                            <strong>Does your tuition fee or balance look incorrect?</strong>
-                            <small>Contact IT Support and include the student's full name, student ID, affected month, and a screenshot so we can check it quickly.</small>
-                        </span>
-                        <a href="mailto:zhairel.lingasa@gmail.com?subject=AMIS%20Tuition%20Fee%20or%20Balance%20Concern" class="payment-fee-support-link">
-                            <span>Email IT Support</span>
-                            <strong>zhairel.lingasa@gmail.com</strong>
+                            <span>Email Support</span>
                         </a>
-                    </aside>
+                    </div>
 
                     @if(empty($monthlyGroups))
-                        <div class="payment-empty-state">
-                            <h3 class="text-base font-bold text-slate-800">No payment schedule yet</h3>
-                            <p class="mt-2 text-sm text-slate-600">The Statement of Account may not have been generated. Please check again later or contact the Finance Office.</p>
+                        <div class="rounded-3xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+                            <h3 class="text-base font-extrabold text-slate-900">No payment schedule yet</h3>
+                            <p class="mt-1 text-xs text-slate-500">The Statement of Account may not have been generated. Please check again later.</p>
                         </div>
                     @else
                         @php
@@ -612,379 +497,287 @@
                             ];
                         @endphp
 
-                        <div class="payment-month-filter" role="tablist" aria-label="Filter monthly payments">
-                            @foreach(['current' => 'CURRENT', 'upcoming' => 'UPCOMING', 'paid' => 'PAID'] as $filterValue => $filterLabel)
-                                <button
-                                    type="button"
-                                    role="tab"
-                                    :aria-selected="(monthFilter === '{{ $filterValue }}').toString()"
-                                    :class="{ 'is-active': monthFilter === '{{ $filterValue }}' }"
-                                    @click="monthFilter = '{{ $filterValue }}'; openMonth = null"
-                                >
+                        <!-- Filter Switcher Buttons -->
+                        <div class="flex items-center gap-2">
+                            @foreach(['current' => 'Current Due', 'upcoming' => 'Upcoming', 'paid' => 'Paid Months'] as $filterValue => $filterLabel)
+                                <button type="button"
+                                        @click="monthFilter = '{{ $filterValue }}'; openMonth = null"
+                                        :class="monthFilter === '{{ $filterValue }}' ? 'bg-emerald-700 text-white shadow-sm' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'"
+                                        class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition">
                                     <span>{{ $filterLabel }}</span>
-                                    <small>{{ $monthFilterCounts[$filterValue] }}</small>
+                                    <span :class="monthFilter === '{{ $filterValue }}' ? 'bg-emerald-800 text-emerald-100' : 'bg-slate-100 text-slate-600'" class="rounded-full px-2 py-0.5 text-[10px] font-extrabold">
+                                        {{ $monthFilterCounts[$filterValue] }}
+                                    </span>
                                 </button>
                             @endforeach
                         </div>
 
-                        @php
-                            $currentPaidGroup = $orderedMonthlyGroups->first(
-                                fn ($group) => $group['is_current'] && $group['unpaid_count'] === 0
-                            );
-                            $currentPaidMonthLabel = $currentPaidGroup
-                                ? ($currentPaidGroup['month_number'] === 0
-                                    ? 'Enrollment / Initial Payment'
-                                    : mb_strtoupper($currentPaidGroup['month_label']))
-                                : null;
-                        @endphp
-
-                        @if($currentPaidGroup)
-                            <section x-show="monthFilter === 'paid'" x-cloak class="payment-full-paid-note" role="status" aria-label="{{ $currentPaidMonthLabel }} paid in full">
-                                <span class="payment-full-paid-icon" aria-hidden="true">
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12.75l2.25 2.25L15 10.5m6 1.5a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                </span>
-                                <span class="payment-full-paid-copy">
-                                    <strong>Assalamu alaikum! Shukran for completing your {{ $currentPaidMonthLabel }} family payment.</strong>
-                                    <small>Finance has verified the full amount, and this month is now paid in full.</small>
-                                </span>
-                                <button type="button" @click="activeTab = 'transactions'; window.scrollTo({ top: 0, behavior: 'smooth' })">View transactions <span aria-hidden="true">→</span></button>
-                            </section>
-                        @endif
-
-                        <div class="payment-month-list">
+                        <!-- Month Cards List -->
+                        <div class="space-y-4">
                             @foreach($orderedMonthlyGroups as $monthKey => $group)
                                 @php
                                     $isCurrent = $group['is_current'];
                                     $allPaid = $group['unpaid_count'] === 0;
                                     $isOverdue = !$isCurrent && $group['is_overdue'];
                                     $hasAdvanceApplied = ! $allPaid && ! $isCurrent && ! $isOverdue && (float) $group['total_paid'] > 0.01;
-                                    $showPaymentStats = $isOverdue || $isCurrent || $hasAdvanceApplied;
-                                    $mainAmountLabel = $allPaid
-                                        ? 'Paid in full'
-                                        : ($isOverdue ? 'Past due' : ($isCurrent ? 'Current balance' : ($hasAdvanceApplied ? 'Remaining scheduled' : 'Scheduled charges')));
-                                    $mainAmount = $allPaid
-                                        ? 0
-                                        : $group['total_remaining'];
+                                    $mainAmount = $allPaid ? 0 : $group['total_remaining'];
                                     $monthLabel = $group['month_number'] === 0 ? 'Enrollment / Initial Payment' : mb_strtoupper($group['month_label']);
+                                    $monthCardFilter = $allPaid ? 'paid' : (($isCurrent || $isOverdue) ? 'current' : 'upcoming');
                                 @endphp
 
-                                <article
-                                    class="payment-month-card {{ $allPaid ? 'is-paid' : ($isOverdue ? 'is-overdue' : ($isCurrent ? 'is-current' : 'is-upcoming')) }}"
-                                    :class="{ 'is-open': openMonth === {{ Js::from($monthKey) }} }"
-                                    x-show="monthFilter === '{{ $allPaid ? 'paid' : (($isCurrent || $isOverdue) ? 'current' : 'upcoming') }}'"
-                                    x-cloak
-                                >
-                                    <button
-                                        type="button"
-                                        class="payment-month-toggle"
-                                        @click="openMonth = openMonth === {{ Js::from($monthKey) }} ? null : {{ Js::from($monthKey) }}"
-                                        :aria-expanded="(openMonth === {{ Js::from($monthKey) }}).toString()"
-                                        aria-controls="payment-month-panel-{{ $monthKey }}"
-                                    >
-                                        <span class="payment-month-copy">
-                                            <span class="payment-month-title-row">
-                                                <span class="payment-month-name">{{ $monthLabel }}</span>
-                                                @if($allPaid)
-                                                    <span class="payment-status payment-status-paid">Paid</span>
-                                                @elseif($isOverdue)
-                                                    <span class="payment-status payment-status-overdue">Overdue</span>
-                                                @elseif($isCurrent)
-                                                    <span class="payment-status payment-status-current">Current</span>
-                                                @else
-                                                    <span class="payment-status payment-status-upcoming">Upcoming</span>
-                                                @endif
-                                            </span>
-                                            <span class="payment-month-meta">Due {{ strtoupper($group['due_date']->format('F Y')) }}</span>
-                                        </span>
+                                <div x-show="monthFilter === '{{ $monthCardFilter }}'" x-cloak class="rounded-3xl border border-slate-200/80 bg-white overflow-hidden shadow-sm transition hover:border-slate-300">
+                                    <div class="p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 cursor-pointer" @click="openMonth = openMonth === {{ Js::from($monthKey) }} ? null : {{ Js::from($monthKey) }}">
+                                        <div class="flex items-center gap-4">
+                                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl {{ $allPaid ? 'bg-emerald-50 text-emerald-700' : ($isOverdue ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-700') }} font-black text-sm shrink-0">
+                                                {{ substr($monthLabel, 0, 3) }}
+                                            </div>
 
-                                        <span class="payment-month-balance">
-                                            <small>{{ $mainAmountLabel }}</small>
-                                            <strong>₱{{ number_format($mainAmount, 2) }}</strong>
-                                        </span>
-
-                                        @if($showPaymentStats)
-                                            <span class="payment-month-quick-stats">
-                                                <span><small>{{ $hasAdvanceApplied ? 'Original scheduled' : ($isOverdue ? 'Original charges' : 'Monthly charges') }}</small><strong>₱{{ number_format($group['total_due'], 2) }}</strong></span>
-                                                <span class="is-paid"><small>{{ $hasAdvanceApplied ? 'Advance applied' : 'Paid' }}</small><strong>₱{{ number_format($group['total_paid'], 2) }}</strong></span>
-                                            </span>
-                                        @endif
-
-                                        <span class="payment-month-breakdown-prompt {{ $showPaymentStats ? '' : 'is-compact' }}">
-                                            <strong>{{ count($group['children']) }} {{ Str::plural('Student', count($group['children'])) }}</strong>
-                                            <small x-text="openMonth === {{ Js::from($monthKey) }} ? 'Hide breakdown' : 'View breakdown'"></small>
-                                        </span>
-
-                                        <span class="payment-month-chevron" aria-hidden="true">
-                                            <svg :class="openMonth === {{ Js::from($monthKey) }} ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
-                                            </svg>
-                                        </span>
-                                    </button>
-
-                                    <div
-                                        id="payment-month-panel-{{ $monthKey }}"
-                                        x-show="openMonth === {{ Js::from($monthKey) }}"
-                                        x-transition:enter="transition ease-out duration-200"
-                                        x-transition:enter-start="opacity-0 -translate-y-1"
-                                        x-transition:enter-end="opacity-100 translate-y-0"
-                                        x-transition:leave="transition ease-in duration-150"
-                                        x-transition:leave-start="opacity-100 translate-y-0"
-                                        x-transition:leave-end="opacity-0 -translate-y-1"
-                                        class="payment-month-body"
-                                    >
-                                        <div class="payment-month-student-list">
-                                            <div class="payment-billing-breakdown" aria-label="{{ $monthLabel }} student fee breakdown">
-                                                @foreach($group['children'] as $child)
-                                                    @php
-                                                        $childPaymentStatus = $child['is_paid']
-                                                            ? 'PAID'
-                                                            : ((float) $child['verified_paid'] > 0.01 ? 'PARTIAL' : 'UNPAID');
-                                                    @endphp
-                                                    <div class="payment-billing-row payment-child-fee-card is-child-{{ ($loop->index % 4) + 1 }}">
-                                                        <span class="payment-child-identity">
-                                                            <span class="payment-child-sequence" aria-label="Child {{ $loop->iteration }}">{{ $loop->iteration }}</span>
-                                                            <span class="payment-child-identity-copy">
-                                                                <strong>{{ mb_strtoupper($child['full_name']) }}</strong>
-                                                                <small>{{ $child['grade_level'] }} · ID {{ $child['student_number'] }}</small>
-                                                            </span>
-                                                        </span>
-                                                        <span class="payment-billing-figures">
-                                                            <span class="payment-billing-amount">
-                                                                <small>Remaining Balance</small>
-                                                                <strong>₱{{ number_format($child['remaining_amount'], 2) }}</strong>
-                                                            </span>
-                                                            <span class="payment-billing-paid-column">
-                                                                <small>Paid This Month</small>
-                                                                <strong>₱{{ number_format($child['verified_paid'], 2) }}</strong>
-                                                            </span>
-                                                            <span class="payment-billing-status-column">
-                                                                <small>Payment Status</small>
-                                                                <em class="payment-child-status is-{{ strtolower($childPaymentStatus) }}">{{ $childPaymentStatus }}</em>
-                                                            </span>
-                                                        </span>
-                                                    </div>
-                                                @endforeach
+                                            <div>
+                                                <div class="flex items-center gap-2">
+                                                    <h3 class="text-base font-black text-slate-900">{{ $monthLabel }}</h3>
+                                                    @if($allPaid)
+                                                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">Paid in Full</span>
+                                                    @elseif($isOverdue)
+                                                        <span class="rounded-full bg-rose-50 border border-rose-200 px-2 py-0.5 text-[10px] font-extrabold text-rose-800">Past Due</span>
+                                                    @elseif($isCurrent)
+                                                        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">Current</span>
+                                                    @else
+                                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-extrabold text-slate-600">Upcoming</span>
+                                                    @endif
+                                                </div>
+                                                <span class="text-xs text-slate-400 font-medium">Due {{ strtoupper($group['due_date']->format('F Y')) }}</span>
                                             </div>
                                         </div>
 
-                                    </div>
-                                </article>
+                                        <div class="flex flex-wrap items-center justify-between lg:justify-end gap-6 border-t lg:border-t-0 border-slate-100 pt-4 lg:pt-0">
+                                            <div>
+                                                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">{{ $allPaid ? 'Status' : 'Remaining Balance' }}</span>
+                                                <strong class="text-lg font-black {{ $allPaid ? 'text-emerald-700' : 'text-slate-900' }}">₱{{ number_format($mainAmount, 2) }}</strong>
+                                            </div>
 
-                        @if($isCurrent && ! $allPaid && $currentPaymentSummary['month_key'] !== null)
-                            <section x-show="monthFilter === 'current'" x-cloak class="payment-proof-section is-family-payment" aria-label="Submit a family payment">
-                                @if($automaticAllocationMonths->isNotEmpty())
-                                    <div class="payment-upload-allocation-info" role="note">
-                                        <span class="payment-upload-allocation-copy">
-                                            <strong>Automatic payment allocation</strong>
-                                            <p>
-                                                After Finance approval, AMIS applies the payment to <b>{{ $automaticAllocationMonths->first() }}</b>
-                                                @if($automaticAllocationMonths->count() > 1)
-                                                    first, then to <b>{{ $automaticAllocationMonths->get(1) }}</b>
-                                                @endif.
-                                                No student or month selection is needed.
-                                            </p>
-                                        </span>
-                                    </div>
-                                @endif
-
-                                @if($currentPaymentSummary['proofs']->isNotEmpty())
-                                    <div class="payment-pending-proof-list" aria-label="Payments awaiting Finance review">
-                                        @foreach($currentPaymentSummary['proofs'] as $proof)
-                                            <article class="payment-pending-proof-card">
-                                                <a href="{{ $proof['view_url'] }}" target="_blank" rel="noopener" class="payment-pending-proof-image" aria-label="Open uploaded payment proof">
-                                                    <img src="{{ $proof['view_url'] }}" alt="Uploaded payment proof {{ $proof['number'] }}">
-                                                </a>
-                                                <span class="payment-pending-proof-copy">
-                                                    <em>Pending Finance Review</em>
-                                                    <strong>{{ $proof['filename'] }}</strong>
-                                                    <small>{{ $proof['number'] }} · {{ $proof['method_label'] }}</small>
-                                                    <small>Your payment has not been deducted yet.</small>
-                                                </span>
-                                                <span class="payment-pending-proof-amount"><small>Submitted amount</small><strong>₱{{ number_format($proof['amount'], 2) }}</strong><a href="{{ $proof['view_url'] }}" target="_blank" rel="noopener">View uploaded proof</a></span>
-                                            </article>
-                                        @endforeach
-                                    </div>
-                                @elseif($currentPaymentSummary['rejected_proof'])
-                                    @php
-                                        $rejectedProof = $currentPaymentSummary['rejected_proof'];
-                                    @endphp
-                                    <article class="payment-rejected-proof-card" role="alert">
-                                        <a href="{{ $rejectedProof['view_url'] }}" target="_blank" rel="noopener" class="payment-pending-proof-image" aria-label="Open rejected payment proof">
-                                            <img src="{{ $rejectedProof['view_url'] }}" alt="Payment proof requiring attention">
-                                        </a>
-                                        <span class="payment-pending-proof-copy">
-                                            <em>{{ $rejectedProof['status'] }}</em>
-                                            <strong>{{ $rejectedProof['filename'] }}</strong>
-                                            <small>{{ $rejectedProof['reason'] }}</small>
-                                        </span>
-                                        <span class="payment-rejected-proof-actions">
-                                            <a href="{{ $rejectedProof['edit_url'] }}">Review details</a>
-                                            <a href="{{ $rejectedProof['reupload_url'] }}" class="is-primary">Re-upload receipt</a>
-                                        </span>
-                                    </article>
-                                @endif
-
-                                <div class="payment-proof-submit-block">
-                                    <div class="payment-proof-amount-left"><span>Total Amount Due</span><strong>₱{{ number_format($familyAmountDueNow, 2) }}</strong></div>
-
-                                    @if($currentPaymentSummary['active_pending_payments'] > 0.01)
-                                        <p class="payment-proof-upload-locked"><span><strong>Receipt awaiting Finance review</strong>Upload is unavailable while Finance reviews this receipt. It will return if the receipt is rejected.</span></p>
-                                    @elseif($currentPaymentSummary['rejected_proof'])
-                                        <p class="payment-proof-upload-locked is-rejected"><span><strong>Action needed</strong>Review the details or upload a replacement receipt to continue.</span></p>
-                                    @elseif($familyAwaitingVerification)
-                                        <p class="payment-proof-covered"><span aria-hidden="true">✓</span><span><strong>Awaiting verification</strong>Your submitted payments currently cover the amount due and are awaiting Finance verification.</span></p>
-                                    @elseif($currentPaymentSummary['remaining_to_submit'] > 0.01)
-                                        <div class="payment-proof-action">
-                                            <a href="{{ route('payment.checkout') }}"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16.5V4.5m0 0L7.5 9M12 4.5L16.5 9M4.5 15.75v2.625A1.125 1.125 0 005.625 19.5h12.75a1.125 1.125 0 001.125-1.125V15.75"/></svg>Upload Payment Proof</a>
+                                            <div class="flex items-center gap-2 text-xs font-bold text-emerald-700">
+                                                <span x-text="openMonth === {{ Js::from($monthKey) }} ? 'Hide Details' : 'View Fee Breakdown'"></span>
+                                                <svg :class="openMonth === {{ Js::from($monthKey) }} ? 'rotate-180' : ''" class="w-4 h-4 transition transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                                                </svg>
+                                            </div>
                                         </div>
-                                    @endif
+                                    </div>
+
+                                    <!-- Collapsible Breakdown Panel -->
+                                    <div x-show="openMonth === {{ Js::from($monthKey) }}" x-collapse class="border-t border-slate-100 bg-slate-50/50 p-6 sm:p-8 space-y-4">
+                                        <div class="text-xs font-black uppercase tracking-wider text-slate-500">Student Breakdown for {{ $monthLabel }}</div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            @foreach($group['children'] as $child)
+                                                @php
+                                                    $childPaymentStatus = $child['is_paid'] ? 'PAID' : ((float) $child['verified_paid'] > 0.01 ? 'PARTIAL' : 'UNPAID');
+                                                    $statusBadge = match($childPaymentStatus) {
+                                                        'PAID' => 'bg-emerald-100 text-emerald-800',
+                                                        'PARTIAL' => 'bg-amber-100 text-amber-800',
+                                                        default => 'bg-slate-200 text-slate-700'
+                                                    };
+                                                @endphp
+                                                <div class="rounded-2xl border border-slate-200 bg-white p-4 flex items-center justify-between">
+                                                    <div>
+                                                        <strong class="text-sm font-bold text-slate-900 block">{{ mb_strtoupper($child['full_name']) }}</strong>
+                                                        <span class="text-xs text-slate-500">{{ $child['grade_level'] }} · ID {{ $child['student_number'] }}</span>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <strong class="text-sm font-black text-slate-900 block">₱{{ number_format($child['remaining_amount'], 2) }}</strong>
+                                                        <span class="rounded-full px-2 py-0.5 text-[10px] font-extrabold {{ $statusBadge }}">{{ $childPaymentStatus }}</span>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
                                 </div>
-                            </section>
+                            @endforeach
+
+                            <!-- Upload Payment Proof Action Card for Current Month -->
+                            <div x-show="monthFilter === 'current'" x-cloak class="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-8 sm:p-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 shadow-sm">
+                                <div class="space-y-1">
+                                    <span class="rounded-full bg-emerald-100 border border-emerald-200 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-800">
+                                        Online Payment Gateway
+                                    </span>
+                                    <h3 class="text-lg font-black text-slate-900">Submit Payment Proof for Verification</h3>
+                                    <p class="text-xs text-slate-600 max-w-xl leading-relaxed">
+                                        Pay via GCash QR or Bank Transfer, then upload your transaction receipt. AMIS Finance will verify and apply payments automatically.
+                                    </p>
+                                </div>
+
+                                <a href="{{ route('payment.checkout') }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 py-3.5 text-xs font-extrabold text-white hover:bg-emerald-800 shadow-sm transition shrink-0">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    <span>Upload Payment Proof</span>
+                                </a>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                <!-- TAB 3: TRANSACTION & RECEIPT HISTORY -->
+                <div x-show="activeTab === 'transactions'" x-cloak class="space-y-6">
+                    <div class="rounded-3xl border border-slate-200/80 bg-white p-8 sm:p-12 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shrink-0">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-black text-slate-900">Payment & Transaction History</h2>
+                                    <p class="text-xs text-slate-500">All submitted receipts and approved Official Receipts (OR) recorded in the AMIS audit trail.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                @foreach(['all' => 'All', 'pending' => 'Pending', 'verified' => 'Verified', 'rejected' => 'Rejected'] as $filterValue => $filterLabel)
+                                    <button type="button"
+                                            @click="transactionFilter = '{{ $filterValue }}'"
+                                            :class="transactionFilter === '{{ $filterValue }}' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                            class="rounded-xl px-3.5 py-1.5 text-xs font-bold transition">
+                                        {{ $filterLabel }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        @if($unpostedPaymentSubmissions->isNotEmpty() || $familyFinanceTransactions->isNotEmpty())
+                            <div class="mt-6 space-y-3">
+                                @foreach($unpostedPaymentSubmissions as $submission)
+                                    @php
+                                        $effectiveStatus = $submission->effective_status;
+                                        $displayPaymentNumber = $submission->submission_number;
+                                        $historyStatus = mb_strtoupper(str_replace('_', ' ', $effectiveStatus));
+                                        $historyStatusClass = match($effectiveStatus) {
+                                            'rejected' => 'bg-rose-50 text-rose-700 border-rose-200',
+                                            default => 'bg-amber-50 text-amber-700 border-amber-200',
+                                        };
+                                        $pendingMethod = strtoupper(str_replace([' ', '-'], '_', (string) ($submission->payment_mode ?: $submission->method)));
+                                        $pendingMethodLabel = match(true) {
+                                            $pendingMethod === 'GCASH' => 'GCash',
+                                            $pendingMethod === 'MAYA' => 'Maya',
+                                            str_starts_with($pendingMethod, 'BDO') => 'BDO',
+                                            in_array($pendingMethod, ['BANK', 'BANK_TRANSFER', 'OTHER_BANK', 'INSTAPAY', 'PESONET'], true) => 'Bank Transfer',
+                                            $pendingMethod === 'REMITTANCE' => 'Remittance',
+                                            default => 'Other',
+                                        };
+                                        $transactionData = [
+                                            'is_consolidated' => false,
+                                            'number' => $displayPaymentNumber,
+                                            'official_receipt_number' => null,
+                                            'submission_number' => $submission->submission_number,
+                                            'date' => $submission->submitted_at ? strtoupper($submission->submitted_at->format('F j, Y · h:i A')) : null,
+                                            'receipt_date' => $submission->submitted_at ? strtoupper($submission->submitted_at->format('F j, Y')) : null,
+                                            'payer' => $user->name,
+                                            'source' => 'Online Payment',
+                                            'method' => $pendingMethodLabel,
+                                            'transaction_date' => $submission->transaction_date ? strtoupper($submission->transaction_date->format('F j, Y')) : null,
+                                            'account' => $submission->account_received,
+                                            'reference' => $submission->reference_no,
+                                            'total' => (float) $submission->total_amount,
+                                            'advance_credit' => (float) ($submission->advanceCredit?->remaining_amount ?? 0),
+                                            'status' => $effectiveStatus,
+                                            'remarks' => $submission->remarks,
+                                            'receipt' => Storage::disk('public')->url($submission->receipt_url),
+                                            'allocation_count' => 0,
+                                            'allocations' => [],
+                                            'covered_students' => [],
+                                            'covered_months' => [],
+                                            'balance_after' => null,
+                                            'itemized_charges_total' => 0,
+                                            'applied_total' => 0,
+                                            'itemized_remaining_total' => 0,
+                                            'payments' => [],
+                                        ];
+                                    @endphp
+
+                                    <div x-show="transactionFilter === 'all' || transactionFilter === '{{ $effectiveStatus }}'"
+                                         @click="openTransaction({{ Js::from($transactionData) }})"
+                                         class="rounded-2xl border border-slate-200/80 bg-white p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 cursor-pointer hover:border-emerald-300 hover:shadow-md transition">
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $historyStatusClass }}">
+                                                    {{ $historyStatus }}
+                                                </span>
+                                                <span class="text-xs font-bold text-slate-500 uppercase">{{ $pendingMethodLabel }}</span>
+                                            </div>
+                                            <h4 class="mt-1 text-sm font-black text-slate-900">Submission #{{ $displayPaymentNumber }}</h4>
+                                            <span class="text-xs text-slate-400">Ref: {{ $submission->reference_no ?: 'None' }} · {{ $submission->submitted_at ? $submission->submitted_at->format('M d, Y') : '' }}</span>
+                                        </div>
+
+                                        <div class="sm:text-right shrink-0">
+                                            <strong class="text-base font-black text-slate-900 block">₱{{ number_format($submission->total_amount, 2) }}</strong>
+                                            <span class="text-xs text-emerald-700 font-bold">View Details →</span>
+                                        </div>
+                                    </div>
+                                @endforeach
+
+                                @foreach($familyFinanceTransactions as $record)
+                                    <div x-show="transactionFilter === 'all' || transactionFilter === 'verified'"
+                                         class="rounded-2xl border border-slate-200/80 bg-white p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800 uppercase">
+                                                    Verified Official Receipt
+                                                </span>
+                                                <span class="text-xs font-bold text-slate-500 uppercase">{{ $record['method_label'] }}</span>
+                                            </div>
+                                            <h4 class="mt-1 text-sm font-black text-slate-900">OR #{{ $record['official_receipt_number'] }}</h4>
+                                            <span class="text-xs text-slate-400">{{ $record['source'] === 'ONLINE' ? 'Online Payment Verified' : 'Onsite Finance Receipt' }} · {{ $record['transaction_at'] ? $record['transaction_at']->format('M d, Y') : '' }}</span>
+                                        </div>
+
+                                        <div class="sm:text-right shrink-0">
+                                            <strong class="text-base font-black text-slate-900 block">₱{{ number_format($record['amount'], 2) }}</strong>
+                                            <span class="text-xs text-emerald-700 font-bold">Recorded in Audit Trail</span>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="mt-8 text-center py-8">
+                                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 14.25l2.25 2.25L15 12.75M6.75 3.75h10.5A2.25 2.25 0 0119.5 6v12A2.25 2.25 0 0117.25 20.25H6.75A2.25 2.25 0 014.5 18V6a2.25 2.25 0 012.25-2.25z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="mt-3 text-base font-extrabold text-slate-900">No payment receipts yet</h3>
+                                <p class="mt-1 text-xs text-slate-500">Submitted receipts and their verification status will appear here.</p>
+                            </div>
                         @endif
-                            @endforeach
-
-                            @foreach(['current' => 'No balance currently requires payment.', 'upcoming' => 'No upcoming monthly payments.', 'paid' => 'No fully paid months yet.'] as $filterValue => $emptyMessage)
-                                @if($monthFilterCounts[$filterValue] === 0)
-                                    <div x-show="monthFilter === '{{ $filterValue }}'" x-cloak class="payment-month-filter-empty">{{ $emptyMessage }}</div>
-                                @endif
-                            @endforeach
-                        </div>
-                    @endif
-                </section>
-
-                <section x-show="activeTab === 'transactions'" x-cloak class="payment-tab-panel payment-section" role="tabpanel" aria-labelledby="history-heading">
-                        <div class="payment-section-heading">
-                            <div>
-                                <span class="payment-section-kicker">Payment history</span>
-                                <h2 id="history-heading" class="payment-section-title">Transactions</h2>
-                                <p class="payment-section-description">All approved online and onsite payments remain listed under their permanent OR numbers.</p>
-                            </div>
-                        </div>
-                    @if($unpostedPaymentSubmissions->isNotEmpty() || $familyFinanceTransactions->isNotEmpty())
-                        <div class="mb-4 flex flex-wrap gap-2" aria-label="Filter transactions">
-                            @foreach(['all' => 'All', 'pending' => 'Pending', 'verified' => 'Verified', 'rejected' => 'Rejected'] as $filterValue => $filterLabel)
-                                <button type="button" class="rounded-full border px-4 py-2 text-sm font-bold" :class="transactionFilter === '{{ $filterValue }}' ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-slate-200 bg-white text-slate-600'" @click="transactionFilter = '{{ $filterValue }}'">{{ $filterLabel }}</button>
-                            @endforeach
-                        </div>
-                        <div class="space-y-3">
-                            @foreach($unpostedPaymentSubmissions as $submission)
-                                @php
-                                    $effectiveStatus = $submission->effective_status;
-                                    $displayPaymentNumber = $submission->submission_number;
-                                    $historyStatus = mb_strtoupper(str_replace('_', ' ', $effectiveStatus));
-                                    $historyStatusClass = match($effectiveStatus) {
-                                        'rejected' => 'bg-rose-50 text-rose-700',
-                                        default => 'bg-amber-50 text-amber-700',
-                                    };
-                                    $pendingMethod = strtoupper(str_replace([' ', '-'], '_', (string) ($submission->payment_mode ?: $submission->method)));
-                                    $pendingMethodLabel = match(true) {
-                                        $pendingMethod === 'GCASH' => 'GCash',
-                                        $pendingMethod === 'MAYA' => 'Maya',
-                                        str_starts_with($pendingMethod, 'BDO') => 'BDO',
-                                        in_array($pendingMethod, ['BANK', 'BANK_TRANSFER', 'OTHER_BANK', 'INSTAPAY', 'PESONET'], true) => 'Bank Transfer',
-                                        $pendingMethod === 'REMITTANCE' => 'Remittance',
-                                        default => 'Other',
-                                    };
-                                    $transactionData = [
-                                        'is_consolidated' => false,
-                                        'number' => $displayPaymentNumber,
-                                        'official_receipt_number' => null,
-                                        'submission_number' => $submission->submission_number,
-                                        'date' => $submission->submitted_at ? strtoupper($submission->submitted_at->format('F j, Y · h:i A')) : null,
-                                        'receipt_date' => $submission->submitted_at ? strtoupper($submission->submitted_at->format('F j, Y')) : null,
-                                        'payer' => $user->name,
-                                        'source' => 'Online Payment',
-                                        'method' => $pendingMethodLabel,
-                                        'transaction_date' => $submission->transaction_date ? strtoupper($submission->transaction_date->format('F j, Y')) : null,
-                                        'account' => $submission->account_received,
-                                        'reference' => $submission->reference_no,
-                                        'total' => (float) $submission->total_amount,
-                                        'advance_credit' => (float) ($submission->advanceCredit?->remaining_amount ?? 0),
-                                        'status' => $effectiveStatus,
-                                        'remarks' => $submission->remarks,
-                                        'receipt' => Storage::disk('public')->url($submission->receipt_url),
-                                        'allocation_count' => 0,
-                                        'allocations' => [],
-                                        'covered_students' => [],
-                                        'covered_months' => [],
-                                        'balance_after' => null,
-                                        'itemized_charges_total' => 0,
-                                        'applied_total' => 0,
-                                        'itemized_remaining_total' => 0,
-                                        'payments' => [],
-                                    ];
-                                @endphp
-                                <button
-                                    type="button"
-                                    x-show="transactionFilter === 'all' || transactionFilter === '{{ $effectiveStatus }}'"
-                                    class="payment-transaction-card flex w-full flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md"
-                                    @click="openTransaction({{ Js::from($transactionData) }})"
-                                >
-                                    <span class="payment-transaction-copy min-w-0">
-                                        <span class="block text-[11px] font-bold uppercase tracking-wide text-slate-500">Submission No.</span>
-                                        <strong class="mt-0.5 block text-sm text-slate-900">{{ $displayPaymentNumber }}</strong>
-                                        <span class="mt-1 flex flex-wrap gap-1.5"><span class="payment-source-badge is-online">ONLINE PAYMENT</span><span class="payment-method-badge">{{ mb_strtoupper($pendingMethodLabel) }}</span></span>
-                                        <span class="mt-1 block text-xs text-slate-500">Submitted {{ $submission->submitted_at ? strtoupper($submission->submitted_at->format('M d, Y')) : '' }} · Ref {{ $submission->reference_no ?: 'Not recorded' }}</span>
-                                    </span>
-                                    <span class="payment-transaction-summary flex flex-shrink-0 items-center gap-4 text-right">
-                                        <span><strong class="block text-base text-slate-900">₱{{ number_format($submission->total_amount, 2) }}</strong><span class="mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-bold {{ $historyStatusClass }}">{{ $historyStatus }}</span></span>
-                                        <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                    </span>
-                                </button>
-                            @endforeach
-                            @foreach($familyFinanceTransactions as $record)
-                                <article x-show="transactionFilter === 'all' || transactionFilter === 'verified'" class="payment-transaction-card flex w-full flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-left shadow-sm">
-                                    <span class="payment-transaction-copy min-w-0">
-                                        <span class="block text-[11px] font-bold uppercase tracking-wide text-slate-500">Official Receipt No.</span>
-                                        <strong class="mt-0.5 block text-sm text-slate-900">{{ $record['official_receipt_number'] }}</strong>
-                                        <span class="mt-1 flex flex-wrap gap-1.5"><span class="payment-source-badge {{ $record['source'] === 'ONLINE' ? 'is-online' : 'is-onsite' }}">{{ mb_strtoupper($record['source_label']) }}</span><span class="payment-method-badge">{{ mb_strtoupper($record['method_label']) }}</span></span>
-                                        <span class="mt-1 block text-xs text-slate-500">{{ $record['source'] === 'ONLINE' ? 'Approved online receipt' : 'Recorded by AMIS Finance' }}{{ $record['transaction_at'] ? ' · '.strtoupper($record['transaction_at']->format('M d, Y')) : '' }}</span>
-                                    </span>
-                                    <span class="payment-transaction-summary payment-history-actions flex flex-shrink-0 flex-wrap items-center justify-end gap-3 text-right">
-                                        <span><strong class="block text-base text-slate-900">₱{{ number_format($record['amount'], 2) }}</strong><span class="mt-1 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">VERIFIED</span></span>
-                                    </span>
-                                </article>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="payment-empty-state">
-                            <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 14.25l2.25 2.25L15 12.75M6.75 3.75h10.5A2.25 2.25 0 0119.5 6v12A2.25 2.25 0 0117.25 20.25H6.75A2.25 2.25 0 014.5 18V6a2.25 2.25 0 012.25-2.25z"/></svg>
-                            </div>
-                            <h3 class="text-base font-bold text-slate-800">No payment receipts yet</h3>
-                            <p class="mt-2 text-sm text-slate-600">Submitted receipts and their verification status will appear here.</p>
-                        </div>
-                    @endif
-                </section>
+                    </div>
+                </div>
             @endif
         </div>
 
-        {{-- Add student modal --}}
+        <!-- Add Student Modal -->
         <div x-show="showAddStudent" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4" @click.self="!linkLoading && (showAddStudent = false)">
-            <div class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="add-student-title">
-                <div class="h-1.5 bg-gradient-to-r from-emerald-700 to-teal-500"></div>
-                <div class="p-6">
-                    <div class="mb-3 flex items-start justify-between gap-4">
+            <div class="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl" role="dialog" aria-modal="true">
+                <div class="h-2 bg-gradient-to-r from-[#065f46] via-emerald-600 to-teal-500"></div>
+                <div class="p-8">
+                    <div class="flex items-start justify-between gap-4">
                         <div>
-                            <span class="payment-section-kicker">Student account</span>
-                            <h2 id="add-student-title" class="text-xl font-extrabold text-slate-900">Link student account</h2>
+                            <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-emerald-800">Student Account</span>
+                            <h2 class="mt-2 text-xl font-black text-slate-900">Link Student Account</h2>
                         </div>
-                        <button type="button" aria-label="Close" class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100" @click="showAddStudent = false" :disabled="linkLoading">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100" @click="showAddStudent = false" :disabled="linkLoading">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
-                    <p class="mb-5 text-sm leading-6 text-slate-600">Enter the student's school ID. AMIS will verify the parent email from the approved enrollment before connecting the payment account.</p>
-                    <form class="space-y-4" @submit.prevent="linkStudent()">
+                    <p class="mt-3 text-xs leading-relaxed text-slate-600">Enter the student's official school ID. AMIS will verify the parent email from enrollment records.</p>
+                    <form class="mt-5 space-y-4" @submit.prevent="linkStudent()">
                         <div>
-                            <label for="student-number" class="mb-1.5 block text-sm font-bold text-slate-700">Student number / ID</label>
-                            <input id="student-number" type="text" x-model.trim="studentNumber" class="w-full rounded-xl border-slate-300 px-4 py-3 text-base focus:border-emerald-600 focus:ring-emerald-600" placeholder="Example: 260001" required :disabled="linkLoading">
+                            <label for="student-number" class="block text-xs font-bold uppercase tracking-wider text-slate-700">Student Number / ID</label>
+                            <input id="student-number" type="text" x-model.trim="studentNumber" class="mt-1.5 w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 text-sm focus:border-emerald-600 focus:bg-white focus:ring-emerald-600" placeholder="e.g. 260001" required :disabled="linkLoading">
                         </div>
-                        <p x-show="linkError" x-text="linkError" class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800"></p>
-                        <p x-show="linkSuccess" x-text="linkSuccess" class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800"></p>
-                        <div class="flex gap-3 border-t border-slate-100 pt-4">
-                            <button type="button" class="min-h-11 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50" @click="showAddStudent = false" :disabled="linkLoading">Cancel</button>
-                            <button type="submit" class="min-h-11 flex-1 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-60" :disabled="linkLoading">
-                                <span x-text="linkLoading ? 'Linking…' : 'Link account'"></span>
+                        <p x-show="linkError" x-text="linkError" class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-800"></p>
+                        <p x-show="linkSuccess" x-text="linkSuccess" class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-bold text-emerald-800"></p>
+                        <div class="flex gap-3 pt-3 border-t border-slate-100">
+                            <button type="button" class="flex-1 rounded-xl border border-slate-300 bg-white py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50" @click="showAddStudent = false" :disabled="linkLoading">Cancel</button>
+                            <button type="submit" class="flex-1 rounded-xl bg-emerald-700 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-800 disabled:opacity-60" :disabled="linkLoading">
+                                <span x-text="linkLoading ? 'Linking…' : 'Link Account'"></span>
                             </button>
                         </div>
                     </form>
@@ -992,100 +785,37 @@
             </div>
         </div>
 
-
-
-        {{-- MANUAL SOA DOCUMENT PREVIEW MODAL --}}
-        <div x-show="showManualSoaPreview" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4" @click.self="showManualSoaPreview = false">
-            <div class="w-full max-w-4xl h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden" role="dialog" aria-modal="true">
-                <div class="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3">
-                    <div class="min-w-0">
-                        <span class="text-[10px] font-black uppercase text-blue-700 tracking-wider">Finance-Uploaded Document</span>
-                        <h3 class="text-sm font-black text-slate-900 truncate" x-text="manualSoaPreviewTitle"></h3>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <a :href="manualSoaPreviewUrl" target="_blank" class="rounded-lg bg-white border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50">
-                            Open in New Tab
-                        </a>
-                        <button type="button" @click="showManualSoaPreview = false" class="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700">
+        <!-- Transaction Details Modal -->
+        <div x-show="showTransaction" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" @click.self="showTransaction = false">
+            <div class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl" role="dialog" aria-modal="true">
+                <div class="h-2 bg-gradient-to-r from-[#065f46] via-emerald-600 to-teal-500"></div>
+                <div class="p-8">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-emerald-800" x-text="transaction?.status === 'verified' ? 'Verified Receipt' : 'Payment Submission'"></span>
+                            <h2 class="mt-2 text-xl font-black text-slate-900" x-text="transaction?.number"></h2>
+                            <p class="text-xs text-slate-400" x-text="transaction?.date"></p>
+                        </div>
+                        <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100" @click="showTransaction = false">
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
-                </div>
-                <div class="flex-1 bg-slate-100 overflow-auto flex items-center justify-center p-2">
-                    <template x-if="manualSoaPreviewIsPdf">
-                        <iframe :src="manualSoaPreviewUrl" class="w-full h-full rounded-lg border border-slate-300 shadow-sm" frameborder="0"></iframe>
-                    </template>
-                    <template x-if="!manualSoaPreviewIsPdf">
-                        <img :src="manualSoaPreviewUrl" alt="SOA Preview" class="max-w-full max-h-full object-contain rounded-lg shadow-md">
-                    </template>
-                </div>
-            </div>
-        </div>
 
-        {{-- Grouped transaction details modal --}}
-        <div x-show="showTransaction" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" @click.self="showTransaction = false">
-            <div class="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="transaction-title">
-                <div class="h-1.5 bg-gradient-to-r from-emerald-700 via-teal-500 to-sky-500"></div>
-                <div class="p-6">
-                    <div class="mb-5 flex items-start justify-between gap-4">
-                        <div>
-                            <span class="payment-section-kicker" x-text="transaction?.status === 'verified' ? 'Official payment receipt' : 'Payment submission'"></span>
-                            <h2 id="transaction-title" class="text-xl font-extrabold text-slate-900" x-text="transaction?.number"></h2>
-                            <p class="mt-1 text-sm text-slate-500" x-text="transaction?.date"></p>
-                        </div>
-                        <button type="button" aria-label="Close transaction details" class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100" @click="showTransaction = false">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
-                    </div>
                     <template x-if="transaction">
-                        <div class="space-y-4">
-                            <section x-show="transaction.status === 'verified'" class="payment-long-receipt">
-                                <header class="payment-long-receipt-header">
-                                    <div><span class="payment-long-receipt-mark">AMIS</span><strong>Al Munawwara Islamic School</strong><small>Family Finance Office</small></div>
-                                    <div><h3>RECEIPT</h3><span><small>Official Receipt No.</small><strong x-text="transaction.official_receipt_number"></strong></span><span><small>Receipt date</small><strong x-text="transaction.receipt_date || 'Not recorded'"></strong></span></div>
-                                </header>
+                        <div class="mt-6 space-y-4">
+                            <div class="grid grid-cols-2 gap-3 text-xs">
+                                <div class="rounded-xl bg-slate-50 p-3"><span class="font-bold text-slate-400 uppercase block">Status</span><strong class="text-slate-900 uppercase" x-text="transaction.status"></strong></div>
+                                <div class="rounded-xl bg-slate-50 p-3"><span class="font-bold text-slate-400 uppercase block">Method</span><strong class="text-slate-900" x-text="transaction.method"></strong></div>
+                                <div class="rounded-xl bg-slate-50 p-3"><span class="font-bold text-slate-400 uppercase block">Amount</span><strong class="text-slate-900" x-text="money(transaction.total)"></strong></div>
+                                <div class="rounded-xl bg-slate-50 p-3"><span class="font-bold text-slate-400 uppercase block">Reference</span><strong class="text-slate-900 break-all" x-text="transaction.reference || 'None'"></strong></div>
+                            </div>
 
-                                <section class="payment-long-receipt-party">
-                                    <div><small>Billed to</small><strong x-text="transaction.payer || 'Family account'"></strong><span>Students: <b x-text="transaction.covered_students.length ? transaction.covered_students.join(', ') : 'Advance credit'"></b></span></div>
-                                    <div><span><small>Payment source</small><strong x-text="transaction.source?.toUpperCase()"></strong></span><span><small>Payment method</small><strong x-text="transaction.method?.toUpperCase()"></strong></span><span><small>Payment reference</small><strong x-text="transaction.reference || 'Not recorded'"></strong></span></div>
-                                </section>
-
-                                <section class="payment-long-receipt-items">
-                                    <div class="payment-long-receipt-table-head"><strong>Description</strong><strong>Amount</strong></div>
-                                    <div x-show="transaction.allocations.length === 0" class="payment-long-receipt-empty">No open billing balance was available. This payment was recorded as advance credit.</div>
-                                    <template x-for="(allocation, index) in transaction.allocations" :key="index">
-                                        <div class="payment-long-receipt-item">
-                                            <span><strong x-text="allocation.student"></strong><small><span x-text="allocation.month"></span> · Balance before payment</small></span>
-                                            <strong x-text="money(allocation.balance_before)"></strong>
-                                        </div>
-                                    </template>
-                                </section>
-
-                                <section class="payment-long-receipt-totals">
-                                    <div><span>Subtotal — listed balances</span><strong x-text="money(transaction.itemized_charges_total)"></strong></div>
-                                    <div class="is-deduction"><span>Less: <b x-text="transaction.source?.toUpperCase()"></b> · <b x-text="transaction.method?.toUpperCase()"></b></span><strong x-text="'-' + money(transaction.applied_total)"></strong></div>
-                                    <div><span>Remaining on listed balances</span><strong x-text="money(transaction.itemized_remaining_total)"></strong></div>
-                                    <div x-show="transaction.advance_credit > 0"><span>Advance credit</span><strong x-text="money(transaction.advance_credit)"></strong></div>
-                                    <div class="is-total"><span>Total amount paid</span><strong x-text="money(transaction.total)"></strong></div>
-                                    <div x-show="transaction.balance_after !== null" class="is-family-balance"><span>Remaining family balance after payment</span><strong x-text="money(transaction.balance_after)"></strong></div>
-                                </section>
-
-                                <footer class="payment-long-receipt-notes"><strong>Notes</strong><p x-text="transaction.remarks || 'Verified by AMIS Finance. Payment allocation was completed automatically using the oldest outstanding family balance first.'"></p><small>This official payment record is permanently linked to the AMIS Finance audit trail.</small></footer>
-                            </section>
-
-                            <section x-show="transaction.status !== 'verified'" class="space-y-4">
-                                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Status</small><strong class="mt-1 block uppercase" x-text="transaction.status"></strong></div>
-                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Payment Source</small><strong class="mt-1 block" x-text="transaction.source?.toUpperCase()"></strong></div>
-                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Payment Method</small><strong class="mt-1 block" x-text="transaction.method?.toUpperCase()"></strong></div>
-                                    <div class="rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Submitted</small><strong class="mt-1 block" x-text="transaction.receipt_date || 'Not recorded'"></strong></div>
-                                    <div class="col-span-2 rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Submission No.</small><strong class="mt-1 block break-all" x-text="transaction.submission_number"></strong></div>
-                                    <div class="col-span-2 rounded-xl bg-slate-50 p-3"><small class="block font-bold uppercase text-slate-500">Payment Reference</small><strong class="mt-1 block break-all" x-text="transaction.reference || 'Not recorded'"></strong></div>
-                                </div>
-                                <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong class="block">Awaiting Finance verification</strong><span>No family balance has changed yet. AMIS will allocate the payment only after approval.</span></div>
-                            </section>
-                            <a x-show="transaction.receipt" :href="transaction.receipt" target="_blank" rel="noopener" class="inline-flex min-h-11 items-center rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">View uploaded receipt</a>
-                            <button x-show="transaction.status === 'rejected'" type="button" class="ml-2 min-h-11 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800" @click="showTransaction = false; activeTab = 'monthly'">Review Monthly Balance</button>
+                            <div x-show="transaction.receipt" class="pt-2">
+                                <a :href="transaction.receipt" target="_blank" class="inline-flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <span>View Uploaded Proof</span>
+                                </a>
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -1180,7 +910,6 @@
                         this.openMonth = monthKey;
                         this.$nextTick(() => document.getElementById('schedule-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
                     },
-
                 };
             }
         </script>
