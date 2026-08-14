@@ -102,6 +102,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('payment.manual-soa.view');
     Route::get('/payment/manual-soa/{soa}/download', [\App\Http\Controllers\StudentManualSoaController::class, 'download'])
         ->name('payment.manual-soa.download');
+    Route::get('/payment/students/{studentIdentifier}/official-soa', [\App\Http\Controllers\StudentManualSoaController::class, 'officialStudentSoa'])
+        ->name('payment.students.official-soa');
     Route::get('/students/{student}', [\App\Http\Controllers\StudentController::class, 'show'])
         ->name('students.show');
     Route::post('/activity/offline', [AuthController::class, 'setOffline'])->name('activity.offline');
