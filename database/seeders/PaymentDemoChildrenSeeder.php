@@ -26,7 +26,13 @@ class PaymentDemoChildrenSeeder extends Seeder
 
     public function seedForUser(User $user): void
     {
-        $children = [
+        $isWcamsar = \Illuminate\Support\Str::contains(\Illuminate\Support\Str::lower($user->email ?? ''), 'wcamsar') || (int) $user->id === 63;
+        $children = $isWcamsar ? [
+            ['display_name' => 'FATIMA W. CAMSAR', 'demo_student_number' => 'AFPS-DEMO-2026-001-'.$user->id, 'grade_level' => 'Grade 1', 'gender' => 'Female'],
+            ['display_name' => 'OMAR W. CAMSAR', 'demo_student_number' => 'AFPS-DEMO-2026-002-'.$user->id, 'grade_level' => 'Grade 3', 'gender' => 'Male'],
+            ['display_name' => 'ZAID W. CAMSAR', 'demo_student_number' => 'AFPS-DEMO-2026-003-'.$user->id, 'grade_level' => 'Grade 5', 'gender' => 'Male'],
+            ['display_name' => 'AISHA W. CAMSAR', 'demo_student_number' => 'AFPS-DEMO-2026-004-'.$user->id, 'grade_level' => 'Grade 7', 'gender' => 'Female'],
+        ] : [
             ['display_name' => 'AHMAD Z. LINGASA', 'demo_student_number' => 'AFPS-DEMO-2026-001-'.$user->id, 'grade_level' => 'Grade 1', 'gender' => 'Male'],
             ['display_name' => 'MARYAM Z. LINGASA', 'demo_student_number' => 'AFPS-DEMO-2026-002-'.$user->id, 'grade_level' => 'Grade 3', 'gender' => 'Female'],
             ['display_name' => 'YUSUF Z. LINGASA', 'demo_student_number' => 'AFPS-DEMO-2026-003-'.$user->id, 'grade_level' => 'Grade 5', 'gender' => 'Male'],
