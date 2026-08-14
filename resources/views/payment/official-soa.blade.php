@@ -10,33 +10,38 @@
     <style>
         @page {
             size: A4 portrait;
-            margin: 10mm 12mm 10mm 12mm;
+            margin: 10mm;
         }
         * {
             box-sizing: border-box;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: Arial, Helvetica, sans-serif;
-            color: #111827;
-            background: #f8fafc;
-            margin: 0;
-            padding: 20px;
+            color: #0f172a;
+            background: #f1f5f9;
+            padding: 20px 0;
             font-size: 11px;
             line-height: 1.35;
         }
         .page-container {
-            max-width: 820px;
+            width: 190mm;
+            max-width: 190mm;
             margin: 0 auto;
             background: #ffffff;
             border: 1px solid #cbd5e1;
-            padding: 24px 28px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            padding: 16px 20px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
         }
         .no-print-bar {
-            max-width: 820px;
-            margin: 0 auto 16px;
+            width: 190mm;
+            max-width: 190mm;
+            margin: 0 auto 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -73,8 +78,8 @@
             align-items: center;
             justify-content: space-between;
             border-bottom: 2px solid #065f46;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
             width: 100%;
         }
         .school-header-cell {
@@ -83,9 +88,9 @@
         }
         .header-english {
             width: 42%;
-            font-size: 14px;
+            font-size: 14.5px;
             font-weight: 900;
-            color: #111827;
+            color: #0f172a;
             letter-spacing: 0.2px;
             text-align: left;
             justify-content: flex-start;
@@ -96,8 +101,8 @@
             justify-content: center;
         }
         .header-logo img {
-            width: 52px;
-            height: 52px;
+            width: 50px;
+            height: 50px;
             object-fit: contain;
             display: block;
             margin: 0 auto;
@@ -119,10 +124,10 @@
         }
         .header-arabic span {
             font-family: 'Amiri', 'Traditional Arabic', serif;
-            font-size: 24px;
+            font-size: 25px;
             font-weight: 700;
             color: #065f46;
-            line-height: 1.2;
+            line-height: 1.15;
             display: block;
             width: 100%;
             text-align: right;
@@ -136,9 +141,9 @@
             background: #a9beba;
             color: #0f172a;
             text-align: center;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 900;
-            padding: 5px 0;
+            padding: 4.5px 0;
             border: 1px solid #475569;
             letter-spacing: 0.5px;
             margin-bottom: 8px;
@@ -149,7 +154,7 @@
             display: table;
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             table-layout: fixed;
         }
         .upper-left {
@@ -158,6 +163,7 @@
             vertical-align: top;
             padding-right: 14px;
             font-size: 10px;
+            line-height: 1.35;
         }
         .upper-mid {
             display: table-cell;
@@ -173,21 +179,21 @@
         }
 
         .ayah-quote {
-            margin-top: 10px;
+            margin-top: 8px;
             color: #1d4ed8;
             font-style: italic;
             font-size: 9.5px;
-            line-height: 1.4;
+            line-height: 1.35;
         }
         .ayah-source {
             font-weight: bold;
             display: block;
-            margin-top: 4px;
+            margin-top: 3px;
         }
 
         .student-header-block {
-            margin-bottom: 6px;
-            padding-bottom: 4px;
+            margin-bottom: 5px;
+            padding-bottom: 3.5px;
             border-bottom: 1px solid #cbd5e1;
             margin-right: -12px;
             width: calc(100% + 12px);
@@ -245,7 +251,7 @@
         }
         .fee-table td {
             border: 1px solid #475569;
-            padding: 3px 5px;
+            padding: 2.5px 5px;
         }
         .fee-table .text-right {
             text-align: right;
@@ -291,6 +297,7 @@
         .highlight-yellow {
             background-color: #fef08a !important;
             font-weight: bold;
+            cursor: pointer;
         }
         .highlight-blue {
             background-color: #bae6fd !important;
@@ -309,7 +316,7 @@
         }
 
         .discrepancy-note {
-            margin-top: 14px;
+            margin-top: 10px;
             font-size: 10px;
             color: #111827;
         }
@@ -326,7 +333,7 @@
             font-weight: bold;
             font-size: 11px;
             padding: 4px 0;
-            margin: 12px 0 10px;
+            margin: 10px 0 8px;
             border: 1px solid #eab308;
         }
 
@@ -335,35 +342,57 @@
             width: 100%;
             font-size: 9px;
             color: #374151;
-            margin-top: 6px;
+            margin-top: 4px;
         }
         .legal-left {
             display: table-cell;
             width: 50%;
             vertical-align: top;
-            line-height: 1.4;
+            line-height: 1.35;
         }
         .legal-right {
             display: table-cell;
             width: 50%;
             text-align: right;
             vertical-align: top;
-            line-height: 1.4;
+            line-height: 1.35;
         }
 
+        /* PRINT MEDIA QUERIES (A4 PORTRAIT EXACT SCALING) */
         @media print {
+            html,
             body {
-                background: #ffffff;
-                padding: 0;
+                width: 210mm;
+                min-height: 297mm;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
             }
-            .page-container {
-                border: none;
-                box-shadow: none;
-                padding: 0;
-                max-width: 100%;
-            }
+
             .no-print-bar {
                 display: none !important;
+            }
+
+            .page-container {
+                width: 190mm !important;
+                max-width: 190mm !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                background: transparent !important;
+            }
+
+            table,
+            .upper-grid,
+            .main-ledger-table,
+            .fee-table,
+            .student-header-block,
+            .discrepancy-note,
+            .shukran-bar,
+            .legal-footer {
+                break-inside: avoid;
+                page-break-inside: avoid;
             }
         }
     </style>
