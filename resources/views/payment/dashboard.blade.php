@@ -67,15 +67,11 @@
                     <div class="absolute -bottom-24 -left-16 h-72 w-72 rounded-full border border-white/10 bg-white/[0.03] pointer-events-none"></div>
 
                     <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                        <!-- Left Hero: Amount Due This Month -->
+                        <!-- Left Hero: Month Fee Heading & Amount -->
                         <div class="lg:col-span-7 space-y-3">
-                            <div class="inline-flex items-center gap-2 rounded-full bg-white/15 border border-white/20 px-3 py-1 text-xs font-black tracking-wider text-white uppercase">
-                                <span>{{ $currentPaymentMonth }} {{ now()->format('Y') }}</span>
-                            </div>
-
-                            <div class="text-xs sm:text-sm font-semibold uppercase tracking-wider text-white/90">
-                                Amount Due This Month
-                            </div>
+                            <h2 class="text-xs sm:text-sm font-black uppercase tracking-wider text-white/90">
+                                {{ $currentPaymentMonth }} {{ now()->format('Y') }} MONTHLY FEE
+                            </h2>
 
                             <div class="flex items-baseline gap-2">
                                 <span class="text-3xl sm:text-4xl font-extrabold text-white">₱</span>
