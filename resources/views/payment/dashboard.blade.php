@@ -98,46 +98,58 @@
 
                     <div class="hub-divider" aria-hidden="true"></div>
 
-                    <!-- 2. STATS GRID (Light individual panels with small accent icons) -->
+                    <!-- 2. STATS GRID (One clean horizontal premium statistics bar) -->
                     <div class="family-stats-grid">
                         <div class="stat-card is-paid">
                             <div class="stat-head">
-                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
+                                <span class="stat-icon-circle">
+                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </span>
                                 <span class="stat-caption">TOTAL PAID THIS MONTH</span>
                             </div>
                             <strong class="stat-amount">₱{{ number_format($currentMonthPaid, 2) }}</strong>
+                            <span class="stat-sub">Payments received</span>
                         </div>
 
                         <div class="stat-card is-still-due">
                             <div class="stat-head">
-                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
+                                <span class="stat-icon-circle">
+                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                </span>
                                 <span class="stat-caption">CURRENT BALANCE</span>
                             </div>
                             <strong class="stat-amount">₱{{ number_format($currentMonthDueNow, 2) }}</strong>
+                            <span class="stat-sub">Amount to be paid</span>
                         </div>
 
                         <div class="stat-card is-past-due {{ $pastDueNow > 0 ? 'has-due' : '' }}">
                             <div class="stat-head">
-                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
+                                <span class="stat-icon-circle">
+                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </span>
                                 <span class="stat-caption">PAST DUE</span>
                             </div>
                             <strong class="stat-amount">₱{{ number_format($pastDueNow, 2) }}</strong>
+                            <span class="stat-sub">{{ $pastDueNow > 0 ? 'Action needed' : 'No overdue payments' }}</span>
                         </div>
 
                         <div class="stat-card is-future">
                             <div class="stat-head">
-                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                </svg>
+                                <span class="stat-icon-circle">
+                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    </svg>
+                                </span>
                                 <span class="stat-caption">UPCOMING BALANCE</span>
                             </div>
                             <strong class="stat-amount">₱{{ number_format($futureScheduledBalance, 2) }}</strong>
+                            <span class="stat-sub">Future payments</span>
                         </div>
                     </div>
 
@@ -146,17 +158,18 @@
                         <div class="hub-divider" aria-hidden="true"></div>
 
                         <div class="family-children-row">
-                            <span class="children-label">Children:</span>
+                            <span class="children-label">{{ $allChildrenList->count() }} CHILDREN</span>
                             <div class="children-items-list">
                                 @foreach($allChildrenList as $child)
                                     @php
                                         $cName = $child->first_name ?? explode(' ', $child->display_name ?? $child->name ?? 'Student')[0];
                                         $cInitial = mb_substr($cName, 0, 1);
                                         $cGrade = $child->grade_level ?? $child->account?->grade_level ?? 'Grade';
+                                        $cAccent = str_contains(strtoupper($cName), 'MARYAM') ? 'accent-blue' : (str_contains(strtoupper($cName), 'YUSUF') ? 'accent-gold' : 'accent-green');
                                     @endphp
-                                    <div class="child-circle-entry">
+                                    <div class="child-circle-entry {{ $cAccent }}">
                                         <span class="child-mini-avatar">{{ $cInitial }}</span>
-                                        <strong class="child-text-name">{{ $cName }}</strong>
+                                        <strong class="child-text-name">{{ mb_strtoupper($cName) }}</strong>
                                         <span class="child-text-dot" aria-hidden="true">·</span>
                                         <span class="child-text-grade">{{ $cGrade }}</span>
                                     </div>
@@ -169,6 +182,9 @@
                 <!-- 4. MUTED ONE-LINE DEMO NOTICE -->
                 @if($demoChildren->isNotEmpty() && $students->isEmpty())
                     <div class="family-demo-muted-notice" role="status">
+                        <svg class="demo-notice-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
                         <span>Demo account: These sample students are for preview only. No official AMIS records will be changed.</span>
                     </div>
                 @endif
@@ -176,7 +192,7 @@
                 <section class="payment-section" aria-labelledby="students-heading">
                     <div class="payment-section-heading">
                         <div>
-                            <span class="payment-section-kicker">Student accounts</span>
+                            <span class="payment-section-kicker">STUDENT ACCOUNTS</span>
                             <h2 id="students-heading" class="payment-section-title">Your linked students / children</h2>
                             <p class="payment-section-description">Open a student account to see its fee breakdown.</p>
                         </div>
@@ -242,6 +258,12 @@
                                 }
                                 $latestManualSoa = $studentManualList->firstWhere('is_current', true) ?? $studentManualList->first();
 
+                                $studentAccentClass = str_contains(strtoupper($studentName), 'MARYAM') 
+                                    ? 'accent-blue' 
+                                    : (str_contains(strtoupper($studentName), 'YUSUF') 
+                                        ? 'accent-gold' 
+                                        : ($loop->index % 3 === 1 ? 'accent-blue' : ($loop->index % 3 === 2 ? 'accent-gold' : 'accent-green')));
+
                                 $breakdown = [
                                     'name' => $studentName,
                                     'avatar' => $avatarUrl,
@@ -296,7 +318,7 @@
                             <a
                                 href="{{ route('payment.students.official-soa', ['studentIdentifier' => $sId]) }}"
                                 target="_blank"
-                                class="payment-student-card"
+                                class="payment-student-card {{ $studentAccentClass }}"
                                 aria-label="Open Official Statement of Account (PDF) for {{ $studentName }}"
                             >
                                 <div class="student-card-main">
@@ -320,7 +342,7 @@
 
                                 <div class="student-card-finance">
                                     <div class="student-card-balance">
-                                        <span class="balance-label">Balance</span>
+                                        <span class="balance-label">BALANCE</span>
                                         <strong class="balance-value">₱{{ number_format($account?->remaining_balance ?? 0, 2) }}</strong>
                                     </div>
                                     <span class="student-card-soa-btn" title="Open & Print Official School Statement of Account (PDF)">
@@ -348,6 +370,12 @@
                                     $demoManualList = $manualSoas->get((string) $demoChild->id) ?? collect();
                                 }
                                 $demoLatestManualSoa = $demoManualList->firstWhere('is_current', true) ?? $demoManualList->first();
+
+                                $demoAccentClass = str_contains(strtoupper($demoChild->display_name), 'MARYAM') 
+                                    ? 'accent-blue' 
+                                    : (str_contains(strtoupper($demoChild->display_name), 'YUSUF') 
+                                        ? 'accent-gold' 
+                                        : ($loop->index % 3 === 1 ? 'accent-blue' : ($loop->index % 3 === 2 ? 'accent-gold' : 'accent-green')));
 
                                 $demoBreakdown = [
                                     'name' => mb_strtoupper($demoChild->display_name),
@@ -402,7 +430,7 @@
                             <a
                                 href="{{ route('payment.students.official-soa', ['studentIdentifier' => $demoChild->demo_student_number]) }}"
                                 target="_blank"
-                                class="payment-student-card is-demo"
+                                class="payment-student-card is-demo {{ $demoAccentClass }}"
                                 aria-label="Open Official Statement of Account (PDF) for {{ $demoChild->display_name }}"
                             >
                                 <div class="student-card-main">
@@ -424,7 +452,7 @@
 
                                 <div class="student-card-finance">
                                     <div class="student-card-balance">
-                                        <span class="balance-label">Balance</span>
+                                        <span class="balance-label">BALANCE</span>
                                         <strong class="balance-value">₱{{ number_format($demoRemainingBalance, 2) }}</strong>
                                     </div>
                                     <span class="student-card-soa-btn" title="Open & Print Official School Statement of Account (PDF)">
@@ -446,10 +474,18 @@
                         :aria-selected="(activeTab === 'notifications').toString()"
                         @click="activeTab = 'notifications'"
                     >
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.85 23.85 0 005.454-1.31A8.97 8.97 0 0118 9.75V9A6 6 0 006 9v.75a8.97 8.97 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.26 24.26 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+                        <span class="tab-icon-circle">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.857 17.082a23.85 23.85 0 005.454-1.31A8.97 8.97 0 0118 9.75V9A6 6 0 006 9v.75a8.97 8.97 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.26 24.26 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+                            </svg>
+                        </span>
+                        <span class="tab-content">
+                            <strong class="tab-title">Notifications</strong>
+                            <small class="tab-sub">{{ $paymentNotifications->count() }} important {{ Str::plural('update', $paymentNotifications->count()) }}</small>
+                        </span>
+                        <svg class="tab-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                         </svg>
-                        <span><strong>Notifications</strong><small>{{ $paymentNotifications->count() }} important {{ Str::plural('update', $paymentNotifications->count()) }}</small></span>
                     </button>
                     <button
                         type="button"
@@ -459,10 +495,18 @@
                         :aria-selected="(activeTab === 'monthly').toString()"
                         @click="activeTab = 'monthly'"
                     >
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6.75 3v2.25M17.25 3v2.25M3.75 9h16.5m-15 12h13.5a1.5 1.5 0 001.5-1.5V6.75a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5V19.5a1.5 1.5 0 001.5 1.5z"/>
+                        <span class="tab-icon-circle">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6.75 3v2.25M17.25 3v2.25M3.75 9h16.5m-15 12h13.5a1.5 1.5 0 001.5-1.5V6.75a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5V19.5a1.5 1.5 0 001.5 1.5z"/>
+                            </svg>
+                        </span>
+                        <span class="tab-content">
+                            <strong class="tab-title">Monthly Payments</strong>
+                            <small class="tab-sub">Balances and payment schedule</small>
+                        </span>
+                        <svg class="tab-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                         </svg>
-                        <span><strong>Monthly Payments</strong><small>Balances and payment schedule</small></span>
                     </button>
                     <button
                         type="button"
@@ -472,13 +516,21 @@
                         :aria-selected="(activeTab === 'transactions').toString()"
                         @click="activeTab = 'transactions'"
                     >
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 14.25l2.25 2.25L15 12.75M6.75 3.75h10.5A2.25 2.25 0 0119.5 6v12A2.25 2.25 0 0117.25 20.25H6.75A2.25 2.25 0 014.5 18V6a2.25 2.25 0 012.25-2.25z"/>
-                        </svg>
+                        <span class="tab-icon-circle">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 14.25l2.25 2.25L15 12.75M6.75 3.75h10.5A2.25 2.25 0 0119.5 6v12A2.25 2.25 0 0117.25 20.25H6.75A2.25 2.25 0 014.5 18V6a2.25 2.25 0 012.25-2.25z"/>
+                            </svg>
+                        </span>
                         @php
                             $familyTransactionCount = $familyFinanceTransactions->count() + $unpostedPaymentSubmissions->count();
                         @endphp
-                        <span><strong>Transactions</strong><small>{{ $familyTransactionCount }} payment {{ Str::plural('record', $familyTransactionCount) }}</small></span>
+                        <span class="tab-content">
+                            <strong class="tab-title">Transactions</strong>
+                            <small class="tab-sub">{{ $familyTransactionCount }} payment {{ Str::plural('record', $familyTransactionCount) }}</small>
+                        </span>
+                        <svg class="tab-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
                     </button>
                 </nav>
 
