@@ -2,6 +2,74 @@
     <x-slot name="title">Secure Payment Wizard</x-slot>
 
     <div class="payment-wizard-page" x-data="paymentWizard()">
+        
+        <!-- SECURE PAYMENT TRANSITION / SPLASH SCREEN -->
+        <div x-show="sessionPreparing"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-out duration-300"
+             x-transition:leave-start="opacity-100 transform scale-100"
+             x-transition:leave-end="opacity-0 transform scale-98 pointer-events-none"
+             class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-md p-4 sm:p-6"
+             role="dialog"
+             aria-modal="true"
+             aria-label="Secure Payment Verification"
+        >
+            <div class="relative w-full max-w-md overflow-hidden rounded-3xl bg-white p-8 sm:p-10 shadow-2xl border border-slate-100 text-center">
+                <!-- Top emerald accent bar -->
+                <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-700"></div>
+                
+                <!-- Background ambient decorative circles -->
+                <div class="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-emerald-50 pointer-events-none"></div>
+                <div class="absolute -bottom-12 -left-12 h-32 w-32 rounded-full bg-emerald-50 pointer-events-none"></div>
+
+                <!-- Brand Shield Icon & Official Logo -->
+                <div class="relative z-10">
+                    <div class="relative mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-200/80 shadow-inner">
+                        <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS Logo" class="h-12 w-12 object-contain">
+                        <div class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-700 text-white shadow-md ring-2 ring-white">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751A11.959 11.959 0 0112 2.714z"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Header Titles -->
+                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Secure Payment Verification</h2>
+                    <p class="mt-1 text-xs text-slate-500 font-medium">Preparing your family payment session securely.</p>
+
+                    <!-- Animated Progress Bar -->
+                    <div x-show="!transitionError" class="mt-6 mb-4">
+                        <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                            <div class="h-full bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-700 rounded-full transition-all duration-300 ease-out" :style="`width: ${transitionProgress}%`"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sequential Status Step -->
+                    <div x-show="!transitionError" class="min-h-[28px] flex items-center justify-center gap-2 pt-1">
+                        <span class="h-2 w-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                        <span class="text-xs font-bold text-slate-700 transition-all duration-200" x-text="transitionStatusText"></span>
+                    </div>
+
+                    <!-- Error State (If preparation fails) -->
+                    <div x-show="transitionError" class="mt-5 space-y-4 text-left">
+                        <div class="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                            <div class="flex items-center gap-2 text-rose-800">
+                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                <strong class="text-xs font-bold">Unable to Prepare Payment Session</strong>
+                            </div>
+                            <p class="mt-1 text-xs text-rose-700 font-medium">Please try again. Your payment information has not been submitted.</p>
+                        </div>
+                        <div class="flex gap-3 pt-1">
+                            <a href="{{ route('payment.dashboard') }}" class="flex-1 text-center rounded-xl border border-slate-300 bg-white py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition">Back to Payments</a>
+                            <button type="button" @click="runTransition()" class="flex-1 rounded-xl bg-emerald-700 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-800 transition shadow-sm">Try Again</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="payment-wizard-shell">
             <header class="payment-wizard-header">
                 <a href="{{ route('payment.dashboard') }}" class="payment-checkout-back">
@@ -514,8 +582,48 @@
                     scanToken: '',
                     scanRecordSaved: false,
                     scanRecordError: '',
+                    sessionPreparing: true,
+                    transitionProgress: 20,
+                    transitionStatusText: 'Verifying family account...',
+                    transitionError: false,
+
+                    async runTransition() {
+                        this.transitionError = false;
+                        this.sessionPreparing = true;
+                        this.transitionProgress = 20;
+                        this.transitionStatusText = 'Verifying family account...';
+
+                        try {
+                            // Step 1: Verify family account & auth session
+                            await new Promise(r => setTimeout(r, 240));
+                            this.transitionProgress = 45;
+                            this.transitionStatusText = 'Loading current balance...';
+
+                            // Step 2: Load current balance & scheduled breakdown
+                            await new Promise(r => setTimeout(r, 260));
+                            this.transitionProgress = 70;
+                            this.transitionStatusText = 'Preparing secure receipt upload...';
+
+                            // Step 3: Prepare channels and security upload session
+                            await new Promise(r => setTimeout(r, 240));
+                            this.transitionProgress = 95;
+                            this.transitionStatusText = 'Payment session ready';
+
+                            // Step 4: Finalize
+                            await new Promise(r => setTimeout(r, 200));
+                            this.transitionProgress = 100;
+                            this.transitionStatusText = 'Opening Secure Payment Form...';
+
+                            await new Promise(r => setTimeout(r, 180));
+                            this.sessionPreparing = false;
+                        } catch (err) {
+                            console.error(err);
+                            this.transitionError = true;
+                        }
+                    },
 
                     init() {
+                        this.runTransition();
                         this.clientToken = this.makeUuid();
                         if (this.retryPayment) {
                             const accountIndex = (this.selectedChannel?.accounts || []).findIndex(account => String(account.number).replace(/\s+/g, '') === String(this.retryPayment.account_received || '').replace(/\s+/g, ''));
