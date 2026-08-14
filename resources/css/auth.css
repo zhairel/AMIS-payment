@@ -240,11 +240,93 @@
 }
 
 .auth-entry-card {
-    padding: 2rem;
+    padding: 2.25rem;
     border: 1px solid #e2e8f0;
-    border-radius: 16px;
+    border-radius: 20px;
     background: #ffffff;
-    box-shadow: 0 24px 58px rgba(15, 23, 42, 0.11);
+    box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.09), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+}
+
+/* Official School Brand Header on Login Card */
+.auth-card-brand-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.auth-card-logo-wrap {
+    width: 62px;
+    height: 62px;
+    flex-shrink: 0;
+    border-radius: 14px;
+    background: #f0fdf4;
+    border: 1.5px solid #bbf7d0;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(4, 120, 87, 0.08);
+}
+
+.auth-card-school-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.auth-card-school-titles {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.auth-card-arabic-name {
+    color: #065f46;
+    font-family: "Tajawal", "Amiri", "Traditional Arabic", "Times New Roman", "Tahoma", "Arial", sans-serif;
+    font-size: 1.1rem;
+    font-weight: 750;
+    line-height: 1.15;
+    letter-spacing: normal !important;
+}
+
+.auth-card-english-name {
+    margin-top: 0.15rem;
+    color: #0f172a;
+    font-size: 0.86rem;
+    font-weight: 900;
+    letter-spacing: 0.015em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.auth-card-system-badge {
+    margin-top: 0.35rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: fit-content;
+    padding: 2px 9px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 9999px;
+    color: #047857;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.auth-card-system-badge .system-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+}
+
+.auth-card-header-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 1.25rem 0 1.35rem;
 }
 
 .auth-entry-mobile-brand {
@@ -280,37 +362,24 @@
 }
 
 .auth-entry-heading {
-    margin-bottom: 1.45rem;
+    margin-bottom: 1.35rem;
     text-align: left;
 }
 
-.auth-entry-kicker {
-    display: inline-flex;
-    align-items: center;
-    min-height: 26px;
-    padding: 0.25rem 0.65rem;
-    border-radius: 999px;
-    background: #ecfdf5;
-    color: #047857;
-    font-size: 0.7rem;
-    font-weight: 850;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
 .auth-entry-heading h2 {
-    margin: 0.9rem 0 0.45rem;
+    margin: 0 0 0.35rem;
     color: #0f172a;
-    font-size: 1.7rem;
-    font-weight: 900;
-    line-height: 1.1;
+    font-size: 1.55rem;
+    font-weight: 850;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
 }
 
 .auth-entry-heading p {
     margin: 0;
     color: #64748b;
-    font-size: 0.92rem;
-    line-height: 1.55;
+    font-size: 0.88rem;
+    line-height: 1.45;
 }
 
 .auth-email-input input {
@@ -835,16 +904,16 @@ input:-webkit-autofill:active {
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-height: 52px;
+    min-height: 48px;
     background: #ffffff;
     border: 1px solid #cbd5e1;
-    border-radius: 9999px;
+    border-radius: 12px;
     color: #1e293b;
     font-size: 0.95rem;
     font-weight: 700;
     text-decoration: none;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .btn-google-auth-premium:hover,
@@ -857,32 +926,32 @@ input:-webkit-autofill:active {
 
 .premium-input-label {
     display: block;
-    font-size: 0.85rem;
+    font-size: 0.84rem;
     font-weight: 700;
     color: #475569;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
 }
 
 .premium-input-wrapper {
     display: flex;
     align-items: center;
     border: 1.5px solid #cbd5e1;
-    border-radius: 9999px;
-    padding: 0 1.25rem;
+    border-radius: 12px;
+    padding: 0 1rem;
     background: #ffffff;
     transition: all 0.2s ease;
-    min-height: 52px;
+    min-height: 48px;
 }
 
 .premium-input-wrapper:focus-within {
-    border-color: #059669;
-    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.12);
+    border-color: #087a5b;
+    box-shadow: 0 0 0 3.5px rgba(8, 122, 91, 0.12);
 }
 
 .premium-input-icon {
     color: #94a3b8;
     flex-shrink: 0;
-    margin-right: 0.75rem;
+    margin-right: 0.65rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -896,7 +965,7 @@ input:-webkit-autofill:active {
     font-size: 0.95rem;
     color: #0f172a;
     width: 100%;
-    padding: 0.75rem 0 !important;
+    padding: 0.7rem 0 !important;
     font-weight: 500;
 }
 
@@ -910,22 +979,22 @@ input:-webkit-autofill:active {
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-height: 52px;
-    background: #059669;
+    min-height: 48px;
+    background: #087a5b;
     color: #ffffff;
     border: none;
-    border-radius: 9999px;
-    font-size: 1rem;
+    border-radius: 12px;
+    font-size: 0.96rem;
     font-weight: 800;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 10px 20px rgba(5, 150, 105, 0.18);
+    transition: all 0.18s ease;
+    box-shadow: 0 4px 14px rgba(8, 122, 91, 0.25);
     margin-top: 1rem;
 }
 
-.premium-continue-button:hover {
-    background: #047857;
-    box-shadow: 0 12px 24px rgba(5, 150, 105, 0.28);
+.premium-continue-button:hover:not(:disabled) {
+    background: #06634a;
+    box-shadow: 0 6px 20px rgba(8, 122, 91, 0.32);
     transform: translateY(-1px);
 }
 

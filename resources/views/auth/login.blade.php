@@ -172,12 +172,24 @@
                     });
                 }
             }">
-                <div class="auth-entry-mobile-brand">
-                    <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS" class="auth-entry-mobile-logo">
-                    <div class="auth-entry-mobile-school">AMIS Family Payment System</div>
+                <!-- Official School Brand Header -->
+                <div class="auth-card-brand-header">
+                    <div class="auth-card-logo-wrap">
+                        <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS Logo" class="auth-card-school-logo">
+                    </div>
+                    <div class="auth-card-school-titles">
+                        <div class="auth-card-arabic-name" lang="ar" dir="rtl">المدرسة المنورة الإسلامية</div>
+                        <div class="auth-card-english-name">AL MUNAWWARA ISLAMIC SCHOOL</div>
+                        <div class="auth-card-system-badge">
+                            <span class="system-badge-dot" aria-hidden="true"></span>
+                            <span>AMIS Family Payment System</span>
+                        </div>
+                    </div>
                 </div>
+
+                <div class="auth-card-header-divider" aria-hidden="true"></div>
+
                 <div class="auth-entry-heading">
-                    <span class="auth-entry-kicker">AMIS Family Payments</span>
                     <h2 x-show="step === 'email'">Welcome, Parent</h2>
                     <h2 x-show="step === 'otp'">Verify your email</h2>
                     <p x-show="step === 'email'">Sign in securely to open your family's payment dashboard.</p>
@@ -259,9 +271,13 @@
                     </div>
                 </div>
 
-                <p class="auth-entry-note" style="margin-top: 1.5rem; text-align: center; color: #64748b; font-size: 0.8rem;">
-                    Your sign-in and family payment information are protected by AMIS security controls.
-                </p>
+                <div class="auth-entry-note">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="flex-shrink:0;">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <span>Your sign-in and family payment information are protected by AMIS security controls.</span>
+                </div>
             </div>
         </div>
     </section>
