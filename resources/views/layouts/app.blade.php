@@ -28,7 +28,7 @@
 <body class="font-sans antialiased">
 
     @php
-        $toastError = session('error') ?: ($errors->any() ? $errors->first() : null);
+        $toastError = session('error') ?: ($errors?->any() ? $errors->first() : null);
     @endphp
     @if (session('success') || session('info') || session('warning') || $toastError)
         <div class="toast-stack">

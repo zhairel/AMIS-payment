@@ -24,7 +24,7 @@
                        autofocus
                        autocomplete="name" />
             </div>
-            <x-input-error class="mt-2" :messages="$errors->get('name')" />
+            <x-input-error class="mt-2" :messages="$errors?->get('name')" />
         </div>
 
         <div>
@@ -43,7 +43,7 @@
                        required
                        autocomplete="username" />
             </div>
-            <x-input-error class="mt-2" :messages="$errors->get('email')" />
+            <x-input-error class="mt-2" :messages="$errors?->get('email')" />
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
                 <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 flex items-center justify-between">
