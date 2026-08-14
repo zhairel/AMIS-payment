@@ -75,20 +75,23 @@
             border-bottom: 2px solid #065f46;
             padding-bottom: 8px;
             margin-bottom: 10px;
+            width: 100%;
         }
         .school-header-cell {
             display: flex;
             align-items: center;
         }
         .header-english {
-            width: 45%;
+            width: 42%;
             font-size: 14px;
             font-weight: 900;
             color: #111827;
             letter-spacing: 0.2px;
+            text-align: left;
+            justify-content: flex-start;
         }
         .header-logo {
-            width: 10%;
+            width: 16%;
             text-align: center;
             justify-content: center;
         }
@@ -96,25 +99,36 @@
             width: 52px;
             height: 52px;
             object-fit: contain;
+            display: block;
+            margin: 0 auto;
         }
         .header-arabic {
-            width: 45%;
+            width: 42%;
             justify-content: flex-end;
             text-align: right;
-            direction: rtl;
+            margin-left: auto;
         }
         .header-arabic img {
             max-height: 42px;
             max-width: 100%;
             height: auto;
             object-fit: contain;
+            display: block;
+            margin-left: auto;
+            margin-right: 0;
         }
         .header-arabic span {
             font-family: 'Amiri', 'Traditional Arabic', serif;
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 700;
             color: #065f46;
             line-height: 1.2;
+            display: block;
+            width: 100%;
+            text-align: right;
+            margin-left: auto;
+            margin-right: 0;
+            direction: rtl;
         }
 
         /* TITLE BANNER */
@@ -348,7 +362,7 @@
                 <img src="/images/AMIS_Logo.png" alt="AMIS Logo" onerror="this.src='/images/AMIS_Logo_receipt.jpg'">
             </div>
             <div class="school-header-cell header-arabic">
-                <img src="/images/amis-arabic-wordmark.svg" alt="المدرسة المنورة الإسلامية" onerror="this.outerHTML='<span>المدرسة المنورة الإسلامية</span>'">
+                <span dir="rtl">المدرسة المنورة الإسلامية</span>
             </div>
         </div>
 
