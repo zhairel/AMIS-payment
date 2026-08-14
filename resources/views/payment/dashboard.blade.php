@@ -30,15 +30,6 @@
                     <h1 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Family Payments</h1>
                     <p class="mt-1 text-sm text-slate-600">Manage your children's balances, monthly tuition fees, official statements of account, and payment receipts.</p>
                 </div>
-
-                <div class="flex items-center gap-3">
-                    <a href="{{ route('profile.edit') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm">
-                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                        <span>Account Profile</span>
-                    </a>
-                </div>
             </div>
 
             @if($students->isEmpty() && $demoChildren->isEmpty())
@@ -78,42 +69,42 @@
                     <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                         <!-- Left Hero: Amount Due This Month -->
                         <div class="lg:col-span-7 space-y-3">
-                            <div class="inline-flex items-center gap-2 rounded-full bg-emerald-400/20 border border-emerald-300/30 px-3 py-1 text-xs font-black tracking-wider text-emerald-100 uppercase">
+                            <div class="inline-flex items-center gap-2 rounded-full bg-white/15 border border-white/20 px-3 py-1 text-xs font-black tracking-wider text-white uppercase">
                                 <span>{{ $currentPaymentMonth }} {{ now()->format('Y') }}</span>
                             </div>
 
-                            <div class="text-xs sm:text-sm font-semibold uppercase tracking-wider text-emerald-200">
+                            <div class="text-xs sm:text-sm font-semibold uppercase tracking-wider text-white/90">
                                 Amount Due This Month
                             </div>
 
                             <div class="flex items-baseline gap-2">
-                                <span class="text-3xl sm:text-4xl font-extrabold text-emerald-300">₱</span>
+                                <span class="text-3xl sm:text-4xl font-extrabold text-white">₱</span>
                                 <span class="text-4xl sm:text-6xl font-black text-white tracking-tight">
                                     {{ number_format($familyAmountDueNow, 2) }}
                                 </span>
                             </div>
 
-                            <p class="text-xs sm:text-sm text-emerald-100/80 leading-relaxed pt-1">
+                            <p class="text-xs sm:text-sm text-white/80 leading-relaxed pt-1">
                                 Total outstanding monthly installment and any overdue balances for your family.
                             </p>
                         </div>
 
                         <!-- Right Hero: Remaining for School Year & Advance Credit -->
                         <div class="lg:col-span-5 rounded-2xl bg-white/10 border border-white/15 p-6 sm:p-8 backdrop-blur-sm space-y-3">
-                            <div class="text-xs font-bold uppercase tracking-wider text-emerald-200">
-                                {{ $demoChildren->isNotEmpty() && $students->isEmpty() ? 'Demo Remaining for School Year' : 'Remaining for School Year' }}
+                            <div class="text-xs font-bold uppercase tracking-wider text-white/90">
+                                {{ $demoChildren->isNotEmpty() && $students->isEmpty() ? "Demo Remaining for School Year $schoolYearLabel" : "Remaining for School Year $schoolYearLabel" }}
                             </div>
 
                             <div class="text-2xl sm:text-3xl font-black text-white tracking-tight">
                                 ₱{{ number_format($familyRemainingBalance, 2) }}
                             </div>
 
-                            <p class="text-xs text-emerald-100/70">
+                            <p class="text-xs text-white/80">
                                 Total balance across all school months.
                             </p>
 
                             @if($familyAdvanceCredit > 0)
-                                <div class="pt-3 border-t border-white/15 flex items-center gap-2 text-xs font-bold text-emerald-300 uppercase tracking-wide">
+                                <div class="pt-3 border-t border-white/15 flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wide">
                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
