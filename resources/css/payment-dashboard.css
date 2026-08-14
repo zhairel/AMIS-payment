@@ -565,26 +565,15 @@
     box-shadow: var(--fp-shadow-sm);
     text-decoration: none;
     color: inherit;
-    transition: all 0.2s ease;
+    transition: all 0.18s ease;
     cursor: pointer;
     position: relative;
     overflow: hidden;
 }
 
-.payment-student-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 4px;
-    background: transparent;
-    transition: background 0.2s ease;
-}
-
 .payment-student-card:hover {
     border-color: var(--fp-border-hover);
-    box-shadow: var(--fp-shadow-md);
+    box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
     transform: translateY(-2px);
 }
 
@@ -593,73 +582,76 @@
     outline-offset: 3px !important;
 }
 
-/* Child Accent Themes */
-/* Ahmad - Soft Green Accent */
-.payment-student-card.accent-green::before {
-    background: var(--fp-green);
+/* Child Soft Background Tint Accents */
+/* Ahmad - Soft Green Tint */
+.payment-student-card.accent-green {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 50%, #ffffff 100%);
+    border-color: #d1fae5;
 }
 .payment-student-card.accent-green .student-card-avatar {
-    background: var(--fp-green-soft);
-    border-color: var(--fp-green-border);
-    color: var(--fp-green-dark);
+    background: #dcfce7;
+    border-color: #bbf7d0;
+    color: #047857;
 }
 .payment-student-card.accent-green:hover .student-card-soa-btn {
-    background: var(--fp-green-soft);
-    border-color: var(--fp-green-border);
-    color: var(--fp-green-dark);
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #047857;
 }
 
-/* Maryam - Soft Blue Accent */
-.payment-student-card.accent-blue::before {
-    background: var(--fp-blue);
+/* Maryam - Soft Blue Tint */
+.payment-student-card.accent-blue {
+    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 50%, #ffffff 100%);
+    border-color: #dbeafe;
 }
 .payment-student-card.accent-blue .student-card-avatar {
-    background: var(--fp-blue-soft);
-    border-color: var(--fp-blue-border);
-    color: var(--fp-blue);
+    background: #dbeafe;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
 }
 .payment-student-card.accent-blue:hover .student-card-soa-btn {
-    background: var(--fp-blue-soft);
-    border-color: var(--fp-blue-border);
-    color: var(--fp-blue);
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
 }
 
-/* Yusuf - Soft Warm Gold Accent */
-.payment-student-card.accent-gold::before {
-    background: var(--fp-gold);
+/* Yusuf - Soft Warm Gold Tint */
+.payment-student-card.accent-gold {
+    background: linear-gradient(135deg, #fffbeb 0%, #ffffff 50%, #ffffff 100%);
+    border-color: #fef3c7;
 }
 .payment-student-card.accent-gold .student-card-avatar {
-    background: var(--fp-gold-soft);
-    border-color: var(--fp-gold-border);
-    color: var(--fp-gold);
+    background: #fef3c7;
+    border-color: #fde68a;
+    color: #b45309;
 }
 .payment-student-card.accent-gold:hover .student-card-soa-btn {
-    background: var(--fp-gold-soft);
-    border-color: var(--fp-gold-border);
-    color: var(--fp-gold);
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #b45309;
 }
 
 /* LEFT / MAIN INFO */
 .student-card-main {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.1rem;
     flex: 1 1 auto;
     min-width: 0;
 }
 
 .student-card-avatar {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     flex-shrink: 0;
-    border-radius: 12px;
+    border-radius: 14px;
     background: var(--fp-surface-muted);
     border: 1px solid var(--fp-border);
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all 0.18s ease;
 }
 
 .student-card-avatar img {
