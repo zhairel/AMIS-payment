@@ -1,13 +1,21 @@
 <x-guest-layout title="Family Payments Login" :show-loader="false">
     <div class="min-h-screen bg-slate-950 flex flex-col lg:grid lg:grid-cols-[1.05fr_.95fr]">
-        <!-- LEFT / TOP BRANDING PANEL: Clean Solid AMIS Green, Sharp & Premium -->
-        <section class="relative bg-[#065f46] px-6 py-14 text-white flex flex-col items-center justify-center lg:min-h-screen lg:p-14">
+        <!-- LEFT / TOP BRANDING PANEL: Clean AMIS Green with Subtle Minimal Geometric Depth -->
+        <section class="relative overflow-hidden bg-[#065f46] px-6 py-14 text-white flex flex-col items-center justify-center lg:min-h-screen lg:p-14">
+            <!-- Subtle Top-Right Geometric Shapes (No blur, clean low-contrast depth) -->
+            <div class="absolute -right-24 -top-24 h-96 w-96 rounded-full border border-white/10 bg-white/[0.03] pointer-events-none"></div>
+            <div class="absolute -right-10 -top-10 h-64 w-64 rounded-full border border-white/5 bg-emerald-400/[0.04] pointer-events-none"></div>
+
+            <!-- Subtle Bottom-Left Geometric Shapes (No blur, clean low-contrast depth) -->
+            <div class="absolute -bottom-32 -left-32 h-[28rem] w-[28rem] rounded-full border border-white/10 bg-white/[0.03] pointer-events-none"></div>
+            <div class="absolute -bottom-16 -left-16 h-72 w-72 rounded-full border border-white/5 bg-emerald-400/[0.04] pointer-events-none"></div>
+
             <div class="relative z-10 flex flex-col items-center justify-center text-center max-w-xl mx-auto">
                 <!-- 1. AMIS Official Logo -->
                 <img src="{{ asset('images/AMIS_Logo.png') }}" class="h-32 w-32 sm:h-36 sm:w-36 lg:h-44 lg:w-44 object-contain drop-shadow-xl" alt="AL MUNAWWARA ISLAMIC SCHOOL Logo">
 
                 <!-- 2. Arabic School Name -->
-                <h1 class="mt-8 sm:mt-10 lg:mt-12 text-3xl sm:text-4xl lg:text-[40px] xl:text-[44px] font-bold tracking-wide text-white font-serif leading-snug" dir="rtl" style="font-family: 'Amiri', 'Tajawal', serif;">
+                <h1 class="mt-8 sm:mt-10 lg:mt-12 text-3xl sm:text-4xl lg:text-[40px] xl:text-[44px] font-bold tracking-wide text-white font-serif leading-snug drop-shadow" dir="rtl" style="font-family: 'Amiri', 'Tajawal', serif;">
                     المدرسة المنورة الإسلامية
                 </h1>
 
