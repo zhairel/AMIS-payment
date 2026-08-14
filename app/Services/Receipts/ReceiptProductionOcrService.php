@@ -37,6 +37,7 @@ class ReceiptProductionOcrService
         $tesseractAttempts = [];
 
         try {
+            $this->logInfo('[OCR] Engine selected: Tesseract');
             $tesseractAttempts[] = $this->run($this->tesseract, 'tesseract', $preferredPath, $preferredVariant);
             $attempts = $tesseractAttempts;
             $tesseractResult = $this->mergeAttempts($tesseractAttempts);
@@ -68,6 +69,7 @@ class ReceiptProductionOcrService
             );
 
             if ($fallbackUsed) {
+                $this->logInfo('[OCR] docTR fallback triggered');
                 $docTrAttempt = $this->run($this->docTr, 'doctr', $preferredPath, $preferredVariant);
                 $attempts[] = $docTrAttempt;
                 $final = $this->mergeAttempts([
@@ -77,6 +79,12 @@ class ReceiptProductionOcrService
             } else {
                 $final = $tesseractResult;
             }
+
+            $rawCombined = collect($attempts)->pluck('raw_text')->filter()->implode("\n");
+            $this->logInfo('[OCR] Raw text extracted', ['raw_text' => $rawCombined]);
+            $this->logInfo('[OCR] Parsed amount: ' . ($final['fields']['amount'] ?? 'null'));
+            $this->logInfo('[OCR] Parsed reference: ' . ($final['fields']['reference_number'] ?? 'null'));
+            $this->logInfo('[OCR] Parsed date: ' . ($final['fields']['transaction_date'] ?? 'null'));
 
             return [
                 'fields' => $final['fields'],
@@ -89,6 +97,16 @@ class ReceiptProductionOcrService
             ];
         } finally {
             $this->preprocessor->cleanupTempFile(is_string($enhancedPath) ? $enhancedPath : null);
+        }
+    }
+
+    private function logInfo(string $message, array $context = []): void
+    {
+        try {
+            if (class_exists(\Illuminate\Support\Facades\Log::class) && \Illuminate\Support\Facades\Log::getFacadeRoot()) {
+                \Illuminate\Support\Facades\Log::info($message, $context);
+            }
+        } catch (\Throwable) {
         }
     }
 

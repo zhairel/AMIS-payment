@@ -809,18 +809,24 @@
 
                         if (data.perceptual_hash) this.receiptPerceptualHash = data.perceptual_hash;
                         this.detectedReceipt = {
-                            method: detectedMethod || null,
-                            amount: detectedAmount ?? null,
-                            date: detectedDate || null,
-                            time: detectedTime || null,
-                            sender: data.detected_sender || null,
-                            receiver: data.detected_receiver || null,
-                            merchant: data.detected_merchant || null,
-                            account: data.detected_account || null
+                            method: detectedMethod || this.detectedReceipt?.method || null,
+                            amount: (detectedAmount !== null && detectedAmount !== undefined) ? detectedAmount : this.detectedReceipt?.amount ?? null,
+                            date: detectedDate || this.detectedReceipt?.date || null,
+                            time: detectedTime || this.detectedReceipt?.time || null,
+                            sender: data.detected_sender || this.detectedReceipt?.sender || null,
+                            receiver: data.detected_receiver || this.detectedReceipt?.receiver || null,
+                            merchant: data.detected_merchant || this.detectedReceipt?.merchant || null,
+                            account: data.detected_account || this.detectedReceipt?.account || null
                         };
 
                         const documentType = data.document_type || 'uncertain';
-                        this.documentStatus = documentType === 'receipt' ? 'pass' : documentType === 'not_receipt' ? 'fail' : 'warning';
+                        if (documentType === 'receipt') {
+                            this.documentStatus = 'pass';
+                        } else if (documentType === 'not_receipt') {
+                            this.documentStatus = 'fail';
+                        } else if (this.documentStatus !== 'pass') {
+                            this.documentStatus = 'warning';
+                        }
                         this.documentMessage = data.document_message || 'Finance will manually verify this receipt.';
 
                         if (this.documentStatus === 'fail') {
@@ -866,7 +872,7 @@
                             this.checkPaymentMode();
                         }
 
-                        const hasAnyDetected = Boolean(detectedReference || (detectedAmount && Number(detectedAmount) > 0) || detectedDate || detectedMethod);
+                        const hasAnyDetected = Boolean(this.paymentReference || (this.transactionAmount && Number(this.transactionAmount) > 0) || this.transactionDate || this.paymentMode);
 
                         if (documentType === 'not_receipt') {
                             this.receiptScanMessage = 'Not a payment receipt — upload the actual transaction receipt';
@@ -877,13 +883,22 @@
                         } else {
                             this.receiptScanMessage = 'Receipt uploaded, but automatic scanning could not read the details. Please enter the information manually.';
                         }
+
+                        console.log('[OCR-FRONTEND] Auto-fill complete', {
+                            amount: this.transactionAmount,
+                            reference_no: this.paymentReference,
+                            transaction_date: this.transactionDate,
+                            transaction_time: this.transactionTime,
+                            payment_mode: this.paymentMode,
+                        });
                     },
                     async scanReceipt(file) {
                         let serverResult = null;
                         try {
+                            console.log('[OCR-FRONTEND] Upload received', { filename: file.name, mime: file.type, size: file.size });
                             const formData = new FormData(); formData.append('receipt', file);
                             if (this.retryPayment?.id) formData.append('retry_submission_id', this.retryPayment.id);
-                            this.ocrProgress = 15; this.ocrProgressLabel = 'Scanning your payment receipt…';
+                            this.ocrProgress = 15; this.ocrProgressLabel = 'AMIS is scanning your receipt…';
                             const upload = await this.fetchWithTimeout(@json(route('payment.receipts.store')), {method: 'POST', headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json'}, body: formData}, 25000);
                             const accepted = await upload.json();
                             if (!upload.ok) throw new Error(accepted.message || 'Receipt upload failed.');
@@ -900,7 +915,7 @@
                                     if (!statusResponse.ok) throw new Error(serverResult.message || 'Receipt status could not be read.');
                                     const elapsedRatio = Math.min(1, (15000 - Math.max(0, foregroundDeadline - Date.now())) / 15000);
                                     this.ocrProgress = Math.min(75, 20 + elapsedRatio * 55);
-                                    this.ocrProgressLabel = serverResult.status === 'UPLOADED' ? 'Extracting payment details…' : 'Checking your payment receipt…';
+                                    this.ocrProgressLabel = serverResult.status === 'UPLOADED' ? 'Extracting payment details…' : 'AMIS is scanning your receipt…';
                                     if (!serverResult.processing) break;
                                 }
                             }
@@ -915,6 +930,8 @@
                                 return;
                             }
 
+                            console.log('[OCR-FRONTEND] Response received', serverResult);
+
                             this.receiptMustBeReuploaded = serverResult.status === 'REUPLOAD_REQUIRED';
                             const readability = serverResult.quality?.readability;
                             this.imageQualityStatus = this.receiptMustBeReuploaded ? 'fail' : ['good', 'acceptable'].includes(readability) ? 'pass' : 'warning';
@@ -926,25 +943,83 @@
                                 || 'Receipt processed and queued for Finance verification.';
                             this.applyReceiptResult(serverResult);
                             this.ocrProgress = 86;
+
+                            // If server scan missed any core field, transparently try browser-side Tesseract fallback
+                            const criticalComplete = Boolean(this.paymentReference && Number(this.transactionAmount) > 0 && this.transactionDate);
+                            if (!criticalComplete && window.AmisReceiptOcr?.recognize) {
+                                try {
+                                    this.ocrProgressLabel = 'Verifying receipt details…';
+                                    const clientOcr = await window.AmisReceiptOcr.recognize(file, this.paymentTotal, (p) => {
+                                        if (p.progress) this.ocrProgress = Math.min(92, Math.round(75 + p.progress * 15));
+                                    });
+                                    if (clientOcr && clientOcr.type !== 'not_receipt') {
+                                        console.log('[OCR-FRONTEND] Browser OCR fallback result:', clientOcr);
+                                        this.applyReceiptResult({
+                                            detected_ref: clientOcr.reference,
+                                            detected_amount: clientOcr.amount,
+                                            detected_date: clientOcr.date,
+                                            detected_time: clientOcr.time,
+                                            detected_method: clientOcr.mode,
+                                            detected_sender: clientOcr.sender,
+                                            detected_receiver: clientOcr.receiver,
+                                            document_type: clientOcr.type,
+                                            document_message: clientOcr.message,
+                                        });
+                                    }
+                                } catch (clientErr) {
+                                    console.warn('[OCR-FRONTEND] Browser OCR fallback warning:', clientErr);
+                                }
+                            }
+
                             if (this.receiptMustBeReuploaded) {
                                 this.imageQualityMessage = serverResult.review_reason || this.imageQualityMessage;
                                 this.receiptScanMessage = 'A clearer complete receipt is required';
                                 this.ocrProgressLabel = 'Receipt image needs replacement';
                                 return;
                             }
-                            const criticalComplete = Boolean(serverResult.detected_ref && serverResult.detected_amount && serverResult.detected_date);
-                            if (!criticalComplete) {
+                            const finalComplete = Boolean(this.paymentReference && Number(this.transactionAmount) > 0 && this.transactionDate);
+                            if (!finalComplete) {
                                 this.documentStatus = 'warning';
-                                this.documentMessage = serverResult.review_reason || 'Some payment details could not be read automatically. Complete them below; Finance will verify the original receipt.';
+                                this.documentMessage = serverResult.review_reason || 'Receipt scanned. Some information could not be detected. Please review the highlighted fields.';
                             }
-                            this.ocrProgressLabel = criticalComplete ? 'Reviewing the detected information…' : 'Receipt received for Finance verification';
+                            this.ocrProgressLabel = finalComplete ? 'Reviewing the detected information…' : 'Receipt received for Finance verification';
                         } catch (serverError) {
-                            this.documentStatus = 'warning';
-                            this.documentMessage = 'Automatic receipt scanning is currently unavailable. Please enter the transaction details manually; Finance will verify the original receipt.';
-                            if (this.imageQualityStatus === 'waiting') this.imageQualityStatus = 'warning';
-                            this.receiptScanMessage = 'Automatic receipt scanning is currently unavailable. Please enter the transaction details manually.';
-                            this.ocrProgress = 86;
-                            this.ocrProgressLabel = 'Receipt received · Enter transaction details';
+                            console.warn('[OCR-FRONTEND] Server OCR error, running client OCR fallback:', serverError);
+                            let fallbackSucceeded = false;
+                            if (window.AmisReceiptOcr?.recognize) {
+                                try {
+                                    this.ocrProgress = 60;
+                                    this.ocrProgressLabel = 'AMIS is scanning your receipt…';
+                                    const clientOcr = await window.AmisReceiptOcr.recognize(file, this.paymentTotal, (p) => {
+                                        if (p.progress) this.ocrProgress = Math.min(92, Math.round(60 + p.progress * 30));
+                                    });
+                                    if (clientOcr && clientOcr.type !== 'not_receipt') {
+                                        console.log('[OCR-FRONTEND] Fallback response received', clientOcr);
+                                        this.applyReceiptResult({
+                                            detected_ref: clientOcr.reference,
+                                            detected_amount: clientOcr.amount,
+                                            detected_date: clientOcr.date,
+                                            detected_time: clientOcr.time,
+                                            detected_method: clientOcr.mode,
+                                            detected_sender: clientOcr.sender,
+                                            detected_receiver: clientOcr.receiver,
+                                            document_type: clientOcr.type,
+                                            document_message: clientOcr.message,
+                                        });
+                                        fallbackSucceeded = true;
+                                    }
+                                } catch (clientErr) {
+                                    console.warn('[OCR-FRONTEND] Browser OCR error:', clientErr);
+                                }
+                            }
+                            if (!fallbackSucceeded) {
+                                this.documentStatus = 'warning';
+                                this.documentMessage = 'Receipt scanning is temporarily unavailable. Please enter the payment details manually.';
+                                if (this.imageQualityStatus === 'waiting') this.imageQualityStatus = 'warning';
+                                this.receiptScanMessage = 'Receipt scanning is temporarily unavailable. Please enter the payment details manually.';
+                                this.ocrProgress = 86;
+                                this.ocrProgressLabel = 'Receipt received · Enter transaction details';
+                            }
                         }
                     },
                     async checkDuplicate() {

@@ -38,6 +38,13 @@ class ReceiptSubmissionController extends Controller
         $file = $request->file('receipt');
         $receiptHash = hash_file('sha256', $file->getRealPath());
 
+        \Illuminate\Support\Facades\Log::info('[OCR] Upload received', [
+            'filename' => $file->getClientOriginalName(),
+            'mime' => $file->getMimeType() ?: $file->getClientMimeType(),
+            'size' => $file->getSize(),
+            'temporary_path' => $file->getRealPath(),
+        ]);
+
         // Anti-spam / duplicate upload safeguard: If the user uploaded the identical receipt in the last 2 minutes, return existing submission.
         if (! $retrySubmission) {
             $existing = ReceiptSubmission::query()
@@ -106,6 +113,14 @@ class ReceiptSubmissionController extends Controller
             \Illuminate\Support\Facades\Log::warning('Synchronous OCR processing failed, dispatching job: '.$e->getMessage());
             ProcessReceiptSubmission::dispatch($receipt->id, $retrySubmission?->id)->afterResponse();
         }
+
+        \Illuminate\Support\Facades\Log::info('[OCR] API response sent', [
+            'submission_id' => $receipt->submission_id,
+            'detected_ref' => $receipt->reference_number,
+            'detected_amount' => $receipt->amount,
+            'detected_date' => $receipt->transaction_date?->format('Y-m-d'),
+            'detected_method' => $receipt->provider,
+        ]);
 
         return response()->json([
             'submission_id' => $receipt->submission_id,

@@ -388,6 +388,7 @@ class ReceiptFieldNormalizer
             'payment amount',
             'amount sent',
             'total amount sent',
+            'total amount paid',
             'remittance amount',
             'transaction amount',
             'received amount',
@@ -402,45 +403,91 @@ class ReceiptFieldNormalizer
             'net amount',
             'grand total',
             'total',
+            'you sent',
         ];
 
+        // 1. Check priority aliases (same-line and multi-line)
         foreach ($priorityAmountAliases as $alias) {
-            $pattern = '/\b'.preg_quote($alias, '/').'\s*\.?\s*[:#-]?\s*(?:SAR|PHP|USD|QAR|AED|KWD|BHD|OMR|EUR|GBP|Php|₱|\$)?\s*([\d,]+(?:\.\d{1,2})?)/i';
+            $patternSameLine = '/(?:^|\b)'.preg_quote($alias, '/').'\s*\.?\s*[:#-]?\s*(?:SAR|PHP|USD|QAR|AED|KWD|BHD|OMR|EUR|GBP|Php|₱|\$|#|﷼)?\s*([\d,]+(?:\.\d{1,2})?)/i';
 
-            foreach ($lines as $line) {
+            foreach ($lines as $index => $line) {
                 // Ensure line is NOT a Fee, VAT, Discount, or Balance line
-                if ($this->isFeeOrExchangeRateLine($line) && $alias !== 'transfer amount' && $alias !== 'payment amount') {
+                if ($this->isFeeOrExchangeRateLine($line) && ! in_array($alias, ['transfer amount', 'payment amount', 'total amount', 'amount sent', 'amount paid'], true)) {
                     continue;
                 }
 
-                if (preg_match($pattern, $line, $match)) {
+                // Check same line
+                if (preg_match($patternSameLine, $line, $match) && ! empty($match[1])) {
                     $valStr = str_replace(',', '', $match[1]);
-                    $val = (float) $valStr;
-                    if ($val > 0) {
-                        $amount = $val;
-                        $matchedLabel = ucwords($alias);
-                        $rawCandidate = $match[0];
-                        break 2;
+                    if (is_numeric($valStr)) {
+                        $val = (float) $valStr;
+                        if ($val > 0) {
+                            $amount = $val;
+                            $matchedLabel = ucwords($alias);
+                            $rawCandidate = $match[0];
+                            break 2;
+                        }
+                    }
+                }
+
+                // Check multi-line (label on this line, numeric amount on line index+1, index+2, or index+3)
+                if (preg_match('/(?:^|\b)'.preg_quote($alias, '/').'\s*\.?\s*[:#-]?\s*$/i', $line)) {
+                    for ($offset = 1; $offset <= 3 && ($index + $offset) < count($lines); $offset++) {
+                        $nextLine = $lines[$index + $offset];
+                        if ($this->isFeeOrExchangeRateLine($nextLine)) {
+                            continue;
+                        }
+                        if (preg_match('/^(?:SAR|PHP|USD|QAR|AED|KWD|BHD|OMR|EUR|GBP|Php|₱|\$|#|﷼)?\s*([\d,]+(?:\.\d{2})?)\s*(?:SAR|PHP|USD|QAR|AED|KWD|BHD|OMR|EUR|GBP|Php|₱|\$)?$/i', $nextLine, $nextMatch)
+                            || preg_match('/\b(?:SAR|PHP|USD|QAR|AED|KWD|BHD|OMR|EUR|GBP|Php|₱|\$|#|﷼)\s*([\d,]+(?:\.\d{1,2})?)/i', $nextLine, $nextMatch)) {
+                            $valStr = str_replace(',', '', $nextMatch[1]);
+                            if (is_numeric($valStr)) {
+                                $val = (float) $valStr;
+                                if ($val > 0) {
+                                    $amount = $val;
+                                    $matchedLabel = ucwords($alias).' (Multi-line)';
+                                    $rawCandidate = $line.' -> '.$nextLine;
+                                    break 2;
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // Fallback to pre-extracted amount if still null
+        // 2. Fallback to pre-extracted amount if still null
         if ($amount === null && $preAmount && $preAmount > 0) {
             $amount = $preAmount;
             $matchedLabel = 'Pre-extracted Amount';
             $rawCandidate = (string) $preAmount;
         }
 
-        // Fallback standalone currency amount regex search
+        // 3. Fallback standalone currency amount regex search
         if ($amount === null) {
-            if (preg_match('/(?:SAR|PHP|USD|QAR|AED|KWD|BHD|OMR|EUR|GBP|Php|₱|\$)\s*([\d,]+(?:\.\d{1,2})?)/i', $text, $m)) {
-                $val = (float) str_replace(',', '', $m[1]);
-                if ($val > 0 && ! $this->isFeeOrExchangeRateLine($m[0])) {
-                    $amount = $val;
-                    $matchedLabel = 'Currency Pattern Match';
-                    $rawCandidate = $m[0];
+            if (preg_match('/(?:SAR|PHP|USD|QAR|AED|KWD|BHD|OMR|EUR|GBP|Php|₱|\$|﷼)\s*([\d,]+(?:\.\d{1,2})?)/i', $text, $m)) {
+                $valStr = str_replace(',', '', $m[1]);
+                if (is_numeric($valStr)) {
+                    $val = (float) $valStr;
+                    if ($val > 0 && ! $this->isFeeOrExchangeRateLine($m[0])) {
+                        $amount = $val;
+                        $matchedLabel = 'Currency Pattern Match';
+                        $rawCandidate = $m[0];
+                    }
+                }
+            }
+        }
+
+        // 4. Fallback floating point currency format e.g. 1,400.00
+        if ($amount === null) {
+            if (preg_match_all('/\b([\d]{1,3}(?:,\d{3})*\.\d{2})\b/', $text, $allMatches)) {
+                foreach ($allMatches[1] as $candidateStr) {
+                    $val = (float) str_replace(',', '', $candidateStr);
+                    if ($val > 0 && $val < 10000000 && ! $this->isFeeOrExchangeRateLine($candidateStr)) {
+                        $amount = $val;
+                        $matchedLabel = 'Decimal Amount Pattern';
+                        $rawCandidate = $candidateStr;
+                        break;
+                    }
                 }
             }
         }
@@ -499,7 +546,7 @@ class ReceiptFieldNormalizer
         // Search lines containing explicit date labels first
         foreach ($dateLabels as $label) {
             $pattern = '/\b'.preg_quote($label, '/').'\s*\.?\s*[:#-]?\s*(.*)$/i';
-            foreach ($lines as $line) {
+            foreach ($lines as $index => $line) {
                 if (preg_match($pattern, $line, $m)) {
                     $matchedDateLabel = ucwords($label);
                     $rawDateCandidate = $m[1] ?: $line;
@@ -509,6 +556,18 @@ class ReceiptFieldNormalizer
                     }
                     if ($parsedTime) {
                         $timeText = $parsedTime;
+                    }
+                    // Multi-line check if date was not on same line
+                    if (! $dateText) {
+                        for ($offset = 1; $offset <= 2 && ($index + $offset) < count($lines); $offset++) {
+                            [$nextLineDate, $nextLineTime] = $this->parseDateAndExtractTime($lines[$index + $offset]);
+                            if ($nextLineDate) {
+                                $dateText = $nextLineDate;
+                                $timeText = $timeText ?: $nextLineTime;
+                                $rawDateCandidate = $lines[$index + $offset];
+                                break;
+                            }
+                        }
                     }
                     if ($dateText) {
                         break 2;

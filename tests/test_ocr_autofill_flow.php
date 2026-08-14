@@ -68,7 +68,10 @@ $partialClass = $classifier->classify([
 assertTest($partialClass['type'] !== 'not_receipt', "Partial OCR is NOT classified as not_receipt (type is: {$partialClass['type']})");
 
 // 4. Test Controller Store & Show Response
-$user = User::where('email', 'zhairel.lingasa@gmail.com')->first() ?? User::first();
+$user = User::firstOrCreate(
+    ['email' => 'test.ocr@amis.edu.ph'],
+    ['name' => 'Test Parent', 'username' => 'test_parent_ocr', 'password' => bcrypt('secret123'), 'role' => 'applicant']
+);
 \Illuminate\Support\Facades\Auth::login($user);
 
 // Create a valid test PNG file
