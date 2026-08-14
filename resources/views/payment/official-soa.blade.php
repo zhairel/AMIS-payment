@@ -586,12 +586,12 @@
                     <tr>
                         <td></td>
                         <td>{{ $monthName }}</td>
-                        <td class="cell-right {{ $monthName === 'July' ? 'highlight-yellow' : '' }}" @if($monthName === 'July') title="Required payment for this month" @endif>{{ number_format($mFee, 2) }}</td>
-                        <td class="cell-center">{{ $isPaidMonth ? '3-Jul-26' : '' }}</td>
+                        <td class="cell-right {{ ($monthName === 'July' && ! $isPaidMonth) ? 'highlight-yellow' : '' }}" @if($monthName === 'July' && ! $isPaidMonth) title="Required payment for this month" @endif>{{ number_format($mFee, 2) }}</td>
+                        <td class="cell-center">{{ $isPaidMonth ? ($monthName === 'July' ? '3-Jul-26' : ($monthName === 'August' ? '15-Aug-26' : '15-Sep-26')) : '' }}</td>
                         <td class="cell-right {{ $isPaidMonth ? 'highlight-yellow' : '' }}" @if($isPaidMonth) title="Payment received and applied to this account" @endif>
                             {{ $isPaidMonth ? number_format($mPaid, 2) : '-' }}
                         </td>
-                        <td class="cell-center">{{ $isPaidMonth ? '9997' : '' }}</td>
+                        <td class="cell-center">{{ $isPaidMonth ? '10539' : '' }}</td>
                         <td class="cell-right">{{ $isPaidMonth ? number_format($runningBalance, 2) : '' }}</td>
                     </tr>
                 @endforeach
@@ -618,7 +618,7 @@
                         <td class="cell-right {{ $isPaidMonth ? 'highlight-yellow' : '' }}" @if($isPaidMonth) title="Payment received and applied to this account" @endif>
                             {{ $isPaidMonth ? number_format($mPaid, 2) : '-' }}
                         </td>
-                        <td class="cell-center">{{ $isPaidMonth ? '9997' : '' }}</td>
+                        <td class="cell-center">{{ $isPaidMonth ? '10539' : '' }}</td>
                         <td class="cell-right">{{ $isPaidMonth ? number_format($runningBalance, 2) : '' }}</td>
                     </tr>
                 @endforeach

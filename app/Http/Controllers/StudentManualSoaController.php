@@ -53,82 +53,90 @@ class StudentManualSoaController extends Controller
 
         // 1. Check Demo Children
         $demoService = app(\App\Services\DemoPaymentScheduleService::class);
-        $demoChildrenAll = collect([
-            1 => (object)[
-                'id' => 1,
-                'demo_student_number' => 'AFPS-DEMO-2026-001-2',
-                'display_name' => 'Ahmad Z. Lingasa',
-                'first_name' => 'AHMAD',
-                'last_name' => 'LINGASA',
-                'gender' => 'Male',
-                'grade_level' => 'Grade 1',
-                'school_year' => '2026-2027',
-                'tuition_fee' => 36500.00,
-                'miscellaneous_fee' => 1900.00,
-                'books_fee' => 5900.00,
-                'discount_percentage' => 15.0,
-                'discount_amount' => 5475.00,
-                'total_balance' => 34430.00,
-                'remaining_balance' => 34430.00,
-                'enrollment_fee_paid' => 3000.00,
-                'installment_months' => 9,
-                'monthly_tuition' => 3803.33,
-            ],
-            2 => (object)[
-                'id' => 2,
-                'demo_student_number' => 'AFPS-DEMO-2026-002-2',
-                'display_name' => 'Maryam Z. Lingasa',
-                'first_name' => 'MARYAM',
-                'last_name' => 'LINGASA',
-                'gender' => 'Female',
-                'grade_level' => 'Grade 3',
-                'school_year' => '2026-2027',
-                'tuition_fee' => 36500.00,
-                'miscellaneous_fee' => 1900.00,
-                'books_fee' => 5900.00,
-                'discount_percentage' => 15.0,
-                'discount_amount' => 5475.00,
-                'total_balance' => 35635.00,
-                'remaining_balance' => 35635.00,
-                'enrollment_fee_paid' => 3000.00,
-                'installment_months' => 9,
-                'monthly_tuition' => 3926.11,
-            ],
-            3 => (object)[
-                'id' => 3,
-                'demo_student_number' => 'AFPS-DEMO-2026-003-2',
-                'display_name' => 'Yusuf Z. Lingasa',
-                'first_name' => 'YUSUF',
-                'last_name' => 'LINGASA',
-                'gender' => 'Male',
-                'grade_level' => 'Grade 5',
-                'school_year' => '2026-2027',
-                'tuition_fee' => 36500.00,
-                'miscellaneous_fee' => 1900.00,
-                'books_fee' => 5900.00,
-                'discount_percentage' => 15.0,
-                'discount_amount' => 5475.00,
-                'total_balance' => 36995.00,
-                'remaining_balance' => 36995.00,
-                'enrollment_fee_paid' => 3000.00,
-                'installment_months' => 9,
-                'monthly_tuition' => 4077.22,
-            ],
-        ]);
+        $dbDemoChildren = $user ? $user->paymentDemoChildren()->orderBy('id')->get() : collect();
+        if ($dbDemoChildren->isNotEmpty()) {
+            $demoChildrenAll = $dbDemoChildren;
+        } else {
+            $demoChildrenAll = collect([
+                1 => (object)[
+                    'id' => 1,
+                    'user_id' => $user?->id,
+                    'demo_student_number' => 'AFPS-DEMO-2026-001-2',
+                    'display_name' => 'Ahmad Z. Lingasa',
+                    'first_name' => 'AHMAD',
+                    'last_name' => 'LINGASA',
+                    'gender' => 'Male',
+                    'grade_level' => 'Grade 1',
+                    'school_year' => '2026-2027',
+                    'tuition_fee' => 36500.00,
+                    'miscellaneous_fee' => 1900.00,
+                    'books_fee' => 5900.00,
+                    'discount_percentage' => 15.0,
+                    'discount_amount' => 5475.00,
+                    'total_balance' => 34430.00,
+                    'remaining_balance' => 34430.00,
+                    'enrollment_fee_paid' => 3000.00,
+                    'installment_months' => 9,
+                    'monthly_tuition' => 3803.33,
+                ],
+                2 => (object)[
+                    'id' => 2,
+                    'user_id' => $user?->id,
+                    'demo_student_number' => 'AFPS-DEMO-2026-002-2',
+                    'display_name' => 'Maryam Z. Lingasa',
+                    'first_name' => 'MARYAM',
+                    'last_name' => 'LINGASA',
+                    'gender' => 'Female',
+                    'grade_level' => 'Grade 3',
+                    'school_year' => '2026-2027',
+                    'tuition_fee' => 36500.00,
+                    'miscellaneous_fee' => 1900.00,
+                    'books_fee' => 5900.00,
+                    'discount_percentage' => 15.0,
+                    'discount_amount' => 5475.00,
+                    'total_balance' => 35635.00,
+                    'remaining_balance' => 35635.00,
+                    'enrollment_fee_paid' => 3000.00,
+                    'installment_months' => 9,
+                    'monthly_tuition' => 3926.11,
+                ],
+                3 => (object)[
+                    'id' => 3,
+                    'user_id' => $user?->id,
+                    'demo_student_number' => 'AFPS-DEMO-2026-003-2',
+                    'display_name' => 'Yusuf Z. Lingasa',
+                    'first_name' => 'YUSUF',
+                    'last_name' => 'LINGASA',
+                    'gender' => 'Male',
+                    'grade_level' => 'Grade 5',
+                    'school_year' => '2026-2027',
+                    'tuition_fee' => 36500.00,
+                    'miscellaneous_fee' => 1900.00,
+                    'books_fee' => 5900.00,
+                    'discount_percentage' => 15.0,
+                    'discount_amount' => 5475.00,
+                    'total_balance' => 36995.00,
+                    'remaining_balance' => 36995.00,
+                    'enrollment_fee_paid' => 3000.00,
+                    'installment_months' => 9,
+                    'monthly_tuition' => 4077.22,
+                ],
+            ]);
+        }
 
         preg_match('/(?:^|[^0-9])0*(1|2|3|4|5|6|7|8|9)(?:[^0-9]|$)/', preg_replace('/202[0-9]/', '', $cleanId), $mId);
         $targetSeq = $mId[1] ?? null;
 
         $targetDemo = $demoChildrenAll->first(function ($child, $seq) use ($cleanId, $targetSeq) {
-            return Str::upper((string) $child->demo_student_number) === $cleanId
+            return Str::upper((string) ($child->demo_student_number ?? '')) === $cleanId
                 || (string) $child->id === $cleanId
                 || ($targetSeq !== null && (string) $seq === (string) $targetSeq)
-                || Str::contains($cleanId, Str::upper($child->first_name))
-                || Str::contains(Str::upper($child->display_name), $cleanId);
+                || Str::contains($cleanId, Str::upper($child->first_name ?? ''))
+                || Str::contains(Str::upper($child->display_name ?? ''), $cleanId);
         });
 
         if ($targetDemo) {
-            $breakdown = $demoService->installmentsFor($targetDemo, $demoChildrenAll);
+            $breakdown = $demoService->installmentsFor($targetDemo, $demoChildrenAll, $user);
             $scheduleCollection = collect($breakdown)->map(function ($item) {
                 return (object)[
                     'month' => $item['month'] ?? '',

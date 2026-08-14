@@ -385,9 +385,9 @@ class DemoPaymentScheduleService
      * This is intentionally independent of enrollment date so late students
      * still receive a complete JULY-MARCH Statement of Account.
      */
-    public function installmentsFor(object $child, ?Collection $allChildren = null): array
+    public function installmentsFor(object $child, ?Collection $allChildren = null, ?User $user = null): array
     {
-        $userId = $child->user_id ?? null;
+        $userId = $user?->id ?? ($child->user_id ?? null);
         if (! $allChildren) {
             try {
                 $allChildren = $userId && Schema::hasTable('payment_demo_children')
@@ -400,7 +400,7 @@ class DemoPaymentScheduleService
                 $allChildren = collect([$child]);
             }
         }
-        $groups = $this->build($allChildren);
+        $groups = $this->build($allChildren, $user);
         $childId = $child->id ?? null;
 
         $installments = [];
