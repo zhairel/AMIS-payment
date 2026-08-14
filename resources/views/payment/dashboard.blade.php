@@ -411,54 +411,95 @@
                         </div>
 
                         @if($paymentNotifications->isNotEmpty())
-                            <div class="mt-6 space-y-4">
+                            <div class="mt-6 space-y-3.5">
                                 @foreach($paymentNotifications as $notification)
                                     @php
                                         $notificationType = $notification['type'];
-                                        $badgeBg = match($notificationType) {
-                                            'overdue', 'previous' => 'bg-rose-50 border-rose-200 text-rose-800',
-                                            'pending' => 'bg-amber-50 border-amber-200 text-amber-800',
-                                            'success' => 'bg-emerald-50 border-emerald-200 text-emerald-800',
-                                            default => 'bg-slate-100 border-slate-200 text-slate-700',
+                                        $cardBg = match($notificationType) {
+                                            'overdue', 'previous' => 'bg-rose-50/20 border-rose-200/80 hover:border-rose-300 hover:bg-rose-50/30',
+                                            'pending' => 'bg-amber-50/20 border-amber-200/80 hover:border-amber-300 hover:bg-amber-50/30',
+                                            'success' => 'bg-emerald-50/20 border-emerald-200/80 hover:border-emerald-300 hover:bg-emerald-50/30',
+                                            default => 'bg-slate-50/40 border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/70',
+                                        };
+                                        $iconWrap = match($notificationType) {
+                                            'overdue', 'previous' => 'bg-rose-100/90 text-rose-800 ring-1 ring-rose-200/80',
+                                            'pending' => 'bg-amber-100/90 text-amber-800 ring-1 ring-amber-200/80',
+                                            'success' => 'bg-emerald-100/90 text-emerald-800 ring-1 ring-emerald-200/80',
+                                            default => 'bg-sky-100/90 text-sky-800 ring-1 ring-sky-200/80',
+                                        };
+                                        $statusTextClass = match($notificationType) {
+                                            'overdue', 'previous' => 'text-rose-800',
+                                            'pending' => 'text-amber-800',
+                                            'success' => 'text-emerald-800',
+                                            default => 'text-slate-700',
                                         };
                                         $notificationLabel = match($notificationType) {
-                                            'overdue', 'previous' => 'ACTION NEEDED',
-                                            'pending' => 'UNDER REVIEW',
-                                            'success' => 'PAYMENT VERIFIED',
-                                            default => 'UPCOMING',
+                                            'overdue', 'previous' => 'Action Needed',
+                                            'pending' => 'Under Review',
+                                            'success' => 'Payment Verified',
+                                            default => 'Upcoming',
                                         };
                                     @endphp
 
-                                    <div class="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-7 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 shadow-sm hover:border-slate-300 transition">
-                                        <div class="space-y-2.5 max-w-2xl">
-                                            <!-- 1. Status Badge & 2. Date -->
-                                            <div class="flex items-center gap-3">
-                                                <span class="rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-wide {{ $badgeBg }}">
-                                                    {{ $notificationLabel }}
-                                                </span>
-                                                @if($notification['date'])
-                                                    <span class="text-xs text-slate-400 font-medium">{{ $notification['date']->format('M j, Y') }}</span>
+                                    <div class="rounded-2xl border p-4 sm:p-5 transition duration-200 hover:shadow-sm {{ $cardBg }}">
+                                        <div class="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)_auto] items-start sm:items-center gap-4 sm:gap-5">
+                                            <!-- LEFT: Status Icon -->
+                                            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 {{ $iconWrap }}">
+                                                @if($notificationType === 'success')
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                                    </svg>
+                                                @elseif($notificationType === 'pending')
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    </svg>
+                                                @elseif(in_array($notificationType, ['overdue', 'previous']))
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                                    </svg>
+                                                @else
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                    </svg>
                                                 @endif
                                             </div>
 
-                                            <!-- 3. Main Title -->
-                                            <h3 class="text-base font-bold text-slate-900 leading-snug">{{ $notification['title'] }}</h3>
-
-                                            <!-- 4. Short Explanation -->
-                                            <p class="text-sm text-slate-600 leading-relaxed">{{ $notification['message'] }}</p>
-
-                                            <!-- Secondary Technical Details (Receipt / Submission Number) -->
-                                            @if(!empty($notification['reference']))
-                                                <div class="text-xs text-slate-400 font-mono font-medium pt-0.5">
-                                                    {{ $notification['reference'] }}
+                                            <!-- CENTER: Content -->
+                                            <div class="space-y-1 min-w-0">
+                                                <!-- Status & Date -->
+                                                <div class="flex items-center gap-2 text-xs font-medium">
+                                                    <span class="font-bold {{ $statusTextClass }}">{{ $notificationLabel }}</span>
+                                                    @if($notification['date'])
+                                                        <span class="text-slate-300">·</span>
+                                                        <span class="text-slate-500 font-medium">{{ $notification['date']->format('M j, Y') }}</span>
+                                                    @endif
                                                 </div>
-                                            @endif
-                                        </div>
 
-                                        <!-- 5. Amount Label & 6. Amount Value -->
-                                        <div class="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex sm:flex-col justify-between items-baseline sm:items-end">
-                                            <span class="text-xs font-medium text-slate-400 block">Amount</span>
-                                            <strong class="text-lg sm:text-xl font-black text-slate-900 tracking-tight block sm:mt-1">₱{{ number_format($notification['amount'], 2) }}</strong>
+                                                <!-- Title -->
+                                                <h3 class="text-base sm:text-[17px] font-bold text-slate-900 leading-snug">
+                                                    {{ $notification['title'] }}
+                                                </h3>
+
+                                                <!-- Description -->
+                                                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed pt-0.5">
+                                                    {{ $notification['message'] }}
+                                                </p>
+
+                                                <!-- Secondary Metadata -->
+                                                @if(!empty($notification['reference']))
+                                                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono font-medium pt-1">
+                                                        {{ $notification['reference'] }}
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            <!-- RIGHT: Amount Area -->
+                                            <div class="sm:text-right shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-200/50 flex sm:flex-col justify-between items-baseline sm:items-end sm:min-w-[120px] rounded-xl sm:bg-white/70 sm:p-3 sm:border sm:border-slate-200/70 shadow-2xs">
+                                                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Amount</span>
+                                                <strong class="text-lg sm:text-xl font-black text-slate-900 tracking-tight block sm:mt-0.5">
+                                                    ₱{{ number_format($notification['amount'], 2) }}
+                                                </strong>
+                                            </div>
                                         </div>
                                     </div>
                                 @endforeach
