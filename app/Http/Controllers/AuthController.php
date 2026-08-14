@@ -143,12 +143,12 @@ class AuthController extends Controller
         // Generate 4-digit numeric code
         $code = sprintf("%04d", rand(1000, 9999));
 
-        // Save verification code in DB (expires in 10 minutes)
+        // Save verification code in DB (expires in 5 minutes, invalidating any previous code)
         VerificationCode::updateOrCreate(
             ['email' => $email],
             [
                 'code' => $code,
-                'expires_at' => now()->addMinutes(10),
+                'expires_at' => now()->addMinutes(5),
                 'used' => false,
             ]
         );
@@ -176,7 +176,7 @@ class AuthController extends Controller
                 'ip_address' => $request->ip(),
                 'user_agent' => Str::limit((string) $request->userAgent(), 1000, ''),
                 'successful' => true,
-                'message' => '4-digit OTP code generated and sent',
+                'message' => '4-digit OTP code generated and sent (5 min validity)',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -206,19 +206,37 @@ class AuthController extends Controller
             $seconds = RateLimiter::availableIn($limiterKey);
             return response()->json([
                 'status' => 'error',
-                'message' => "Too many verification attempts. Please wait {$seconds} seconds."
+                'message' => "Too many unsuccessful attempts. Please wait {$seconds} seconds before trying again."
             ], 429);
         }
         RateLimiter::hit($limiterKey, 60);
 
-        // Retrieve the latest valid unused, unexpired verification code
+        // Retrieve the latest verification code record for this email
         $verifyCode = VerificationCode::where('email', $email)
-            ->where('code', $code)
             ->where('used', false)
-            ->where('expires_at', '>', now())
             ->first();
 
-        if (!$verifyCode) {
+        if (! $verifyCode) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No active verification code found. Please request a new code.'
+            ], 422);
+        }
+
+        // Check if the code is expired (5 minute validity)
+        if ($verifyCode->expires_at <= now()) {
+            return response()->json([
+                'status' => 'error',
+                'expired' => true,
+                'message' => 'This verification code has expired. Please request a new code.'
+            ], 422);
+        }
+
+        // Check if the code matches
+        if ($verifyCode->code !== $code) {
+            $attemptsUsed = RateLimiter::attempts($limiterKey);
+            $attemptsRemaining = max(0, 5 - $attemptsUsed);
+
             // Log verification failure
             try {
                 DB::table('admin_audit_logs')->insert([
@@ -228,15 +246,21 @@ class AuthController extends Controller
                     'ip_address' => $request->ip(),
                     'user_agent' => Str::limit((string) $request->userAgent(), 1000, ''),
                     'successful' => false,
-                    'message' => 'Invalid or expired OTP code entered',
+                    'message' => 'Incorrect OTP code entered',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
             } catch (\Throwable $e) {}
 
+            $msg = 'The verification code is incorrect. Please try again.';
+            if ($attemptsRemaining > 0 && $attemptsRemaining < 5) {
+                $msg = "Incorrect code. {$attemptsRemaining} attempt(s) remaining.";
+            }
+
             return response()->json([
                 'status' => 'error',
-                'message' => 'Invalid or expired verification code.'
+                'message' => $msg,
+                'attempts_remaining' => $attemptsRemaining
             ], 422);
         }
 

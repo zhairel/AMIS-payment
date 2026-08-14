@@ -35,8 +35,51 @@
                 email: '{{ old('email') }}',
                 otp: ['', '', '', ''],
                 loading: false,
+                signingIn: false,
                 error: '',
                 success: '',
+                expirySeconds: 300,
+                resendCooldown: 30,
+                isExpired: false,
+                timerInterval: null,
+                cooldownInterval: null,
+
+                formatTimer(totalSeconds) {
+                    const mins = Math.floor(Math.max(0, totalSeconds) / 60);
+                    const secs = Math.max(0, totalSeconds) % 60;
+                    return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+                },
+
+                startTimers() {
+                    this.stopTimers();
+                    this.expirySeconds = 300;
+                    this.resendCooldown = 30;
+                    this.isExpired = false;
+
+                    this.timerInterval = setInterval(() => {
+                        if (this.expirySeconds > 0) {
+                            this.expirySeconds--;
+                        } else {
+                            this.isExpired = true;
+                            this.error = 'This verification code has expired. Please request a new code.';
+                            clearInterval(this.timerInterval);
+                        }
+                    }, 1000);
+
+                    this.cooldownInterval = setInterval(() => {
+                        if (this.resendCooldown > 0) {
+                            this.resendCooldown--;
+                        } else {
+                            clearInterval(this.cooldownInterval);
+                        }
+                    }, 1000);
+                },
+
+                stopTimers() {
+                    if (this.timerInterval) clearInterval(this.timerInterval);
+                    if (this.cooldownInterval) clearInterval(this.cooldownInterval);
+                },
+
                 async request(path, body) {
                     const response = await fetch(path, {
                         method: 'POST',
@@ -50,11 +93,17 @@
                     const data = await response.json();
                     return { ok: response.ok, status: response.status, data };
                 },
-                async sendOtp() {
+
+                async sendOtp(isResend = false) {
+                    if (this.loading) return;
                     if (!this.email || !this.email.includes('@')) {
                         this.error = 'Enter a valid parent email address.';
                         return;
                     }
+                    if (isResend && this.resendCooldown > 0) {
+                        return;
+                    }
+
                     this.loading = true;
                     this.error = '';
                     this.success = '';
@@ -62,8 +111,9 @@
                         const result = await this.request('{{ route('auth.send-otp') }}', { email: this.email });
                         if (result.ok && result.data.status === 'success') {
                             this.step = 'code';
-                            this.success = result.data.message || 'Verification code sent to your email.';
+                            this.success = isResend ? 'A new verification code has been sent.' : (result.data.message || 'A 4-digit verification code has been sent to your email.');
                             this.otp = ['', '', '', ''];
+                            this.startTimers();
                             this.$nextTick(() => {
                                 if (this.$refs.otp0) this.$refs.otp0.focus();
                             });
@@ -76,44 +126,73 @@
                         this.loading = false;
                     }
                 },
+
                 inputOtp(event, index) {
-                    this.otp[index] = event.target.value.replace(/\D/g, '').slice(-1);
-                    if (this.otp[index] && index < 3) {
-                        this.$refs['otp' + (index + 1)].focus();
-                    }
-                    if (this.otp.join('').length === 4) {
-                        this.verifyOtp();
+                    const val = event.target.value.replace(/\D/g, '').slice(-1);
+                    this.otp[index] = val;
+                    if (val && index < 3) {
+                        this.$nextTick(() => {
+                            if (this.$refs['otp' + (index + 1)]) {
+                                this.$refs['otp' + (index + 1)].focus();
+                            }
+                        });
                     }
                 },
+
                 keyOtp(event, index) {
-                    if (event.key === 'Backspace' && !this.otp[index] && index > 0) {
+                    if (event.key === 'Backspace') {
+                        if (!this.otp[index] && index > 0) {
+                            this.$refs['otp' + (index - 1)].focus();
+                        }
+                    } else if (event.key === 'ArrowLeft' && index > 0) {
                         this.$refs['otp' + (index - 1)].focus();
+                    } else if (event.key === 'ArrowRight' && index < 3) {
+                        this.$refs['otp' + (index + 1)].focus();
+                    } else if (event.key === 'Enter') {
+                        if (this.otp.join('').length === 4 && !this.isExpired) {
+                            this.verifyOtp();
+                        }
                     }
                 },
+
                 pasteOtp(event) {
-                    const digits = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4).split('');
+                    const raw = event.clipboardData ? event.clipboardData.getData('text') : '';
+                    const digits = raw.replace(/\D/g, '').slice(0, 4).split('');
                     if (!digits.length) return;
                     event.preventDefault();
                     this.otp = [digits[0] || '', digits[1] || '', digits[2] || '', digits[3] || ''];
-                    if (this.otp.join('').length === 4) {
-                        this.verifyOtp();
-                    }
+                    const lastIdx = Math.min(3, digits.length - 1);
+                    this.$nextTick(() => {
+                        if (this.$refs['otp' + lastIdx]) {
+                            this.$refs['otp' + lastIdx].focus();
+                        }
+                    });
                 },
+
                 async verifyOtp() {
-                    if (this.otp.join('').length !== 4 || this.loading) return;
+                    const code = this.otp.join('');
+                    if (code.length !== 4 || this.loading || this.isExpired) return;
+
                     this.loading = true;
                     this.error = '';
                     this.success = '';
                     try {
                         const result = await this.request('{{ route('auth.verify-otp') }}', {
                             email: this.email,
-                            code: this.otp.join('')
+                            code: code
                         });
                         if (result.ok && result.data.status === 'success') {
-                            window.location.href = result.data.redirectUrl;
+                            this.signingIn = true;
+                            this.stopTimers();
+                            setTimeout(() => {
+                                window.location.href = result.data.redirectUrl;
+                            }, 500);
                         } else {
-                            this.error = result.data.message || 'Invalid verification code.';
-                            this.otp = ['', '', '', ''];
+                            if (result.data.expired) {
+                                this.isExpired = true;
+                                this.stopTimers();
+                            }
+                            this.error = result.data.message || 'The verification code is incorrect. Please try again.';
                             this.$nextTick(() => {
                                 if (this.$refs.otp0) this.$refs.otp0.focus();
                             });
@@ -121,8 +200,23 @@
                     } catch (e) {
                         this.error = 'Network error. Please try again.';
                     } finally {
-                        this.loading = false;
+                        if (!this.signingIn) {
+                            this.loading = false;
+                        }
                     }
+                },
+
+                changeEmail() {
+                    this.stopTimers();
+                    this.step = 'email';
+                    this.otp = ['', '', '', ''];
+                    this.error = '';
+                    this.success = '';
+                    this.isExpired = false;
+                    this.$nextTick(() => {
+                        const emailInput = document.getElementById('otp-email');
+                        if (emailInput) emailInput.focus();
+                    });
                 }
             }">
                 <!-- Main White Card -->
@@ -132,39 +226,94 @@
                         <p class="mt-2 text-sm leading-6 text-slate-500">Use a one-time email code to securely access your family's payment account.</p>
                     </div>
 
+                    <!-- Flash / Global Errors -->
                     @if ($errors->any())
                         <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800">{{ $errors->first() }}</div>
                     @endif
-                    <div x-show="error" x-cloak x-text="error" class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800"></div>
-                    <div x-show="success" x-cloak x-text="success" class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800"></div>
+                    <div x-show="error" x-cloak x-text="error" aria-live="polite" class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800"></div>
+                    <div x-show="success" x-cloak x-text="success" aria-live="polite" class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800"></div>
 
-                    <!-- Email Code / OTP Flow -->
-                    <div class="mt-6">
-                        <!-- Step 1: Email Input -->
-                        <div x-show="step==='email'">
-                            <label for="otp-email" class="text-xs font-bold uppercase tracking-wider text-slate-700">PARENT EMAIL ADDRESS</label>
-                            <input id="otp-email" x-model.trim="email" @keydown.enter.prevent="sendOtp()" type="email" autocomplete="email" placeholder="jhon@gmail.com" class="mt-2 w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 text-sm focus:border-emerald-600 focus:ring-emerald-600">
-                            <button type="button" @click="sendOtp()" :disabled="loading" class="mt-4 w-full rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-extrabold text-white hover:bg-emerald-800 disabled:opacity-50 transition">
-                                <span x-show="!loading">Send verification code</span>
-                                <span x-show="loading">Sending securely…</span>
+                    <!-- STEP 1: Email Input Form -->
+                    <div x-show="step==='email'" class="mt-6">
+                        <label for="otp-email" class="text-xs font-bold uppercase tracking-wider text-slate-700">PARENT EMAIL ADDRESS</label>
+                        <input id="otp-email" x-model.trim="email" @keydown.enter.prevent="sendOtp()" type="email" autocomplete="email" placeholder="jhon@gmail.com" class="mt-2 w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 text-sm focus:border-emerald-600 focus:ring-emerald-600">
+                        <button type="button" @click="sendOtp()" :disabled="loading" class="mt-4 w-full rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-extrabold text-white hover:bg-emerald-800 disabled:opacity-50 transition">
+                            <span x-show="!loading">Send verification code</span>
+                            <span x-show="loading">Sending securely…</span>
+                        </button>
+                    </div>
+
+                    <!-- STEP 2: 4-digit OTP Verification Flow -->
+                    <div x-show="step==='code'" x-cloak class="mt-6">
+                        <!-- Email Instruction Layout: Separated to its own prominent line -->
+                        <div>
+                            <p class="text-sm text-slate-600">Enter the 4-digit code sent to</p>
+                            <p class="mt-1 text-sm font-bold text-slate-900 break-all select-all" x-text="email"></p>
+                        </div>
+
+                        <!-- Expired State Box -->
+                        <div x-show="isExpired" x-cloak class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center">
+                            <p class="text-sm font-bold text-rose-800">Verification code expired</p>
+                            <p class="mt-1 text-xs text-rose-600">This code is no longer valid. Please send a new code.</p>
+                            <button type="button" @click="sendOtp(true)" :disabled="loading" class="mt-3.5 w-full rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-rose-700 transition">
+                                <span x-show="!loading">Send a new code</span>
+                                <span x-show="loading">Sending…</span>
                             </button>
                         </div>
 
-                        <!-- Step 2: 4-digit Code Input -->
-                        <div x-show="step==='code'" x-cloak>
-                            <p class="text-sm text-slate-600">Enter the 4-digit code sent to <strong class="break-all text-slate-900" x-text="email"></strong>.</p>
+                        <!-- Active OTP Inputs -->
+                        <div x-show="!isExpired">
+                            <!-- 4 Digit Boxes -->
                             <div class="mt-5 grid grid-cols-4 gap-3" @paste="pasteOtp($event)">
                                 @for($index=0;$index<4;$index++)
-                                    <input type="text" inputmode="numeric" maxlength="1" x-model="otp[{{ $index }}]" x-ref="otp{{ $index }}" @input="inputOtp($event,{{ $index }})" @keydown="keyOtp($event,{{ $index }})" class="h-14 rounded-xl border-slate-300 text-center text-2xl font-black text-slate-900 focus:border-emerald-600 focus:ring-emerald-600">
+                                    <input type="text"
+                                           inputmode="numeric"
+                                           autocomplete="one-time-code"
+                                           maxlength="1"
+                                           aria-label="Digit {{ $index + 1 }} of 4"
+                                           x-model="otp[{{ $index }}]"
+                                           x-ref="otp{{ $index }}"
+                                           @input="inputOtp($event,{{ $index }})"
+                                           @keydown="keyOtp($event,{{ $index }})"
+                                           class="h-14 rounded-xl border-slate-300 text-center text-2xl font-black text-slate-900 focus:border-emerald-600 focus:ring-emerald-600">
                                 @endfor
                             </div>
-                            <button type="button" @click="verifyOtp()" :disabled="loading || otp.join('').length!==4" class="mt-5 w-full rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-extrabold text-white disabled:opacity-50 transition">
-                                <span x-show="!loading">Verify and sign in</span>
-                                <span x-show="loading">Verifying…</span>
+
+                            <!-- 5-Minute Countdown Indicator -->
+                            <div class="mt-3.5 flex items-center justify-center">
+                                <p class="text-xs transition-colors" :class="expirySeconds <= 60 ? 'text-amber-600 font-semibold' : 'text-slate-500 font-medium'">
+                                    Code expires in <span class="font-mono font-bold" x-text="formatTimer(expirySeconds)"></span>
+                                </p>
+                            </div>
+
+                            <!-- Verify and Sign In Button -->
+                            <button type="button"
+                                    @click="verifyOtp()"
+                                    :disabled="loading || signingIn || otp.join('').length !== 4"
+                                    class="mt-5 w-full rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-extrabold text-white hover:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                                <span x-show="!loading && !signingIn">Verify and sign in</span>
+                                <span x-show="loading && !signingIn">Verifying…</span>
+                                <span x-show="signingIn">Verified. Signing you in…</span>
                             </button>
-                            <div class="mt-4 flex items-center justify-between text-xs font-bold">
-                                <button type="button" @click="step='email';otp=['','','',''];error='';success=''" class="text-slate-500 hover:text-slate-700">← Change email</button>
-                                <button type="button" @click="sendOtp()" :disabled="loading" class="text-emerald-700 hover:text-emerald-900">Resend code</button>
+                        </div>
+
+                        <!-- Bottom Navigation: Change Email & Resend Cooldown -->
+                        <div class="mt-5 flex items-center justify-between text-xs">
+                            <button type="button" @click="changeEmail()" class="font-bold text-slate-500 hover:text-slate-800 transition">
+                                ← Change email
+                            </button>
+
+                            <div x-show="!isExpired">
+                                <template x-if="resendCooldown > 0">
+                                    <span class="font-semibold text-slate-400">
+                                        Resend code in <span class="font-mono font-bold" x-text="formatTimer(resendCooldown)"></span>
+                                    </span>
+                                </template>
+                                <template x-if="resendCooldown === 0">
+                                    <button type="button" @click="sendOtp(true)" :disabled="loading" class="font-bold text-emerald-700 hover:text-emerald-900 transition">
+                                        Resend code
+                                    </button>
+                                </template>
                             </div>
                         </div>
                     </div>
