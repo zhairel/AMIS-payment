@@ -107,6 +107,23 @@ class AuthController extends Controller
             $request->session()->regenerateToken();
         }
 
+        // Check if email is currently in 5-minute lockout
+        $lockoutKey = 'otp_lockout:' . $email;
+        if (Cache::has($lockoutKey)) {
+            $lockoutUntil = (int) Cache::get($lockoutKey);
+            $remaining = max(1, $lockoutUntil - time());
+            if ($remaining > 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'locked' => true,
+                    'lockout_seconds' => $remaining,
+                    'message' => 'Too many incorrect attempts. Verification is temporarily locked for 5 minutes.'
+                ], 429);
+            }
+            // Lockout expired, clear it
+            Cache::forget($lockoutKey);
+        }
+
         // Rate limit sending OTP codes to 3 per 60 seconds per email
         $limiterKey = 'send-otp:' . $email;
         if (RateLimiter::tooManyAttempts($limiterKey, 3)) {
@@ -152,6 +169,10 @@ class AuthController extends Controller
                 'used' => false,
             ]
         );
+
+        // Reset failed attempts counter upon generating a new OTP
+        Cache::forget('otp_attempts:' . $email);
+        RateLimiter::clear('verify-otp:' . $email);
 
         // Send Notification containing the code
         try {
@@ -200,18 +221,24 @@ class AuthController extends Controller
         $email = Str::lower(trim($validated['email']));
         $code = trim($validated['code']);
 
-        // Rate limit OTP code verification attempts to 5 per 60 seconds per email
-        $limiterKey = 'verify-otp:' . $email;
-        if (RateLimiter::tooManyAttempts($limiterKey, 5)) {
-            $seconds = RateLimiter::availableIn($limiterKey);
-            return response()->json([
-                'status' => 'error',
-                'message' => "Too many unsuccessful attempts. Please wait {$seconds} seconds before trying again."
-            ], 429);
+        // 1. Check if email is currently in 5-minute lockout
+        $lockoutKey = 'otp_lockout:' . $email;
+        if (Cache::has($lockoutKey)) {
+            $lockoutUntil = (int) Cache::get($lockoutKey);
+            $remaining = max(1, $lockoutUntil - time());
+            if ($remaining > 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'locked' => true,
+                    'lockout_seconds' => $remaining,
+                    'message' => 'Too many incorrect attempts. Verification is temporarily locked for 5 minutes.'
+                ], 429);
+            }
+            // Lockout expired
+            Cache::forget($lockoutKey);
         }
-        RateLimiter::hit($limiterKey, 60);
 
-        // Retrieve the latest verification code record for this email
+        // 2. Retrieve active verification code
         $verifyCode = VerificationCode::where('email', $email)
             ->where('used', false)
             ->first();
@@ -219,11 +246,12 @@ class AuthController extends Controller
         if (! $verifyCode) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'No active verification code found. Please request a new code.'
+                'expired' => true,
+                'message' => 'This verification code is no longer valid. Please request a new code.'
             ], 422);
         }
 
-        // Check if the code is expired (5 minute validity)
+        // 3. Check if the code is expired (5 minute validity)
         if ($verifyCode->expires_at <= now()) {
             return response()->json([
                 'status' => 'error',
@@ -232,10 +260,11 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Check if the code matches
+        // 4. Check if the code matches
         if ($verifyCode->code !== $code) {
-            $attemptsUsed = RateLimiter::attempts($limiterKey);
-            $attemptsRemaining = max(0, 5 - $attemptsUsed);
+            $attemptsKey = 'otp_attempts:' . $email;
+            $failedAttempts = (int) Cache::get($attemptsKey, 0) + 1;
+            Cache::put($attemptsKey, $failedAttempts, now()->addMinutes(10));
 
             // Log verification failure
             try {
@@ -246,26 +275,44 @@ class AuthController extends Controller
                     'ip_address' => $request->ip(),
                     'user_agent' => Str::limit((string) $request->userAgent(), 1000, ''),
                     'successful' => false,
-                    'message' => 'Incorrect OTP code entered',
+                    'message' => "Incorrect OTP code entered (Attempt {$failedAttempts}/5)",
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
             } catch (\Throwable $e) {}
 
-            $msg = 'The verification code is incorrect. Please try again.';
-            if ($attemptsRemaining > 0 && $attemptsRemaining < 5) {
-                $msg = "Incorrect code. {$attemptsRemaining} attempt(s) remaining.";
+            // Check if 5 wrong attempts reached
+            if ($failedAttempts >= 5) {
+                // Invalidate current OTP
+                $verifyCode->update(['used' => true]);
+                Cache::forget($attemptsKey);
+
+                // Set 5-minute lockout (300 seconds)
+                $lockoutDuration = 300;
+                Cache::put($lockoutKey, time() + $lockoutDuration, now()->addSeconds($lockoutDuration));
+
+                return response()->json([
+                    'status' => 'error',
+                    'locked' => true,
+                    'lockout_seconds' => $lockoutDuration,
+                    'message' => 'Too many incorrect attempts. Verification is temporarily locked for 5 minutes.'
+                ], 422);
             }
+
+            $attemptsRemaining = 5 - $failedAttempts;
+            $attemptWord = $attemptsRemaining === 1 ? 'attempt' : 'attempts';
 
             return response()->json([
                 'status' => 'error',
-                'message' => $msg,
-                'attempts_remaining' => $attemptsRemaining
+                'attempts_remaining' => $attemptsRemaining,
+                'message' => "Incorrect verification code. {$attemptsRemaining} {$attemptWord} remaining."
             ], 422);
         }
 
         // Mark code as used
         $verifyCode->update(['used' => true]);
+        Cache::forget('otp_attempts:' . $email);
+        Cache::forget($lockoutKey);
 
         // Find the user
         $user = User::where('email', $email)->first();

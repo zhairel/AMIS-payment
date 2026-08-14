@@ -2,11 +2,11 @@
     <div class="min-h-screen bg-slate-950 flex flex-col lg:grid lg:grid-cols-[1.05fr_.95fr]">
         <!-- LEFT / TOP BRANDING PANEL: Clean AMIS Green with Subtle Minimal Geometric Depth -->
         <section class="relative overflow-hidden bg-[#065f46] px-6 py-14 text-white flex flex-col items-center justify-center lg:min-h-screen lg:p-14">
-            <!-- Subtle Top-Right Geometric Shapes (No blur, clean low-contrast depth) -->
+            <!-- Subtle Top-Right Geometric Shapes -->
             <div class="absolute -right-24 -top-24 h-96 w-96 rounded-full border border-white/10 bg-white/[0.03] pointer-events-none"></div>
             <div class="absolute -right-10 -top-10 h-64 w-64 rounded-full border border-white/5 bg-emerald-400/[0.04] pointer-events-none"></div>
 
-            <!-- Subtle Bottom-Left Geometric Shapes (No blur, clean low-contrast depth) -->
+            <!-- Subtle Bottom-Left Geometric Shapes -->
             <div class="absolute -bottom-32 -left-32 h-[28rem] w-[28rem] rounded-full border border-white/10 bg-white/[0.03] pointer-events-none"></div>
             <div class="absolute -bottom-16 -left-16 h-72 w-72 rounded-full border border-white/5 bg-emerald-400/[0.04] pointer-events-none"></div>
 
@@ -49,8 +49,11 @@
                 expirySeconds: 300,
                 resendCooldown: 30,
                 isExpired: false,
+                isLocked: false,
+                lockoutSeconds: 0,
                 timerInterval: null,
                 cooldownInterval: null,
+                lockoutInterval: null,
 
                 formatTimer(totalSeconds) {
                     const mins = Math.floor(Math.max(0, totalSeconds) / 60);
@@ -63,13 +66,14 @@
                     this.expirySeconds = 300;
                     this.resendCooldown = 30;
                     this.isExpired = false;
+                    this.isLocked = false;
+                    this.lockoutSeconds = 0;
 
                     this.timerInterval = setInterval(() => {
                         if (this.expirySeconds > 0) {
                             this.expirySeconds--;
                         } else {
                             this.isExpired = true;
-                            this.error = 'This verification code has expired. Please request a new code.';
                             clearInterval(this.timerInterval);
                         }
                     }, 1000);
@@ -83,9 +87,27 @@
                     }, 1000);
                 },
 
+                startLockout(duration) {
+                    this.stopTimers();
+                    this.isLocked = true;
+                    this.isExpired = false;
+                    this.lockoutSeconds = duration || 300;
+                    this.otp = ['', '', '', ''];
+                    this.error = '';
+
+                    this.lockoutInterval = setInterval(() => {
+                        if (this.lockoutSeconds > 0) {
+                            this.lockoutSeconds--;
+                        } else {
+                            clearInterval(this.lockoutInterval);
+                        }
+                    }, 1000);
+                },
+
                 stopTimers() {
                     if (this.timerInterval) clearInterval(this.timerInterval);
                     if (this.cooldownInterval) clearInterval(this.cooldownInterval);
+                    if (this.lockoutInterval) clearInterval(this.lockoutInterval);
                 },
 
                 async request(path, body) {
@@ -108,7 +130,7 @@
                         this.error = 'Enter a valid parent email address.';
                         return;
                     }
-                    if (isResend && this.resendCooldown > 0) {
+                    if (isResend && this.resendCooldown > 0 && !this.isExpired && !this.isLocked) {
                         return;
                     }
 
@@ -126,7 +148,12 @@
                                 if (this.$refs.otp0) this.$refs.otp0.focus();
                             });
                         } else {
-                            this.error = result.data.message || Object.values(result.data.errors || {})[0]?.[0] || 'Could not send the verification code.';
+                            if (result.data.locked) {
+                                this.step = 'code';
+                                this.startLockout(result.data.lockout_seconds || 300);
+                            } else {
+                                this.error = result.data.message || Object.values(result.data.errors || {})[0]?.[0] || 'Could not send the verification code.';
+                            }
                         }
                     } catch (e) {
                         this.error = 'Network error. Please try again.';
@@ -157,7 +184,7 @@
                     } else if (event.key === 'ArrowRight' && index < 3) {
                         this.$refs['otp' + (index + 1)].focus();
                     } else if (event.key === 'Enter') {
-                        if (this.otp.join('').length === 4 && !this.isExpired) {
+                        if (this.otp.join('').length === 4 && !this.isExpired && !this.isLocked) {
                             this.verifyOtp();
                         }
                     }
@@ -179,7 +206,7 @@
 
                 async verifyOtp() {
                     const code = this.otp.join('');
-                    if (code.length !== 4 || this.loading || this.isExpired) return;
+                    if (code.length !== 4 || this.loading || this.isExpired || this.isLocked) return;
 
                     this.loading = true;
                     this.error = '';
@@ -196,14 +223,18 @@
                                 window.location.href = result.data.redirectUrl;
                             }, 500);
                         } else {
-                            if (result.data.expired) {
+                            if (result.data.locked) {
+                                this.startLockout(result.data.lockout_seconds || 300);
+                            } else if (result.data.expired) {
                                 this.isExpired = true;
                                 this.stopTimers();
+                            } else {
+                                this.error = result.data.message || 'Incorrect verification code. Please try again.';
+                                this.otp = ['', '', '', ''];
+                                this.$nextTick(() => {
+                                    if (this.$refs.otp0) this.$refs.otp0.focus();
+                                });
                             }
-                            this.error = result.data.message || 'The verification code is incorrect. Please try again.';
-                            this.$nextTick(() => {
-                                if (this.$refs.otp0) this.$refs.otp0.focus();
-                            });
                         }
                     } catch (e) {
                         this.error = 'Network error. Please try again.';
@@ -221,6 +252,8 @@
                     this.error = '';
                     this.success = '';
                     this.isExpired = false;
+                    this.isLocked = false;
+                    this.lockoutSeconds = 0;
                     this.$nextTick(() => {
                         const emailInput = document.getElementById('otp-email');
                         if (emailInput) emailInput.focus();
@@ -234,20 +267,24 @@
                         <p class="mt-2 text-sm leading-6 text-slate-500">Use a one-time email code to securely access your family's payment account.</p>
                     </div>
 
-                    <!-- Flash / Global Errors -->
+                    <!-- Single Clean Success Banner -->
+                    <div x-show="success && !isExpired && !isLocked" x-cloak x-text="success" aria-live="polite" class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm font-semibold text-emerald-800"></div>
+
+                    <!-- Single Clean Error Banner (Shown only for standard errors, NOT duplicated when expired/locked) -->
+                    <div x-show="error && !isExpired && !isLocked" x-cloak x-text="error" aria-live="polite" class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-sm font-semibold text-rose-800"></div>
+
+                    <!-- Global Validation Errors -->
                     @if ($errors->any())
-                        <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800">{{ $errors->first() }}</div>
+                        <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-sm font-semibold text-rose-800">{{ $errors->first() }}</div>
                     @endif
-                    <div x-show="error" x-cloak x-text="error" aria-live="polite" class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800"></div>
-                    <div x-show="success" x-cloak x-text="success" aria-live="polite" class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800"></div>
 
                     <!-- STEP 1: Email Input Form -->
                     <div x-show="step==='email'" class="mt-6">
                         <label for="otp-email" class="text-xs font-bold uppercase tracking-wider text-slate-700">PARENT EMAIL ADDRESS</label>
                         <input id="otp-email" x-model.trim="email" @keydown.enter.prevent="sendOtp()" type="email" autocomplete="email" placeholder="jhon@gmail.com" class="mt-2 w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 text-sm focus:border-emerald-600 focus:ring-emerald-600">
                         <button type="button" @click="sendOtp()" :disabled="loading" class="mt-4 w-full rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-extrabold text-white hover:bg-emerald-800 disabled:opacity-50 transition">
-                            <span x-show="!loading">Send verification code</span>
-                            <span x-show="loading">Sending securely…</span>
+                            <span x-show="!loading">Send Verification Code</span>
+                            <span x-show="loading">Sending Securely...</span>
                         </button>
                     </div>
 
@@ -259,18 +296,39 @@
                             <p class="mt-1 text-sm font-bold text-slate-900 break-all select-all" x-text="email"></p>
                         </div>
 
-                        <!-- Expired State Box -->
-                        <div x-show="isExpired" x-cloak class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center">
-                            <p class="text-sm font-bold text-rose-800">Verification code expired</p>
-                            <p class="mt-1 text-xs text-rose-600">This code is no longer valid. Please send a new code.</p>
-                            <button type="button" @click="sendOtp(true)" :disabled="loading" class="mt-3.5 w-full rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-rose-700 transition">
-                                <span x-show="!loading">Send a new code</span>
-                                <span x-show="loading">Sending…</span>
+                        <!-- STATE A: 5-Minute Attempt Lockout Card (Single Dedicated Error Card) -->
+                        <div x-show="isLocked" x-cloak class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-center">
+                            <h3 class="text-sm font-black text-rose-900">Too Many Incorrect Attempts</h3>
+                            
+                            <template x-if="lockoutSeconds > 0">
+                                <p class="mt-1.5 text-xs text-rose-700">
+                                    Try again in <span class="font-mono font-bold text-rose-900" x-text="formatTimer(lockoutSeconds)"></span>
+                                </p>
+                            </template>
+
+                            <template x-if="lockoutSeconds === 0">
+                                <div class="mt-2">
+                                    <p class="text-xs text-rose-700">You can request a new verification code.</p>
+                                    <button type="button" @click="sendOtp(true)" :disabled="loading" class="mt-3.5 w-full rounded-xl bg-emerald-700 px-5 py-3 text-xs font-extrabold text-white hover:bg-emerald-800 disabled:opacity-50 transition">
+                                        <span x-show="!loading">Send New Code</span>
+                                        <span x-show="loading">Sending Securely...</span>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- STATE B: Expired Code Card (Single Dedicated Expiration Card) -->
+                        <div x-show="isExpired && !isLocked" x-cloak class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-center">
+                            <h3 class="text-sm font-black text-rose-900">Verification Code Expired</h3>
+                            <p class="mt-1 text-xs text-rose-700">This code is no longer valid. Please send a new code.</p>
+                            <button type="button" @click="sendOtp(true)" :disabled="loading" class="mt-4 w-full rounded-xl bg-rose-600 px-5 py-3 text-xs font-extrabold text-white hover:bg-rose-700 disabled:opacity-50 transition">
+                                <span x-show="!loading">Send New Code</span>
+                                <span x-show="loading">Sending Securely...</span>
                             </button>
                         </div>
 
-                        <!-- Active OTP Inputs -->
-                        <div x-show="!isExpired">
+                        <!-- STATE C: Active OTP Inputs & Verification -->
+                        <div x-show="!isExpired && !isLocked">
                             <!-- 4 Digit Boxes -->
                             <div class="mt-5 grid grid-cols-4 gap-3" @paste="pasteOtp($event)">
                                 @for($index=0;$index<4;$index++)
@@ -299,19 +357,19 @@
                                     @click="verifyOtp()"
                                     :disabled="loading || signingIn || otp.join('').length !== 4"
                                     class="mt-5 w-full rounded-xl bg-emerald-700 px-5 py-3.5 text-sm font-extrabold text-white hover:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed transition">
-                                <span x-show="!loading && !signingIn">Verify and sign in</span>
-                                <span x-show="loading && !signingIn">Verifying…</span>
-                                <span x-show="signingIn">Verified. Signing you in…</span>
+                                <span x-show="!loading && !signingIn">Verify and Sign In</span>
+                                <span x-show="loading && !signingIn">Verifying...</span>
+                                <span x-show="signingIn">Verified. Signing you in...</span>
                             </button>
                         </div>
 
                         <!-- Bottom Navigation: Change Email & Resend Cooldown -->
                         <div class="mt-5 flex items-center justify-between text-xs">
                             <button type="button" @click="changeEmail()" class="font-bold text-slate-500 hover:text-slate-800 transition">
-                                ← Change email
+                                ← Change Email
                             </button>
 
-                            <div x-show="!isExpired">
+                            <div x-show="!isExpired && !isLocked">
                                 <template x-if="resendCooldown > 0">
                                     <span class="font-semibold text-slate-400">
                                         Resend code in <span class="font-mono font-bold" x-text="formatTimer(resendCooldown)"></span>
@@ -319,7 +377,7 @@
                                 </template>
                                 <template x-if="resendCooldown === 0">
                                     <button type="button" @click="sendOtp(true)" :disabled="loading" class="font-bold text-emerald-700 hover:text-emerald-900 transition">
-                                        Resend code
+                                        Resend Code
                                     </button>
                                 </template>
                             </div>
@@ -342,7 +400,7 @@
                                 <path fill="#FBBC05" d="M5.24 14.56c-.23-.69-.36-1.43-.36-2.2s.13-1.51.36-2.2L1.44 7.22C.52 9.07 0 11.13 0 13.3c0 2.17.52 4.23 1.44 6.08l3.8-2.82z"/>
                                 <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.92l-3.69-2.87c-1.02.68-2.33 1.09-3.97 1.09-3.36 0-5.86-1.7-6.76-4.4l-3.8 2.94C3.39 20.35 7.35 23 12 23z"/>
                             </svg>
-                            Sign in with Google
+                            Sign In with Google
                         </a>
                     </div>
                 </div>
