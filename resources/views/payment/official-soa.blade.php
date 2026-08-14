@@ -154,14 +154,14 @@
         }
         .upper-left {
             display: table-cell;
-            width: 30%;
+            width: 29%;
             vertical-align: top;
             padding-right: 10px;
             font-size: 10px;
         }
         .upper-mid {
             display: table-cell;
-            width: 37%;
+            width: 38%;
             vertical-align: top;
             padding-right: 8px;
             font-size: 10.5px;
@@ -393,20 +393,16 @@
                 @php
                     $sName = strtoupper($soaData['student_name'] ?? '');
                     $sLen = mb_strlen($sName);
-                    $nameSize = $sLen > 30 ? '9.5px' : ($sLen > 24 ? '10.5px' : ($sLen > 18 ? '11px' : '12px'));
+                    $nameSize = $sLen > 32 ? '8.5px' : ($sLen > 25 ? '9.5px' : ($sLen > 18 ? '10.5px' : '11.5px'));
                     $nameSpacing = $sLen > 28 ? '-0.2px' : '0px';
                 @endphp
-                
-                {{-- 1. NAME OF STUDENT BLOCK --}}
-                <div class="student-name-container" style="margin-bottom: 5px; padding-bottom: 3px; border-bottom: 1px solid #cbd5e1;">
-                    <div style="font-size: 9px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; line-height: 1;">NAME OF STUDENT:</div>
-                    <div style="font-size: {{ $nameSize }}; letter-spacing: {{ $nameSpacing }}; font-weight: 900; color: #0f172a; margin-top: 2px; line-height: 1.2; white-space: nowrap; overflow: visible;">
-                        {{ $sName }}
-                    </div>
-                </div>
-
-                {{-- 2. STUDENT DETAILS TABLE BELOW NAME --}}
                 <table class="student-info-table">
+                    <tr>
+                        <td class="info-lbl" style="white-space: nowrap; width: 105px; font-weight: 600;">Name of Student:</td>
+                        <td class="info-val" style="white-space: nowrap;">
+                            <span style="font-size: {{ $nameSize }}; letter-spacing: {{ $nameSpacing }}; font-weight: 900; color: #0f172a; white-space: nowrap; display: inline-block;">{{ $sName }}</span>
+                        </td>
+                    </tr>
                     <tr>
                         <td class="info-lbl">Address:</td>
                         <td class="info-val">{{ strtoupper($soaData['address']) }}</td>
