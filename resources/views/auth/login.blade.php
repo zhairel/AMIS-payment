@@ -172,28 +172,26 @@
                     });
                 }
             }">
-                <!-- Official School Brand Header -->
-                <div class="auth-card-brand-header">
-                    <div class="auth-card-logo-wrap">
-                        <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS Logo" class="auth-card-school-logo">
+                <!-- 1. Top Branding Section -->
+                <header class="auth-brand-header">
+                    <div class="auth-brand-logo-wrap">
+                        <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS Logo" class="auth-brand-logo">
                     </div>
-                    <div class="auth-card-school-titles">
-                        <div class="auth-card-arabic-name" lang="ar" dir="rtl">المدرسة المنورة الإسلامية</div>
-                        <div class="auth-card-english-name">AL MUNAWWARA ISLAMIC SCHOOL</div>
-                        <div class="auth-card-system-badge">
-                            <span class="system-badge-dot" aria-hidden="true"></span>
-                            <span>AMIS Family Payment System</span>
-                        </div>
+                    <div class="auth-brand-titles">
+                        <div class="auth-arabic-name" lang="ar" dir="rtl">المدرسة المنورة الإسلامية</div>
+                        <div class="auth-english-name">AL MUNAWWARA ISLAMIC SCHOOL</div>
+                        <div class="auth-product-name">Family Payment System</div>
                     </div>
-                </div>
+                </header>
 
-                <div class="auth-card-header-divider" aria-hidden="true"></div>
+                <div class="auth-card-divider" aria-hidden="true"></div>
 
-                <div class="auth-entry-heading">
-                    <h2 x-show="step === 'email'">Welcome, Parent</h2>
-                    <h2 x-show="step === 'otp'">Verify your email</h2>
-                    <p x-show="step === 'email'">Sign in securely to open your family's payment dashboard.</p>
-                    <p x-show="step === 'otp'">We sent a 4-digit verification code to <strong x-text="email" style="color:#0f172a; word-break:break-all;"></strong>. Enter the code to continue.</p>
+                <!-- 2. Welcome Section -->
+                <div class="auth-welcome-block">
+                    <h2 class="auth-welcome-title" x-show="step === 'email'">Welcome, Parent</h2>
+                    <h2 class="auth-welcome-title" x-show="step === 'otp'">Verify your email</h2>
+                    <p class="auth-welcome-sub" x-show="step === 'email'">Sign in securely to open your family's payment dashboard.</p>
+                    <p class="auth-welcome-sub" x-show="step === 'otp'">We sent a 4-digit verification code to <strong x-text="email" class="auth-email-bold"></strong>. Enter the code to continue.</p>
                 </div>
 
                 <!-- Messages -->
@@ -202,9 +200,10 @@
 
                 <!-- Step 1: Email View -->
                 <div x-show="step === 'email'">
+                    <!-- 3. Sign-in Methods Section -->
                     <!-- Google Sign In Button -->
-                    <a href="{{ route('auth.google') }}" class="btn-google-auth-premium" style="margin-bottom: 0.75rem;">
-                        <svg class="auth-google-logo" width="18" height="18" viewBox="0 0 24 24" style="margin-right: 12px; flex-shrink: 0;">
+                    <a href="{{ route('auth.google') }}" class="btn-auth-google-premium">
+                        <svg class="auth-google-logo" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
                             <path fill="#EA4335" d="M12 5.04c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 1.76 14.94 1 12 1 7.35 1 3.39 3.65 1.44 7.5l3.8 2.94c.9-2.7 3.4-4.4 6.76-4.4z"/>
                             <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.44h6.44c-.28 1.48-1.12 2.73-2.38 3.58l3.69 2.87c2.16-1.99 3.4-4.93 3.4-8.55z"/>
                             <path fill="#FBBC05" d="M5.24 14.56c-.23-.69-.36-1.43-.36-2.2s.13-1.51.36-2.2L1.44 7.22C.52 9.07 0 11.13 0 13.3c0 2.17.52 4.23 1.44 6.08l3.8-2.82z"/>
@@ -213,37 +212,41 @@
                         <span>Sign in with Google</span>
                     </a>
 
-                    <!-- Microsoft is intentionally unavailable until tenant setup is complete. -->
-                    <div class="auth-coming-soon-option auth-microsoft-soon" aria-disabled="true">
+                    <!-- Microsoft Sign In Option (Muted/Coming Soon without chips) -->
+                    <div class="auth-ms-soon-container" aria-disabled="true">
                         <svg class="auth-microsoft-logo" width="18" height="18" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                             <rect width="10.5" height="10.5" fill="#F25022"/>
                             <rect x="12.5" width="10.5" height="10.5" fill="#7FBA00"/>
                             <rect y="12.5" width="10.5" height="10.5" fill="#00A4EF"/>
                             <rect x="12.5" y="12.5" width="10.5" height="10.5" fill="#FFB900"/>
                         </svg>
-                        <div>
-                            <strong>Microsoft sign in</strong>
-                            <span>School account access</span>
+                        <div class="auth-ms-soon-info">
+                            <strong class="auth-ms-soon-title">Microsoft sign in</strong>
+                            <span class="auth-ms-soon-subtitle">School account access <span class="auth-ms-tag-text">· Coming soon</span></span>
                         </div>
-                        <em>Coming soon</em>
                     </div>
 
-                    <div class="auth-option-divider"><span>or continue with email</span></div>
+                    <!-- 4. Divider Section -->
+                    <div class="auth-clean-divider">
+                        <span>or continue with email</span>
+                    </div>
 
-                    <div class="form-group">
-                        <label for="email" class="premium-input-label">Email address</label>
-                        <div class="premium-input-wrapper">
-                            <svg class="premium-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <!-- 5. Email Form Section -->
+                    <div class="auth-form-group">
+                        <label for="email" class="auth-input-label">Email address</label>
+                        <div class="auth-input-wrapper">
+                            <svg class="auth-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                                 <polyline points="22,6 12,13 2,6"/>
                             </svg>
-                            <input type="email" id="email" x-model="email" placeholder="Email address" required class="premium-input-field" @keydown.enter.prevent="submitEmail()">
+                            <input type="email" id="email" x-model="email" placeholder="Enter your parent email address" required class="auth-input-control" @keydown.enter.prevent="submitEmail()">
                         </div>
                     </div>
 
-                    <button type="button" class="auth-button premium-continue-button" @click="submitEmail()" :disabled="loading">
+                    <!-- 6. Continue Button -->
+                    <button type="button" class="auth-btn-continue" @click="submitEmail()" :disabled="loading">
                         <span x-show="!loading">Continue</span>
-                        <span x-show="loading" class="premium-spinner"></span>
+                        <span x-show="loading" class="auth-btn-spinner" aria-hidden="true"></span>
                     </button>
                 </div>
 
@@ -260,9 +263,9 @@
                                x-model="otp[3]" @input="handleOtpInput($event, 3)" @keydown="handleOtpKeydown($event, 3)" x-ref="otp3">
                     </div>
 
-                    <button type="button" class="auth-button premium-continue-button" @click="verifyOtpCode()" :disabled="loading || otp.join('').length !== 4" style="margin-top: 1.5rem;">
+                    <button type="button" class="auth-btn-continue" @click="verifyOtpCode()" :disabled="loading || otp.join('').length !== 4" style="margin-top: 1.5rem;">
                         <span x-show="!loading">Verify Code</span>
-                        <span x-show="loading" class="premium-spinner"></span>
+                        <span x-show="loading" class="auth-btn-spinner" aria-hidden="true"></span>
                     </button>
 
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; font-size:0.85rem;">
@@ -271,10 +274,10 @@
                     </div>
                 </div>
 
-                <div class="auth-entry-note">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="flex-shrink:0;">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                <!-- 7. Security Notice -->
+                <div class="auth-security-panel">
+                    <svg class="auth-security-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
                     </svg>
                     <span>Your sign-in and family payment information are protected by AMIS security controls.</span>
                 </div>
