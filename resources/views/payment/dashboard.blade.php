@@ -12,7 +12,14 @@
         <div class="payment-shell">
             <header class="payment-page-header">
                 <div>
-                    <span class="payment-page-eyebrow">School Year {{ $students->first()?->account?->school_year ?? $demoChildren->first()?->school_year ?? '2026–2027' }}</span>
+                    <div class="payment-page-eyebrow-wrapper">
+                        <span class="payment-page-eyebrow-badge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span>School Year {{ $students->first()?->account?->school_year ?? $demoChildren->first()?->school_year ?? '2026–2027' }}</span>
+                        </span>
+                    </div>
                     <h1 class="payment-page-title">Family Payments</h1>
                     <p class="payment-page-subtitle">See your family balance, review each student's account, and submit payment receipts in one place.</p>
                 </div>
@@ -45,33 +52,76 @@
                 @endphp
                 <section class="payment-summary-card" aria-labelledby="family-balance-title">
                     <div class="payment-summary-primary">
-                        <span class="payment-section-kicker">Family account overview</span>
+                        {{-- Subtle background decoration --}}
+                        <div class="hero-bg-decoration" aria-hidden="true">
+                            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="150" cy="50" r="80" stroke="rgba(16, 185, 129, 0.14)" stroke-width="2" stroke-dasharray="6 6"/>
+                                <circle cx="150" cy="50" r="120" stroke="rgba(5, 150, 105, 0.08)" stroke-width="1.5"/>
+                                <circle cx="150" cy="50" r="40" fill="rgba(16, 185, 129, 0.04)"/>
+                            </svg>
+                        </div>
+
+                        <span class="payment-summary-kicker-badge">Family account overview</span>
                         <span id="family-balance-title" class="payment-summary-label">{{ $demoChildren->isNotEmpty() && $students->isEmpty() ? 'Demo Remaining Balance' : 'Total Remaining Balance' }}</span>
                         <strong class="payment-summary-amount">₱{{ number_format($familyRemainingBalance, 2) }}</strong>
-                        <p class="payment-summary-help">{{ $demoChildren->isNotEmpty() && $students->isEmpty() ? 'AFPS-only sample balances. These children are not connected to official AMIS student or enrollment records.' : 'Combined remaining school balance for all enrolled children and all unpaid monthly installments.' }}</p>
-                        <p class="payment-summary-due-now"><span>{{ $demoChildren->isNotEmpty() && $students->isEmpty() ? $currentPaymentMonth.' — Demo monthly tuition due' : $currentPaymentMonth.' — Amount requiring payment now' }}</span><strong>₱{{ number_format($familyAmountDueNow, 2) }}</strong></p>
+
+                        <div class="payment-summary-due-now">
+                            <span class="due-chip-indicator"></span>
+                            <span class="due-chip-label">{{ $demoChildren->isNotEmpty() && $students->isEmpty() ? $currentPaymentMonth.' — Demo monthly tuition due' : $currentPaymentMonth.' — Amount requiring payment now' }}</span>
+                            <strong>₱{{ number_format($familyAmountDueNow, 2) }}</strong>
+                        </div>
+
                         @if($demoChildren->isNotEmpty() && $students->isEmpty())
-                            <p class="payment-summary-help"><strong>Schedule preview only.</strong> Payment posting stays disabled because these children are not linked to official AMIS records.</p>
+                            <div class="payment-summary-note">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span><strong>Schedule preview only.</strong> Payment posting stays disabled because these children are not linked to official AMIS records.</span>
+                            </div>
+                        @else
+                            <div class="payment-summary-note">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Combined remaining school balance for all enrolled children and all unpaid monthly installments.</span>
+                            </div>
                         @endif
+
                         @if($familyAdvanceCredit > 0)
-                            <p class="payment-summary-help"><strong>Advance credit: ₱{{ number_format($familyAdvanceCredit, 2) }}</strong></p>
+                            <div class="payment-summary-advance-credit">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <span>Advance credit: ₱{{ number_format($familyAdvanceCredit, 2) }}</span>
+                            </div>
                         @endif
                     </div>
+
                     <div class="payment-summary-stats">
-                        <div class="payment-summary-stat is-overdue">
-                            <span>Past due</span>
+                        <div class="payment-summary-stat is-overdue {{ $pastDueNow > 0 ? 'has-overdue' : '' }}">
+                            <div class="stat-head">
+                                <span class="stat-label">Past due</span>
+                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
                             <strong>₱{{ number_format($pastDueNow, 2) }}</strong>
                         </div>
                         <div class="payment-summary-stat is-current">
-                            <span>Current month</span>
+                            <div class="stat-head">
+                                <span class="stat-label">Current month</span>
+                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            </div>
                             <strong>₱{{ number_format($currentMonthDueNow, 2) }}</strong>
                         </div>
                         <div class="payment-summary-stat is-future">
-                            <span>Future scheduled</span>
+                            <div class="stat-head">
+                                <span class="stat-label">Future scheduled</span>
+                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                            </div>
                             <strong>₱{{ number_format($futureScheduledBalance, 2) }}</strong>
                         </div>
-                        <div class="payment-summary-stat">
-                            <span>Students</span>
+                        <div class="payment-summary-stat is-students">
+                            <div class="stat-head">
+                                <span class="stat-label">Students</span>
+                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                            </div>
                             <strong>{{ $students->count() + $demoChildren->count() }} {{ $demoChildren->isNotEmpty() && $students->isEmpty() ? 'demo' : 'enrolled' }}</strong>
                         </div>
                     </div>
@@ -79,8 +129,11 @@
 
                 @if($demoChildren->isNotEmpty())
                     <aside class="payment-demo-notice" role="status">
-                        <strong>AFPS DEMO CHILDREN</strong>
-                        <span>Payment-system display data only. No official student, enrollment, or admin.amis.edu.ph record is linked or changed.</span>
+                        <span class="demo-badge">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>AFPS Demo Children</span>
+                        </span>
+                        <span class="demo-text">Payment-system display data only. No official student, enrollment, or admin.amis.edu.ph record is linked or changed.</span>
                     </aside>
                 @endif
 
