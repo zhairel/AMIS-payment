@@ -464,12 +464,21 @@ table {
 
     .login-form-panel {
         display: flex;
-        align-items: center;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
         width: 100%;
+        max-width: 440px;
+        margin: 0 auto;
         min-height: calc(100dvh - 1.5rem);
     }
 
-    .auth-entry-card,
+    .auth-entry-card {
+        width: 100%;
+        padding: 1.75rem 1.35rem 1.5rem;
+        border-radius: 20px;
+    }
+
     .auth-card,
     .success-card,
     .enrollment-closed-card {

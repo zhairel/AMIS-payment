@@ -228,18 +228,26 @@
 
 .login-form {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     min-width: 0;
     padding: clamp(1.5rem, 5vw, 3rem);
     background: #f8fafc;
+    min-height: 100vh;
 }
 
 .login-form-panel {
-    width: min(100%, 440px);
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 0 auto;
 }
 
 .auth-entry-card {
+    width: 100%;
     padding: 2.25rem 2.25rem 2rem;
     border: 1px solid #e2e8f0;
     border-radius: 24px;
