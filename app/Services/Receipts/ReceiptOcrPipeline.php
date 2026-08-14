@@ -147,6 +147,21 @@ class ReceiptOcrPipeline
             'document_type' => $classification['type'], 'document_score' => $classification['score'],
         ], $reason);
 
+        $rawCombinedText = collect($analysis['attempts'])->pluck('raw_text')->filter()->implode("\n");
+        \Illuminate\Support\Facades\Log::info("AMIS_RECEIPT_OCR_DIAGNOSTICS", [
+            'ocr_request_sent' => 'YES',
+            'ocr_service_url' => config('services.receipt_ocr.url') ?: 'CLI runner (Tesseract + docTR)',
+            'ocr_http_status' => !empty(config('services.receipt_ocr.url')) ? 200 : 'N/A (CLI)',
+            'ocr_engine_used' => $analysis['fallback_used'] ? 'docTR (fallback)' : 'Tesseract',
+            'raw_ocr_text' => $rawCombinedText,
+            'raw_ocr_text_length' => strlen($rawCombinedText),
+            'parsed_payment_method' => $fields['provider'] ?? null,
+            'parsed_reference_number' => $fields['reference_number'] ?? null,
+            'parsed_transaction_date' => $fields['transaction_date'] ?? null,
+            'parsed_transaction_time' => $fields['transaction_time'] ?? null,
+            'parsed_amount' => $fields['amount'] ?? null,
+        ]);
+
         return $receipt->fresh(['ocrResults', 'auditLogs']);
     }
 

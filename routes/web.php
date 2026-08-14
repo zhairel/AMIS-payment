@@ -98,6 +98,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('payment.receipts.download-jpg');
     Route::get('/payment/receipts/{receipt}/download-pdf', [ReceiptSubmissionController::class, 'downloadPdf'])
         ->name('payment.receipts.download-pdf');
+    Route::get('/payment/manual-soa/{soa}/view', [\App\Http\Controllers\StudentManualSoaController::class, 'view'])
+        ->name('payment.manual-soa.view');
+    Route::get('/payment/manual-soa/{soa}/download', [\App\Http\Controllers\StudentManualSoaController::class, 'download'])
+        ->name('payment.manual-soa.download');
     Route::get('/students/{student}', [\App\Http\Controllers\StudentController::class, 'show'])
         ->name('students.show');
     Route::post('/activity/offline', [AuthController::class, 'setOffline'])->name('activity.offline');

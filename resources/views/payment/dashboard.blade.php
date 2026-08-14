@@ -146,6 +146,13 @@
                                 $installmentVerified = round((float) $installmentSchedule->sum('verified'), 2);
                                 $installmentRemaining = round((float) $installmentSchedule->sum('remaining'), 2);
                                 $finalInstallment = (float) ($installmentSchedule->last()['original'] ?? ($account?->monthly_tuition ?? 0));
+                                $sId = (string) ($student->student_number ?: $student->id);
+                                $studentManualList = (isset($manualSoas) && $manualSoas->has($sId)) ? $manualSoas->get($sId) : collect();
+                                if ($studentManualList->isEmpty() && isset($manualSoas)) {
+                                    $studentManualList = $manualSoas->get((string) $student->id) ?? collect();
+                                }
+                                $latestManualSoa = $studentManualList->firstWhere('is_current', true) ?? $studentManualList->first();
+
                                 $breakdown = [
                                     'name' => $studentName,
                                     'avatar' => $avatarUrl,
@@ -167,6 +174,33 @@
                                     'installment_remaining' => $installmentRemaining,
                                     'installment_breakdown' => $installmentBreakdown,
                                     'next_payment' => $nextPayableByStudent[$student->id] ?? null,
+                                    'manual_soa_latest' => $latestManualSoa ? [
+                                        'id' => $latestManualSoa->id,
+                                        'billing_month' => $latestManualSoa->billing_month,
+                                        'version' => $latestManualSoa->version,
+                                        'filename' => $latestManualSoa->original_filename,
+                                        'size' => $latestManualSoa->formatted_file_size,
+                                        'uploaded_at' => $latestManualSoa->created_at->format('M d, Y h:i A'),
+                                        'uploaded_by' => $latestManualSoa->uploaded_by,
+                                        'remarks' => $latestManualSoa->remarks,
+                                        'is_pdf' => $latestManualSoa->is_pdf,
+                                        'view_url' => route('payment.manual-soa.view', $latestManualSoa),
+                                        'download_url' => route('payment.manual-soa.download', $latestManualSoa),
+                                    ] : null,
+                                    'manual_soa_history' => $studentManualList->map(fn ($soa) => [
+                                        'id' => $soa->id,
+                                        'billing_month' => $soa->billing_month,
+                                        'version' => $soa->version,
+                                        'is_current' => (bool) $soa->is_current,
+                                        'filename' => $soa->original_filename,
+                                        'size' => $soa->formatted_file_size,
+                                        'uploaded_at' => $soa->created_at->format('M d, Y h:i A'),
+                                        'uploaded_by' => $soa->uploaded_by,
+                                        'remarks' => $soa->remarks,
+                                        'is_pdf' => $soa->is_pdf,
+                                        'view_url' => route('payment.manual-soa.view', $soa),
+                                        'download_url' => route('payment.manual-soa.download', $soa),
+                                    ])->values()->all(),
                                 ];
                             @endphp
 
@@ -208,6 +242,13 @@
                                 $demoFinalInstallment = (float) (collect($demoInstallmentBreakdown)->last()['original'] ?? $demoChild->monthly_tuition);
                                 $demoNextPayment = collect($demoInstallmentBreakdown)
                                     ->first(fn ($installment) => (float) $installment['remaining'] > 0.01);
+                                $demoId = (string) $demoChild->demo_student_number;
+                                $demoManualList = (isset($manualSoas) && $manualSoas->has($demoId)) ? $manualSoas->get($demoId) : collect();
+                                if ($demoManualList->isEmpty() && isset($manualSoas)) {
+                                    $demoManualList = $manualSoas->get((string) $demoChild->id) ?? collect();
+                                }
+                                $demoLatestManualSoa = $demoManualList->firstWhere('is_current', true) ?? $demoManualList->first();
+
                                 $demoBreakdown = [
                                     'name' => mb_strtoupper($demoChild->display_name),
                                     'avatar' => $demoAvatarUrl,
@@ -229,6 +270,33 @@
                                     'installment_remaining' => $demoRemainingBalance,
                                     'installment_breakdown' => $demoInstallmentBreakdown,
                                     'next_payment' => $demoNextPayment,
+                                    'manual_soa_latest' => $demoLatestManualSoa ? [
+                                        'id' => $demoLatestManualSoa->id,
+                                        'billing_month' => $demoLatestManualSoa->billing_month,
+                                        'version' => $demoLatestManualSoa->version,
+                                        'filename' => $demoLatestManualSoa->original_filename,
+                                        'size' => $demoLatestManualSoa->formatted_file_size,
+                                        'uploaded_at' => $demoLatestManualSoa->created_at->format('M d, Y h:i A'),
+                                        'uploaded_by' => $demoLatestManualSoa->uploaded_by,
+                                        'remarks' => $demoLatestManualSoa->remarks,
+                                        'is_pdf' => $demoLatestManualSoa->is_pdf,
+                                        'view_url' => route('payment.manual-soa.view', $demoLatestManualSoa),
+                                        'download_url' => route('payment.manual-soa.download', $demoLatestManualSoa),
+                                    ] : null,
+                                    'manual_soa_history' => $demoManualList->map(fn ($soa) => [
+                                        'id' => $soa->id,
+                                        'billing_month' => $soa->billing_month,
+                                        'version' => $soa->version,
+                                        'is_current' => (bool) $soa->is_current,
+                                        'filename' => $soa->original_filename,
+                                        'size' => $soa->formatted_file_size,
+                                        'uploaded_at' => $soa->created_at->format('M d, Y h:i A'),
+                                        'uploaded_by' => $soa->uploaded_by,
+                                        'remarks' => $soa->remarks,
+                                        'is_pdf' => $soa->is_pdf,
+                                        'view_url' => route('payment.manual-soa.view', $soa),
+                                        'download_url' => route('payment.manual-soa.download', $soa),
+                                    ])->values()->all(),
                                 ];
                             @endphp
                             <button
@@ -797,14 +865,14 @@
 
         {{-- Student account breakdown modal --}}
         <div x-show="showBreakdown" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4" @click.self="showBreakdown = false">
-            <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="breakdown-title">
+            <div class="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="breakdown-title">
                 <div class="mb-5 flex items-start justify-between gap-4">
                     <div class="flex min-w-0 items-center gap-3">
                         <span class="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-emerald-100 bg-emerald-50">
                             <img :src="breakdown?.avatar" :alt="'Profile avatar of ' + (breakdown?.name || 'student')" class="h-full w-full" :class="breakdown?.avatar_is_fallback ? 'object-contain' : 'object-cover'">
                         </span>
                         <div class="min-w-0">
-                            <span class="payment-section-kicker">Student Account Details</span>
+                            <span class="payment-section-kicker">Statement of Account</span>
                             <h2 id="breakdown-title" class="truncate text-xl font-extrabold text-slate-900" x-text="breakdown?.name"></h2>
                         </div>
                     </div>
@@ -812,59 +880,152 @@
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
+
                 <template x-if="breakdown">
-                    <div class="space-y-3 text-sm">
-                        <div class="flex justify-between gap-4"><span class="text-slate-600">Tuition Fee</span><strong x-text="money(breakdown.tuition)"></strong></div>
-                        <div class="flex justify-between gap-4"><span class="text-slate-600">Miscellaneous Fee</span><strong x-text="money(breakdown.misc)"></strong></div>
-                        <div class="flex justify-between gap-4"><span class="text-slate-600">Books and LMS</span><strong x-text="money(breakdown.books)"></strong></div>
-                        <div x-show="breakdown.discount > 0" class="flex justify-between gap-4 text-emerald-700"><span x-text="'Sibling Discount (' + Number(breakdown.discount_percentage).toFixed(0) + '%)'"></span><strong x-text="'-' + money(breakdown.discount)"></strong></div>
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <p class="mb-3 text-xs font-extrabold uppercase tracking-wide text-slate-500">Payment Plan Calculation</p>
-                            <div class="flex justify-between gap-4">
-                                <span class="text-slate-600">Total School Fees</span>
-                                <strong x-text="money(breakdown.total)"></strong>
-                            </div>
-                            <div class="mt-2 flex justify-between gap-4">
-                                <span class="text-slate-600">Less: Enrollment / Initial Payment <small class="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-700">Paid</small></span>
-                                <strong class="text-emerald-700" x-text="'-' + money(breakdown.enrollment)"></strong>
-                            </div>
-                            <div class="mt-3 flex justify-between gap-4 border-t border-slate-200 pt-3">
-                                <span><strong class="block text-slate-800">Monthly Tuition Plan</strong><small class="text-slate-500" x-text="breakdown.installments + ' Scheduled Installments'"></small></span>
-                                <strong class="text-lg text-slate-900" x-text="money(breakdown.installment_plan_total)"></strong>
-                            </div>
-                        </div>
-
-                        <div class="overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50">
-                            <button type="button" class="flex w-full items-center justify-between gap-4 p-4 text-left" @click="installmentsOpen = !installmentsOpen" :aria-expanded="installmentsOpen.toString()">
-                                <span>
-                                    <span class="block font-bold text-emerald-950" x-text="breakdown.installments + '-Month SOA Fee Breakdown'"></span>
-                                    <span class="mt-0.5 block text-xs text-emerald-700" x-text="installmentsOpen ? 'Hide Monthly Fees' : 'View Monthly Fees'"></span>
-                                </span>
-                                <span class="flex flex-shrink-0 items-center gap-3">
-                                    <span class="text-right"><strong class="block text-emerald-950" x-text="money(breakdown.monthly) + ' Regular'"></strong><small x-show="Math.abs(breakdown.final_installment - breakdown.monthly) > 0.001" class="text-emerald-700" x-text="money(breakdown.final_installment) + ' Final Month'"></small></span>
-                                    <svg class="h-4 w-4 text-emerald-700 transition" :class="installmentsOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                </span>
-                            </button>
-
-                            <div x-show="installmentsOpen" class="border-t border-emerald-200 bg-white">
-                                <template x-if="breakdown.installment_breakdown.length === 0">
-                                    <p class="px-4 py-5 text-center text-sm text-slate-500">No monthly installment schedule is available yet.</p>
+                    <div class="space-y-4">
+                        {{-- OPTION 1: FINANCE-UPLOADED SOA --}}
+                        <section class="rounded-2xl border-2 border-blue-200 bg-blue-50/40 p-5 shadow-xs">
+                            <div class="flex items-center justify-between gap-2 border-b border-blue-200/80 pb-3">
+                                <div>
+                                    <span class="rounded-md bg-blue-700 px-2 py-0.5 text-[10px] font-black uppercase text-white tracking-wider">Option 1</span>
+                                    <h3 class="mt-1 font-black text-blue-950 text-sm">FINANCE-UPLOADED SOA</h3>
+                                </div>
+                                <template x-if="breakdown.manual_soa_latest">
+                                    <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-black text-emerald-800" x-text="'Latest: ' + breakdown.manual_soa_latest.billing_month"></span>
                                 </template>
-                                <template x-for="installment in breakdown.installment_breakdown" :key="installment.month">
-                                    <div class="border-b border-slate-100 px-4 py-3 last:border-b-0">
-                                        <div class="flex items-start justify-between gap-4">
-                                            <span class="min-w-0">
-                                                <strong class="block text-sm text-slate-900" x-text="installment.month"></strong>
-                                                <small class="mt-0.5 block text-slate-500" x-text="'Due ' + (installment.due_date || 'Date Not Set')"></small>
-                                            </span>
-                                            <span class="text-right">
-                                                <strong class="block text-sm text-slate-900" x-text="money(installment.original)"></strong>
-                                            </span>
+                            </div>
+
+                            <p class="mt-2 text-xs text-blue-900 font-medium">
+                                Uploaded by AMIS Finance. This document is shown exactly as provided by the Finance Office.
+                            </p>
+
+                            <template x-if="breakdown.manual_soa_latest">
+                                <div class="mt-3.5 rounded-xl border border-blue-200 bg-white p-4 shadow-2xs">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <strong class="text-sm text-slate-900" x-text="breakdown.manual_soa_latest.billing_month"></strong>
+                                                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600" x-text="'Version ' + breakdown.manual_soa_latest.version + ' (Current)'"></span>
+                                            </div>
+                                            <p class="mt-1 text-xs text-slate-500 font-mono" x-text="'📄 ' + breakdown.manual_soa_latest.filename + ' (' + breakdown.manual_soa_latest.size + ')'"></p>
+                                            <p class="text-[11px] text-slate-400 mt-0.5" x-text="'Uploaded ' + breakdown.manual_soa_latest.uploaded_at + ' by ' + breakdown.manual_soa_latest.uploaded_by"></p>
+                                            <p x-show="breakdown.manual_soa_latest.remarks" class="mt-1 text-xs text-slate-600 italic" x-text="'Remarks: ' + breakdown.manual_soa_latest.remarks"></p>
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <button type="button" @click="openManualSoaPreview(breakdown.manual_soa_latest.view_url, breakdown.name + ' · ' + breakdown.manual_soa_latest.billing_month + ' SOA', breakdown.manual_soa_latest.is_pdf)" class="rounded-xl bg-blue-700 px-3.5 py-2 text-xs font-extrabold text-white hover:bg-blue-800 shadow-sm transition">
+                                                View SOA
+                                            </button>
+                                            <a :href="breakdown.manual_soa_latest.download_url" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs">
+                                                Download
+                                            </a>
                                         </div>
                                     </div>
-                                </template>
+
+                                    {{-- Statement History if multiple exist --}}
+                                    <template x-if="breakdown.manual_soa_history && breakdown.manual_soa_history.length > 1">
+                                        <div class="mt-4 border-t border-slate-100 pt-3">
+                                            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Previous Statement History</span>
+                                            <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                                                <template x-for="historyItem in breakdown.manual_soa_history" :key="historyItem.id">
+                                                    <div class="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-xs">
+                                                        <span class="truncate">
+                                                            <strong x-text="historyItem.billing_month"></strong>
+                                                            <small class="text-slate-500" x-text="' (v' + historyItem.version + ')'"></small>
+                                                            <span x-show="historyItem.is_current" class="ml-1 text-[10px] font-bold text-emerald-700">· Latest</span>
+                                                        </span>
+                                                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                                                            <button type="button" @click="openManualSoaPreview(historyItem.view_url, breakdown.name + ' · ' + historyItem.billing_month + ' SOA', historyItem.is_pdf)" class="text-blue-700 font-bold hover:underline px-1.5 py-0.5">
+                                                                View
+                                                            </button>
+                                                            <a :href="historyItem.download_url" class="text-slate-600 font-bold hover:underline px-1.5 py-0.5">
+                                                                Download
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <template x-if="!breakdown.manual_soa_latest">
+                                <div class="mt-3 rounded-xl border border-dashed border-blue-200 bg-white p-4 text-center">
+                                    <p class="text-xs font-semibold text-slate-700">No manual Statement of Account has been uploaded yet for this student.</p>
+                                    <p class="mt-1 text-[11px] text-slate-500">Please check again later or contact the Finance Office.</p>
+                                </div>
+                            </template>
+                        </section>
+
+                        {{-- OPTION 2: SYSTEM-COMPUTED SOA — BETA --}}
+                        <section class="rounded-2xl border-2 border-slate-200 bg-white p-5 shadow-xs">
+                            <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                                <div>
+                                    <span class="rounded-md bg-slate-700 px-2 py-0.5 text-[10px] font-black uppercase text-white tracking-wider">Option 2</span>
+                                    <h3 class="mt-1 font-black text-slate-900 text-sm">SYSTEM-COMPUTED SOA — BETA</h3>
+                                </div>
+                                <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-900">BETA / FOR TESTING</span>
                             </div>
-                        </div>
+
+                            <p class="mt-2 text-xs text-slate-500">
+                                Automatically calculated by the AMIS payment system for testing and verification.
+                            </p>
+
+                            <div class="mt-4 space-y-3 text-sm">
+                                <div class="flex justify-between gap-4"><span class="text-slate-600">Tuition Fee</span><strong x-text="money(breakdown.tuition)"></strong></div>
+                                <div class="flex justify-between gap-4"><span class="text-slate-600">Miscellaneous Fee</span><strong x-text="money(breakdown.misc)"></strong></div>
+                                <div class="flex justify-between gap-4"><span class="text-slate-600">Books and LMS</span><strong x-text="money(breakdown.books)"></strong></div>
+                                <div x-show="breakdown.discount > 0" class="flex justify-between gap-4 text-emerald-700"><span x-text="'Sibling Discount (' + Number(breakdown.discount_percentage).toFixed(0) + '%)'"></span><strong x-text="'-' + money(breakdown.discount)"></strong></div>
+                                
+                                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                    <p class="mb-3 text-xs font-extrabold uppercase tracking-wide text-slate-500">Payment Plan Calculation</p>
+                                    <div class="flex justify-between gap-4">
+                                        <span class="text-slate-600">Total School Fees</span>
+                                        <strong x-text="money(breakdown.total)"></strong>
+                                    </div>
+                                    <div class="mt-2 flex justify-between gap-4">
+                                        <span class="text-slate-600">Less: Enrollment / Initial Payment <small class="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-700">Paid</small></span>
+                                        <strong class="text-emerald-700" x-text="'-' + money(breakdown.enrollment)"></strong>
+                                    </div>
+                                    <div class="mt-3 flex justify-between gap-4 border-t border-slate-200 pt-3">
+                                        <span><strong class="block text-slate-800">Monthly Tuition Plan</strong><small class="text-slate-500" x-text="breakdown.installments + ' Scheduled Installments'"></small></span>
+                                        <strong class="text-lg text-slate-900" x-text="money(breakdown.installment_plan_total)"></strong>
+                                    </div>
+                                </div>
+
+                                <div class="overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50">
+                                    <button type="button" class="flex w-full items-center justify-between gap-4 p-4 text-left" @click="installmentsOpen = !installmentsOpen" :aria-expanded="installmentsOpen.toString()">
+                                        <span>
+                                            <span class="block font-bold text-emerald-950" x-text="breakdown.installments + '-Month Installment Breakdown'"></span>
+                                            <span class="mt-0.5 block text-xs text-emerald-700" x-text="installmentsOpen ? 'Hide Monthly Breakdown' : 'View Monthly Breakdown'"></span>
+                                        </span>
+                                        <span class="flex flex-shrink-0 items-center gap-3">
+                                            <span class="text-right"><strong class="block text-emerald-950" x-text="money(breakdown.monthly) + ' Regular'"></strong><small x-show="Math.abs(breakdown.final_installment - breakdown.monthly) > 0.001" class="text-emerald-700" x-text="money(breakdown.final_installment) + ' Final Month'"></small></span>
+                                            <svg class="h-4 w-4 text-emerald-700 transition" :class="installmentsOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                        </span>
+                                    </button>
+
+                                    <div x-show="installmentsOpen" class="border-t border-emerald-200 bg-white">
+                                        <template x-if="breakdown.installment_breakdown.length === 0">
+                                            <p class="px-4 py-5 text-center text-sm text-slate-500">No monthly installment schedule is available yet.</p>
+                                        </template>
+                                        <template x-for="installment in breakdown.installment_breakdown" :key="installment.month">
+                                            <div class="border-b border-slate-100 px-4 py-3 last:border-b-0">
+                                                <div class="flex items-start justify-between gap-4">
+                                                    <span class="min-w-0">
+                                                        <strong class="block text-sm text-slate-900" x-text="installment.month"></strong>
+                                                        <small class="mt-0.5 block text-slate-500" x-text="'Due ' + (installment.due_date || 'Date Not Set')"></small>
+                                                    </span>
+                                                    <span class="text-right">
+                                                        <strong class="block text-sm text-slate-900" x-text="money(installment.original)"></strong>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </template>
                 <div class="mt-6 flex gap-3">
@@ -872,6 +1033,34 @@
                     <button x-show="breakdown?.next_payment" type="button" class="min-h-11 flex-[1.6] rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-800" @click="showBreakdown = false; activeTab = 'monthly'">
                         View Family Payment Schedule
                     </button>
+                </div>
+            </div>
+        </div>
+
+        {{-- MANUAL SOA DOCUMENT PREVIEW MODAL --}}
+        <div x-show="showManualSoaPreview" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4" @click.self="showManualSoaPreview = false">
+            <div class="w-full max-w-4xl h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden" role="dialog" aria-modal="true">
+                <div class="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3">
+                    <div class="min-w-0">
+                        <span class="text-[10px] font-black uppercase text-blue-700 tracking-wider">Finance-Uploaded Document</span>
+                        <h3 class="text-sm font-black text-slate-900 truncate" x-text="manualSoaPreviewTitle"></h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a :href="manualSoaPreviewUrl" target="_blank" class="rounded-lg bg-white border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                            Open in New Tab
+                        </a>
+                        <button type="button" @click="showManualSoaPreview = false" class="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 bg-slate-100 overflow-auto flex items-center justify-center p-2">
+                    <template x-if="manualSoaPreviewIsPdf">
+                        <iframe :src="manualSoaPreviewUrl" class="w-full h-full rounded-lg border border-slate-300 shadow-sm" frameborder="0"></iframe>
+                    </template>
+                    <template x-if="!manualSoaPreviewIsPdf">
+                        <img :src="manualSoaPreviewUrl" alt="SOA Preview" class="max-w-full max-h-full object-contain rounded-lg shadow-md">
+                    </template>
                 </div>
             </div>
         </div>
@@ -960,6 +1149,10 @@
                     showBreakdown: false,
                     breakdown: null,
                     installmentsOpen: false,
+                    showManualSoaPreview: false,
+                    manualSoaPreviewUrl: '',
+                    manualSoaPreviewTitle: '',
+                    manualSoaPreviewIsPdf: false,
                     showTransaction: false,
                     transaction: null,
                     transactionFilter: 'all',
@@ -976,6 +1169,7 @@
                     },
 
                     closeTopModal() {
+                        if (this.showManualSoaPreview) return this.showManualSoaPreview = false;
                         if (this.showTransaction) return this.showTransaction = false;
                         if (this.showBreakdown) return this.showBreakdown = false;
                         if (this.showAddStudent && !this.linkLoading) this.showAddStudent = false;
@@ -1009,6 +1203,13 @@
                         this.breakdown = data;
                         this.installmentsOpen = false;
                         this.showBreakdown = true;
+                    },
+
+                    openManualSoaPreview(url, title, isPdf) {
+                        this.manualSoaPreviewUrl = url;
+                        this.manualSoaPreviewTitle = title;
+                        this.manualSoaPreviewIsPdf = isPdf;
+                        this.showManualSoaPreview = true;
                     },
 
                     openTransaction(data) {

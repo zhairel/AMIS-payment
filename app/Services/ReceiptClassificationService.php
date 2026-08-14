@@ -59,26 +59,41 @@ class ReceiptClassificationService
             'transaction details',
             'reference number',
             'transaction number',
+            'reference no',
+            'ref no',
+            'ref. no',
             'amount sent',
             'amount paid',
             'paid to',
             'sent to',
+            'express send',
+            'send money',
             'transfer complete',
             'payment received',
+            'gcash',
+            'maya',
+            'bdo',
+            'instapay',
+            'pesonet',
         ];
 
         $receiptPhraseHits = collect($receiptPhrases)
             ->filter(fn (string $phrase) => str_contains($text, $phrase))
             ->count();
-        $coreFieldCount = collect([
-            $ocr['detected_method'] ?? null,
-            $ocr['detected_ref'] ?? null,
-            $ocr['detected_amount'] ?? null,
-            $ocr['detected_datetime'] ?? null,
-        ])->filter(fn ($value) => $value !== null && $value !== '')->count();
+
+        $detectedRef = $ocr['detected_ref'] ?? $ocr['reference_number'] ?? null;
+        $detectedAmount = $ocr['detected_amount'] ?? $ocr['amount'] ?? null;
+        $detectedMethod = $ocr['detected_method'] ?? $ocr['provider'] ?? null;
+        $detectedDate = $ocr['detected_datetime'] ?? $ocr['transaction_date'] ?? null;
+
+        $coreFieldCount = collect([$detectedMethod, $detectedRef, $detectedAmount, $detectedDate])
+            ->filter(fn ($value) => $value !== null && $value !== '')
+            ->count();
+
         $wordCount = preg_match_all('/[a-z]{3,}/i', $text);
 
-        if ($wordCount >= 2 && $receiptPhraseHits === 0 && $coreFieldCount === 0) {
+        // If it's an unrelated screenshot with words and zero financial/receipt keywords and zero detected fields:
+        if ($wordCount >= 3 && $receiptPhraseHits === 0 && $coreFieldCount === 0 && !str_contains($text, 'php') && !str_contains($text, '₱')) {
             return [
                 'type' => 'not_receipt',
                 'score' => -5,
@@ -87,15 +102,15 @@ class ReceiptClassificationService
         }
 
         $score = $receiptPhraseHits * 2;
-        $score += !empty($ocr['detected_method']) ? 2 : 0;
-        $score += !empty($ocr['detected_ref']) ? 2 : 0;
-        $score += isset($ocr['detected_amount']) && $ocr['detected_amount'] !== null ? 2 : 0;
-        $score += !empty($ocr['detected_datetime']) ? 1 : 0;
+        $score += !empty($detectedMethod) ? 2 : 0;
+        $score += !empty($detectedRef) ? 2 : 0;
+        $score += ($detectedAmount !== null) ? 2 : 0;
+        $score += !empty($detectedDate) ? 1 : 0;
 
-        if ($score >= 5) {
+        if ($score >= 3 || $coreFieldCount >= 1 || $receiptPhraseHits >= 1) {
             return [
                 'type' => 'receipt',
-                'score' => $score,
+                'score' => max(5, $score),
                 'message' => 'Payment receipt detected. Please double-check the auto-filled details.',
             ];
         }

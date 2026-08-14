@@ -9,6 +9,7 @@ use App\Models\ReceiptSubmission;
 use App\Models\SoaMonthlyBilling;
 use App\Models\Student;
 use App\Models\StudentAccountPayment;
+use App\Models\StudentManualSoa;
 use App\Models\User;
 use App\Services\AmisReceiptRiskService;
 use App\Services\CurrentFamilyPaymentCoverageService;
@@ -892,12 +893,16 @@ class PaymentController extends Controller
             ]);
         }
 
+        $manualSoas = Schema::hasTable('student_manual_soas')
+            ? StudentManualSoa::query()->where('family_email', $user->email)->latest('id')->get()->groupBy('student_identifier')
+            : collect();
+
         return view('payment.dashboard', compact(
             'user', 'students', 'demoChildren',
             'monthlyGroups', 'familyTotalRemaining', 'familyTotalBalance',
             'firstUnpaidMonthKey', 'payments', 'legacyPayments', 'paymentSubmissions',
             'paymentNotifications', 'nextPayableByStudent', 'familyAdvanceCredit', 'currentPaymentSummary',
-            'officialReceiptNumbersBySubmission', 'familyFinanceTransactions', 'unpostedPaymentSubmissions', 'consolidatedFinanceReceipt'
+            'officialReceiptNumbersBySubmission', 'familyFinanceTransactions', 'unpostedPaymentSubmissions', 'consolidatedFinanceReceipt', 'manualSoas'
         ));
     }
 
