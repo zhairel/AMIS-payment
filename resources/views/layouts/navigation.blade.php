@@ -8,16 +8,9 @@
                         <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS" class="h-9 w-9 object-contain">
                         <div>
                             <span class="text-sm font-bold text-gray-900">AMIS</span>
-                            <span class="text-xs text-gray-500 block leading-none">School Payments</span>
+                            <span class="text-xs text-gray-500 block leading-none">Family Payments</span>
                         </div>
                     </a>
-                </div>
-
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('payment.dashboard')" :active="request()->routeIs('payment.dashboard')">
-                        {{ __('My Payments') }}
-                    </x-nav-link>
                 </div>
             </div>
 
@@ -65,11 +58,7 @@
 
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('payment.dashboard')" :active="request()->routeIs('payment.dashboard')">
-                {{ __('My Payments') }}
-            </x-responsive-nav-link>
-        </div>
+
 
         <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">
