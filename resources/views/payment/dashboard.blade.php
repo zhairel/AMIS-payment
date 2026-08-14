@@ -68,7 +68,7 @@
 
                             <div class="due-amount-hero">
                                 <span class="due-currency">₱</span>
-                                <span>{{ number_format($familyAmountDueNow, 2) }}</span>
+                                <strong class="due-value">{{ number_format($familyAmountDueNow, 2) }}</strong>
                             </div>
 
                             <div class="due-hero-meta">
