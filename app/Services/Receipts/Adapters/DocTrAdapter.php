@@ -16,9 +16,14 @@ class DocTrAdapter implements OcrEngineAdapterInterface
     public function checkAvailability(): array
     {
         $url = config('services.receipt_ocr.url');
+        $token = config('services.receipt_ocr.token');
         if (! empty($url)) {
             try {
-                $response = Http::connectTimeout(2)->timeout(3)->get(rtrim($url, '/').'/health');
+                $client = Http::connectTimeout(2)->timeout(3);
+                if (! empty($token)) {
+                    $client = $client->withToken($token);
+                }
+                $response = $client->get(rtrim($url, '/').'/health');
                 if ($response->successful()) {
                     return [
                         'available' => true,
@@ -53,14 +58,27 @@ class DocTrAdapter implements OcrEngineAdapterInterface
 
         // 1. Try OCR Microservice with fast connect timeout
         $url = config('services.receipt_ocr.url');
+        $token = config('services.receipt_ocr.token');
         if (! empty($url)) {
             try {
-                $response = Http::connectTimeout(2)
-                    ->timeout(30)
+                $client = Http::connectTimeout(3)->timeout(45);
+                if (! empty($token)) {
+                    $client = $client->withToken($token);
+                }
+                $response = $client
                     ->attach('receipt', file_get_contents($filePath), basename($filePath))
-                    ->post(rtrim($url, '/').'/scan', [
+                    ->post(rtrim($url, '/').'/api/scan', [
                         'engine' => 'doctr',
                     ]);
+
+                // Also support legacy /scan endpoint if /api/scan is 404
+                if ($response->status() === 404) {
+                    $response = $client
+                        ->attach('receipt', file_get_contents($filePath), basename($filePath))
+                        ->post(rtrim($url, '/').'/scan', [
+                            'engine' => 'doctr',
+                        ]);
+                }
 
                 if ($response->successful()) {
                     $result = $response->json();

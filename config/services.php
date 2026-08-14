@@ -65,6 +65,7 @@ return [
     'receipt_ocr' => [
         'python' => env('OCR_PYTHON_BINARY', base_path('.venv-ocr/bin/python')),
         'url' => env('OCR_SERVICE_URL', null),
+        'token' => env('OCR_SERVICE_TOKEN', null),
         'confidence_threshold' => (float) env('RECEIPT_OCR_CONFIDENCE_THRESHOLD', 0.72),
     ],
 
