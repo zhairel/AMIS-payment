@@ -20,31 +20,24 @@
         html, body {
             margin: 0;
             padding: 0;
+            background: #f1f5f9;
         }
         body {
             font-family: Arial, Helvetica, sans-serif;
             color: #0f172a;
-            background: #f1f5f9;
-            padding: 20px 0;
             font-size: 11px;
             line-height: 1.35;
         }
-        .page-container {
-            width: 190mm;
-            max-width: 190mm;
-            margin: 0 auto;
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            padding: 16px 20px;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-        }
+
         .no-print-bar {
-            width: 190mm;
-            max-width: 190mm;
-            margin: 0 auto 12px;
+            width: 210mm;
+            max-width: 100%;
+            margin: 14px auto 0;
+            padding: 0 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-sizing: border-box;
         }
         .btn-print {
             background: #0f172a;
@@ -58,6 +51,8 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: background 0.15s;
         }
         .btn-print:hover {
             background: #334155;
@@ -67,9 +62,49 @@
             text-decoration: none;
             font-size: 12px;
             font-weight: 600;
+            padding: 6px 0;
         }
         .btn-back:hover {
+            color: #0f172a;
             text-decoration: underline;
+        }
+
+        /* SOA VIEWPORT (Interactive mobile viewer: pan & pinch-zoom) */
+        .soa-viewport {
+            width: 100%;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x pan-y pinch-zoom;
+            padding: 12px 16px 36px;
+            box-sizing: border-box;
+        }
+
+        /* FIXED A4 SOA PAGE CONTAINER (Never collapses or wraps on mobile) */
+        .soa-page {
+            width: 210mm;
+            min-width: 210mm;
+            max-width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 16px 20px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+            box-sizing: border-box;
+        }
+
+        @media screen and (max-width: 768px) {
+            .soa-viewport {
+                overflow-x: auto;
+                overflow-y: auto;
+                padding: 10px 8px 24px;
+            }
+            .soa-page {
+                width: 210mm;
+                min-width: 210mm;
+                max-width: none;
+                margin: 0 auto;
+            }
         }
 
         /* HEADER */
@@ -149,7 +184,7 @@
             margin-bottom: 8px;
         }
 
-        /* UPPER SECTION GRID */
+        /* UPPER SECTION GRID (3-Column Top-Aligned Layout) */
         .upper-grid {
             display: table;
             width: 100%;
@@ -159,15 +194,15 @@
         }
         .upper-left {
             display: table-cell;
-            width: 29%;
+            width: 28%;
             vertical-align: top;
-            padding-right: 14px;
+            padding-right: 12px;
             font-size: 10px;
             line-height: 1.35;
         }
         .upper-mid {
             display: table-cell;
-            width: 37%;
+            width: 38%;
             vertical-align: top;
             padding-right: 12px;
             font-size: 10.5px;
@@ -220,12 +255,12 @@
             border-collapse: collapse;
         }
         .student-info-table td {
-            padding: 1.5px 0;
+            padding: 2px 0;
             font-size: 10.5px;
         }
         .info-lbl {
             color: #64748b;
-            width: 110px;
+            width: 112px;
             font-weight: 500;
             white-space: nowrap;
         }
@@ -244,14 +279,14 @@
         .fee-table th {
             background: #ffffff;
             border: 1px solid #475569;
-            padding: 3px 4px;
+            padding: 3.5px 4px;
             font-weight: bold;
             text-align: center;
             font-size: 9.5px;
         }
         .fee-table td {
             border: 1px solid #475569;
-            padding: 2.5px 5px;
+            padding: 3px 5px;
         }
         .fee-table .text-right {
             text-align: right;
@@ -275,7 +310,7 @@
             background: #a9beba;
             color: #111827;
             border: 1px solid #475569;
-            padding: 4px 6px;
+            padding: 4.5px 6px;
             font-weight: bold;
             text-align: left;
             font-size: 10px;
@@ -284,7 +319,7 @@
         .main-ledger-table th.th-right { text-align: right; }
         .main-ledger-table td {
             border: 1px solid #cbd5e1;
-            padding: 3px 6px;
+            padding: 3.5px 6px;
             font-size: 10.5px;
         }
         .main-ledger-table td.cell-right { text-align: right; }
@@ -362,8 +397,8 @@
         @media print {
             html,
             body {
-                width: 210mm;
-                min-height: 297mm;
+                width: 210mm !important;
+                min-height: 297mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: #ffffff !important;
@@ -373,14 +408,25 @@
                 display: none !important;
             }
 
-            .page-container {
+            .soa-viewport {
+                overflow: visible !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+            }
+
+            .soa-page {
                 width: 190mm !important;
+                min-width: 190mm !important;
                 max-width: 190mm !important;
+                min-height: auto !important;
                 margin: 0 auto !important;
                 padding: 0 !important;
                 border: none !important;
                 box-shadow: none !important;
                 background: transparent !important;
+                transform: none !important;
+                zoom: 1 !important;
             }
 
             table,
@@ -407,7 +453,8 @@
         </button>
     </div>
 
-    <div class="page-container">
+    <div class="soa-viewport">
+        <div class="soa-page">
         {{-- TOP SCHOOL HEADER --}}
         <div class="school-header">
             <div class="school-header-cell header-english">
@@ -696,6 +743,7 @@
             </div>
         </div>
     </div>
+</div>
 
 </body>
 </html>
