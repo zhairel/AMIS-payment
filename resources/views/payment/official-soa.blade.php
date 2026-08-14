@@ -191,26 +191,30 @@
             border-collapse: collapse;
             margin-bottom: 8px;
             table-layout: fixed;
+            box-sizing: border-box;
         }
         .upper-left {
             display: table-cell;
-            width: 28%;
+            width: 27%;
             vertical-align: top;
-            padding-right: 12px;
+            padding-right: 14px;
             font-size: 10px;
             line-height: 1.35;
+            box-sizing: border-box;
         }
         .upper-mid {
             display: table-cell;
             width: 38%;
             vertical-align: top;
-            padding-right: 12px;
+            padding-right: 14px;
             font-size: 10.5px;
+            box-sizing: border-box;
         }
         .upper-right {
             display: table-cell;
-            width: 34%;
+            width: 35%;
             vertical-align: top;
+            box-sizing: border-box;
         }
 
         .ayah-quote {
@@ -230,8 +234,8 @@
             margin-bottom: 5px;
             padding-bottom: 3.5px;
             border-bottom: 1px solid #cbd5e1;
-            margin-right: -12px;
-            width: calc(100% + 12px);
+            width: 100%;
+            box-sizing: border-box;
         }
         .student-header-label {
             font-size: 9.5px;
@@ -275,6 +279,7 @@
             border-collapse: collapse;
             font-size: 10px;
             border: 1px solid #475569;
+            box-sizing: border-box;
         }
         .fee-table th {
             background: #ffffff;
