@@ -77,7 +77,7 @@ class StudentManualSoaTest extends TestCase
 
         $unauthorizedParent = User::factory()->create([
             'email' => 'unauthorized.parent.' . uniqid() . '@example.com',
-            'role' => 'parent',
+            'role' => 'applicant',
         ]);
 
         $response = $this->actingAs($unauthorizedParent)->get(route('payment.manual-soa.view', $soa));
@@ -87,7 +87,7 @@ class StudentManualSoaTest extends TestCase
     public function test_authorized_parent_can_view_and_download_own_student_soa(): void
     {
         $parent = User::query()->where('email', 'zhairel.lingasa@gmail.com')->first()
-            ?? User::factory()->create(['role' => 'parent']);
+            ?? User::factory()->create(['role' => 'applicant']);
 
         $file = UploadedFile::fake()->create('ahmad_august_2026_soa.pdf', 100, 'application/pdf');
         $path = $file->store('soa/manual/AMIS-2026-DEMO-01', 'local');

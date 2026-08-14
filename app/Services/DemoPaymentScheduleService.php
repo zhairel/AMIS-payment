@@ -71,6 +71,7 @@ class DemoPaymentScheduleService
 
             $childrenRows = [];
             $groupOriginalTotal = 0.0;
+            $groupManualPaid = 0.0;
 
             foreach ($children as $child) {
                 $childInstallments = max(1, (int) $child->installment_months);
@@ -78,8 +79,16 @@ class DemoPaymentScheduleService
                     continue;
                 }
 
-                $originalAmount = $this->installmentAmount($child, $installment, $childInstallments);
+                $childName = (string) ($child->display_name ?: ($child->first_name ?? '').' '.($child->last_name ?? ''));
+                $childId = (string) ($child->demo_student_number ?: $child->id);
+                $adj = $this->findAdjustmentForChild($childId, $childName, $monthLabel);
+
+                $originalAmount = $adj ? round((float) $adj['fee'], 2) : $this->installmentAmount($child, $installment, $childInstallments);
+                $manualPaid = $adj ? round((float) $adj['paid'], 2) : 0.0;
+                $rem = max(0.0, round($originalAmount - $manualPaid, 2));
+
                 $groupOriginalTotal += $originalAmount;
+                $groupManualPaid += $manualPaid;
 
                 $childrenRows[] = [
                     'child_obj' => $child,
@@ -89,14 +98,14 @@ class DemoPaymentScheduleService
                     'student_number' => (string) $child->demo_student_number,
                     'original' => $originalAmount,
                     'original_amount' => $originalAmount,
-                    'verified' => 0.0,
-                    'verified_paid' => 0.0,
-                    'remaining' => $originalAmount,
-                    'remaining_amount' => $originalAmount,
-                    'amount_due' => $originalAmount,
-                    'allocated' => 0.0,
-                    'is_paid' => false,
-                    'status' => 'unpaid',
+                    'verified' => $manualPaid,
+                    'verified_paid' => $manualPaid,
+                    'remaining' => $rem,
+                    'remaining_amount' => $rem,
+                    'amount_due' => $rem,
+                    'allocated' => $manualPaid,
+                    'is_paid' => $rem <= 0.01,
+                    'status' => $rem <= 0.01 ? 'paid' : ($manualPaid > 0.01 ? 'partial' : 'unpaid'),
                 ];
             }
 
@@ -107,9 +116,9 @@ class DemoPaymentScheduleService
                 'due_date' => $dueDate,
                 'children' => $childrenRows,
                 'total_due' => round($groupOriginalTotal, 2),
-                'total_paid' => 0.0,
-                'remaining' => round($groupOriginalTotal, 2),
-                'total_remaining' => round($groupOriginalTotal, 2),
+                'total_paid' => round($groupManualPaid, 2),
+                'remaining' => max(0.0, round($groupOriginalTotal - $groupManualPaid, 2)),
+                'total_remaining' => max(0.0, round($groupOriginalTotal - $groupManualPaid, 2)),
             ];
         }
 
@@ -490,5 +499,60 @@ class DemoPaymentScheduleService
             'oldest_outstanding_month_number' => null,
             'oldest_outstanding_amount' => $remainingAmount,
         ];
+    }
+
+    public function getAdjustments(): array
+    {
+        $paths = [
+            storage_path('app/demo_schedule_adjustments.json'),
+            base_path('../amis_admin/storage/app/demo_schedule_adjustments.json'),
+            base_path('../admin.amis.edu.ph/storage/app/demo_schedule_adjustments.json'),
+        ];
+
+        foreach ($paths as $p) {
+            if (file_exists($p)) {
+                try {
+                    $content = file_get_contents($p);
+                    $decoded = json_decode($content, true);
+                    if (is_array($decoded) && ! empty($decoded)) {
+                        return $decoded;
+                    }
+                } catch (\Throwable $e) {
+                }
+            }
+        }
+
+        return [];
+    }
+
+    public function findAdjustmentForChild(string $studentId, string $childName, string $month): ?array
+    {
+        $adjustments = $this->getAdjustments();
+        $monthClean = strtoupper(trim($month));
+
+        foreach ($adjustments as $key => $adj) {
+            if (strtoupper(trim($adj['month'] ?? '')) !== $monthClean) {
+                continue;
+            }
+            $adjId = strtoupper(trim($adj['student_identifier'] ?? ''));
+            $cleanStudentId = strtoupper(trim($studentId));
+            $cleanChildName = strtoupper(trim($childName));
+
+            if ($adjId === $cleanStudentId || $adjId === $cleanChildName) {
+                return $adj;
+            }
+
+            preg_match('/(?:^|[^0-9])0*(1|2|3|4|5|6|7|8|9)(?:[^0-9]|$)/', preg_replace('/202[0-9]/', '', $adjId), $m1);
+            preg_match('/(?:^|[^0-9])0*(1|2|3|4|5|6|7|8|9)(?:[^0-9]|$)/', preg_replace('/202[0-9]/', '', $cleanStudentId), $m2);
+            if (($m1[1] ?? null) !== null && ($m1[1] ?? null) === ($m2[1] ?? null)) {
+                return $adj;
+            }
+
+            if (str_contains($cleanChildName, $adjId) || str_contains($adjId, $cleanChildName)) {
+                return $adj;
+            }
+        }
+
+        return null;
     }
 }
