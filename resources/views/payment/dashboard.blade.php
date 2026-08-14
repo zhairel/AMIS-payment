@@ -100,12 +100,12 @@
                     <div class="family-stats-grid">
                         <div class="stat-item is-paid">
                             <strong class="stat-amount">₱{{ number_format($currentMonthPaid, 2) }}</strong>
-                            <span class="stat-caption">Paid this month</span>
+                            <span class="stat-caption">Total paid this month</span>
                         </div>
 
                         <div class="stat-item is-still-due">
                             <strong class="stat-amount">₱{{ number_format($currentMonthDueNow, 2) }}</strong>
-                            <span class="stat-caption">Still to pay</span>
+                            <span class="stat-caption">Current balance</span>
                         </div>
 
                         <div class="stat-item is-past-due {{ $pastDueNow > 0 ? 'has-due' : '' }}">
@@ -115,7 +115,7 @@
 
                         <div class="stat-item is-future">
                             <strong class="stat-amount">₱{{ number_format($futureScheduledBalance, 2) }}</strong>
-                            <span class="stat-caption">Future scheduled</span>
+                            <span class="stat-caption">Upcoming balance</span>
                         </div>
                     </div>
 
