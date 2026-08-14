@@ -6,10 +6,13 @@
             <header class="payment-wizard-header">
                 <a href="{{ route('payment.dashboard') }}" class="payment-checkout-back">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
-                    Back to payments
+                    <span>Back to payments</span>
                 </a>
-                <img src="{{ asset('images/MA_Logo.png') }}" alt="Al Munawwara Islamic School">
-                <span class="payment-checkout-secure"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.5 10.5V6.75a4.5 4.5 0 00-9 0v3.75m-.75 0h10.5A2.25 2.25 0 0119.5 12.75v6A2.25 2.25 0 0117.25 21H6.75a2.25 2.25 0 01-2.25-2.25v-6a2.25 2.25 0 012.25-2.25z"/></svg> Secure checkout</span>
+                <div class="payment-wizard-brand flex items-center justify-center gap-2">
+                    <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS" class="h-8 w-8 object-contain">
+                    <span class="text-xs sm:text-sm font-black text-slate-900 tracking-tight hidden xs:inline">AMIS Online Payment</span>
+                </div>
+                <span class="payment-checkout-secure"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.5 10.5V6.75a4.5 4.5 0 00-9 0v3.75m-.75 0h10.5A2.25 2.25 0 0119.5 12.75v6A2.25 2.25 0 0117.25 21H6.75a2.25 2.25 0 01-2.25-2.25v-6a2.25 2.25 0 012.25-2.25z"/></svg> <span>Secure checkout</span></span>
             </header>
 
             <nav x-show="!submissionComplete" class="payment-wizard-progress" aria-label="Payment steps">
