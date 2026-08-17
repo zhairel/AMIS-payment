@@ -85,6 +85,7 @@ class PaymentDemoChildrenSeeder extends Seeder
                 ],
                 [
                     'submission_number' => 'PS-2026-0815-10539-'.$user->id,
+                    'client_token' => 'tok_demo_'.\Illuminate\Support\Str::random(16),
                     'method' => 'bank_transfer',
                     'payment_mode' => 'online',
                     'account_received' => '10539',

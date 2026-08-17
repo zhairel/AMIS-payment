@@ -59,6 +59,7 @@ class ResetDemoPaymentCommand extends Command
                 DB::table('payment_submissions')->where('user_id', $userId)->delete();
                 \App\Models\PaymentSubmission::query()->create([
                     'submission_number' => 'PS-2026-0815-10539-'.$userId,
+                    'client_token' => 'tok_demo_'.\Illuminate\Support\Str::random(16),
                     'user_id' => $userId,
                     'method' => 'bank_transfer',
                     'payment_mode' => 'online',
