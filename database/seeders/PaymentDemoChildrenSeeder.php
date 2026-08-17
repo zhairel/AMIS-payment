@@ -34,9 +34,14 @@ class PaymentDemoChildrenSeeder extends Seeder
             ['display_name' => 'AISHA W. CAMSAR', 'demo_student_number' => 'AFPS-DEMO-2026-004-'.$user->id, 'grade_level' => 'Grade 7', 'gender' => 'Female'],
         ] : [
             ['display_name' => 'AHMAD Z. LINGASA', 'demo_student_number' => 'AFPS-DEMO-2026-001-'.$user->id, 'grade_level' => 'Grade 1', 'gender' => 'Male'],
-            ['display_name' => 'MARYAM Z. LINGASA', 'demo_student_number' => 'AFPS-DEMO-2026-002-'.$user->id, 'grade_level' => 'Grade 3', 'gender' => 'Female'],
-            ['display_name' => 'YUSUF Z. LINGASA', 'demo_student_number' => 'AFPS-DEMO-2026-003-'.$user->id, 'grade_level' => 'Grade 5', 'gender' => 'Male'],
         ];
+
+        // Clean up any removed demo children for this user
+        $validNumbers = array_column($children, 'demo_student_number');
+        PaymentDemoChild::query()
+            ->where('user_id', $user->id)
+            ->whereNotIn('demo_student_number', $validNumbers)
+            ->delete();
 
         $discountPercentage = DiscountSetting::current()
             ->siblingPercentageForFamilySize(count($children));

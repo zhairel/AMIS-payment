@@ -74,11 +74,9 @@ class ResetDemoPaymentCommand extends Command
 
         $this->newLine();
         $this->info("✓ AFPS demo reset complete for {$email}!");
-        $this->line("  All 3 demo children are restored to their initial unpaid July 2026 tuition:");
-        $this->line("  • AHMAD Z. LINGASA (Grade 1): ₱3,803.33");
-        $this->line("  • MARYAM Z. LINGASA (Grade 3): ₱3,926.11");
-        $this->line("  • YUSUF Z. LINGASA (Grade 5): ₱4,077.22");
-        $this->line("  • July Total: ₱11,806.66");
+        $this->line("  Ahmad Z. Lingasa is restored to his initial unpaid July 2026 tuition:");
+        $this->line("  • AHMAD Z. LINGASA (Grade 1): ₱4,477.78");
+        $this->line("  • July Total: ₱4,477.78");
 
         return Command::SUCCESS;
     }

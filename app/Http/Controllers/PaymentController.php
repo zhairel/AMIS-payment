@@ -40,8 +40,8 @@ class PaymentController extends Controller
         $user = Auth::user();
         $demoChildren = $user->paymentDemoChildren()->orderBy('id')->get();
 
-        // ── AUTO-SEED DEMO CHILDREN IF PARENT HAS NO STUDENTS ────────────────
-        if ($user && $user->students()->count() === 0 && $demoChildren->isEmpty()) {
+        // ── AUTO-SEED OR SYNC DEMO CHILDREN IF PARENT HAS NO STUDENTS ────────────────
+        if ($user && $user->students()->count() === 0) {
             try {
                 app(\Database\Seeders\PaymentDemoChildrenSeeder::class)->seedForUser($user);
                 $demoChildren = $user->paymentDemoChildren()->orderBy('id')->get();
