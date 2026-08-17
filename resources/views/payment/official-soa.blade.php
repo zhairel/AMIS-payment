@@ -720,7 +720,7 @@
                 </tr>
                 <tr>
                     <td colspan="6" style="font-weight:bold; border-right:none;">Total Amount to pay</td>
-                    <td class="cell-right highlight-blue" style="font-size:11px;">{{ number_format($soaData['total_remaining'] > 0 ? $soaData['total_remaining'] : $runningBalance, 2) }}</td>
+                    <td class="cell-right highlight-blue" style="font-size:11px;">{{ number_format($runningBalance, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="2" style="font-weight:bold; border-right:none;">Due Monthly Payment (9 Months)</td>
