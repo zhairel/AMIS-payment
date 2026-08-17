@@ -232,10 +232,13 @@
 
         .student-header-block {
             margin-bottom: 5px;
-            padding-bottom: 3.5px;
-            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 4px;
+            border-bottom: 1.5px solid #cbd5e1;
             width: 100%;
+            height: auto;
+            min-height: auto;
             box-sizing: border-box;
+            display: block;
         }
         .student-header-label {
             font-size: 9.5px;
@@ -243,15 +246,23 @@
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.3px;
-            line-height: 1;
+            line-height: 1.1;
+            margin-bottom: 2px;
         }
         .student-header-name {
             font-size: 12.5px;
             font-weight: 900;
             color: #0f172a;
-            line-height: 1.25;
-            margin-top: 2px;
-            white-space: nowrap;
+            line-height: 1.18;
+            margin-top: 1px;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            word-break: normal;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            display: block;
         }
 
         .student-info-table {
@@ -502,15 +513,15 @@
             {{-- COLUMN 2: STUDENT DETAILS --}}
             <div class="upper-mid">
                 @php
-                    $sName = strtoupper($soaData['student_name'] ?? '');
+                    $sName = strtoupper(trim($soaData['student_name'] ?? ''));
                     $sLen = mb_strlen($sName);
-                    $nameSize = $sLen > 32 ? '9.5px' : ($sLen > 25 ? '11px' : ($sLen > 18 ? '12px' : '13px'));
-                    $nameSpacing = $sLen > 28 ? '-0.2px' : '0px';
+                    $nameSize = $sLen > 48 ? '10.5px' : ($sLen > 36 ? '11.5px' : ($sLen > 24 ? '12px' : '12.5px'));
+                    $nameLineHeight = $sLen > 36 ? '1.15' : '1.18';
                 @endphp
                 
                 <div class="student-header-block">
                     <div class="student-header-label">NAME OF STUDENT:</div>
-                    <div class="student-header-name" style="font-size: {{ $nameSize }}; letter-spacing: {{ $nameSpacing }};">
+                    <div class="student-header-name" style="font-size: {{ $nameSize }}; line-height: {{ $nameLineHeight }};">
                         {{ $sName }}
                     </div>
                 </div>
