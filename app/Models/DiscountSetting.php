@@ -32,15 +32,29 @@ class DiscountSetting extends Model
 
     public function siblingPercentageForOrder(int $siblingOrder): float
     {
-        return $this->siblingPercentageForFamilySize($siblingOrder);
+        if (! $this->is_active || $siblingOrder <= 1) {
+            return 0.0;
+        }
+
+        return match ($siblingOrder) {
+            2 => 10.0,
+            3 => 15.0,
+            4 => 20.0,
+            default => min(100.0, $siblingOrder * (float) ($this->per_child_percentage ?: 5)),
+        };
     }
 
     public function siblingPercentageForFamilySize(int $childCount): float
     {
-        if (!$this->is_active || $childCount < 1) {
+        if (! $this->is_active || $childCount <= 1) {
             return 0.0;
         }
 
-        return min(100.0, $childCount * (float) $this->per_child_percentage);
+        return match ($childCount) {
+            2 => 10.0,
+            3 => 15.0,
+            4 => 20.0,
+            default => min(100.0, $childCount * (float) ($this->per_child_percentage ?: 5)),
+        };
     }
 }

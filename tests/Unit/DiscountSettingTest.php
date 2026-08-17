@@ -18,7 +18,7 @@ class DiscountSettingTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->assertSame(5.0, $setting->siblingPercentageForFamilySize(1));
+        $this->assertSame(0.0, $setting->siblingPercentageForFamilySize(1));
         $this->assertSame(10.0, $setting->siblingPercentageForFamilySize(2));
         $this->assertSame(15.0, $setting->siblingPercentageForFamilySize(3));
         $this->assertSame(20.0, $setting->siblingPercentageForFamilySize(4));

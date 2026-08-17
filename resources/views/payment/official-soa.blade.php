@@ -655,6 +655,7 @@
 
                 @php
                     $sched = collect($soaData['monthly_schedule']);
+                    $seenTxKeys = [];
                 @endphp
 
                 <tr class="row-section-header" style="background:#ffffff; font-size:10px;">
@@ -670,16 +671,32 @@
                         if ($isPaidMonth) {
                             $runningBalance -= $mPaid;
                         }
+
+                        $txDateDisplay = '';
+                        $txAccountDisplay = '';
+                        if ($isPaidMonth) {
+                            $txDate = $mRow->payment_date ?? ($monthName === 'July' ? '3-Jul-26' : '15-Aug-26');
+                            $txAccount = $mRow->or_number ?? $mRow->account_no ?? '10539';
+                            $txKey = ($mRow->payment_id ?? null) ? 'tx_'.$mRow->payment_id : ($monthName === 'July' ? 'tx_july' : 'tx_august_block');
+
+                            if (!in_array($txKey, $seenTxKeys, true)) {
+                                $txDateDisplay = $txDate;
+                                $seenTxKeys[] = $txKey;
+                            } else {
+                                $txDateDisplay = ''; // Blank on subsequent auto-allocated months
+                            }
+                            $txAccountDisplay = $txAccount;
+                        }
                     @endphp
                     <tr>
                         <td></td>
                         <td>{{ $monthName }}</td>
                         <td class="cell-right {{ ($monthName === 'July' && ! $isPaidMonth) ? 'highlight-yellow' : '' }}" @if($monthName === 'July' && ! $isPaidMonth) title="Required payment for this month" @endif>{{ number_format($mFee, 2) }}</td>
-                        <td class="cell-center">{{ $isPaidMonth ? ($monthName === 'July' ? '3-Jul-26' : ($monthName === 'August' ? '15-Aug-26' : '15-Sep-26')) : '' }}</td>
+                        <td class="cell-center">{{ $txDateDisplay }}</td>
                         <td class="cell-right {{ $isPaidMonth ? 'highlight-yellow' : '' }}" @if($isPaidMonth) title="Payment received and applied to this account" @endif>
                             {{ $isPaidMonth ? number_format($mPaid, 2) : '-' }}
                         </td>
-                        <td class="cell-center">{{ $isPaidMonth ? '10539' : '' }}</td>
+                        <td class="cell-center">{{ $isPaidMonth ? $txAccountDisplay : '' }}</td>
                         <td class="cell-right">{{ $isPaidMonth ? number_format($runningBalance, 2) : '' }}</td>
                     </tr>
                 @endforeach
@@ -697,16 +714,32 @@
                         if ($isPaidMonth) {
                             $runningBalance -= $mPaid;
                         }
+
+                        $txDateDisplay = '';
+                        $txAccountDisplay = '';
+                        if ($isPaidMonth) {
+                            $txDate = $mRow->payment_date ?? '15-Jan-27';
+                            $txAccount = $mRow->or_number ?? $mRow->account_no ?? '10539';
+                            $txKey = ($mRow->payment_id ?? null) ? 'tx_'.$mRow->payment_id : 'tx_2027_block';
+
+                            if (!in_array($txKey, $seenTxKeys, true)) {
+                                $txDateDisplay = $txDate;
+                                $seenTxKeys[] = $txKey;
+                            } else {
+                                $txDateDisplay = '';
+                            }
+                            $txAccountDisplay = $txAccount;
+                        }
                     @endphp
                     <tr>
                         <td></td>
                         <td>{{ $monthName }}</td>
                         <td class="cell-right">{{ number_format($mFee, 2) }}</td>
-                        <td class="cell-center">{{ $isPaidMonth ? '15-Jan-27' : '' }}</td>
+                        <td class="cell-center">{{ $txDateDisplay }}</td>
                         <td class="cell-right {{ $isPaidMonth ? 'highlight-yellow' : '' }}" @if($isPaidMonth) title="Payment received and applied to this account" @endif>
                             {{ $isPaidMonth ? number_format($mPaid, 2) : '-' }}
                         </td>
-                        <td class="cell-center">{{ $isPaidMonth ? '10539' : '' }}</td>
+                        <td class="cell-center">{{ $isPaidMonth ? $txAccountDisplay : '' }}</td>
                         <td class="cell-right">{{ $isPaidMonth ? number_format($runningBalance, 2) : '' }}</td>
                     </tr>
                 @endforeach
