@@ -536,6 +536,11 @@
                         <td class="info-lbl">Grade Level:</td>
                         <td class="info-val">{{ $soaData['grade_level'] }}</td>
                     </tr>
+                    @php
+                        $discVal = (float) str_replace('%', '', (string) ($soaData['discount_privilege'] ?? '0'));
+                        $hasDiscount = $discVal > 0.01 && ((float) ($soaData['discount_amount'] ?? 0)) > 0.01;
+                    @endphp
+                    @if($hasDiscount)
                     <tr>
                         <td class="info-lbl">Discount Privilege:</td>
                         <td class="info-val">{{ $soaData['discount_privilege'] }}</td>
@@ -544,6 +549,7 @@
                         <td class="info-lbl">Discount Status:</td>
                         <td class="info-val">{{ $soaData['discount_status'] }}</td>
                     </tr>
+                    @endif
                 </table>
             </div>
 
@@ -566,9 +572,9 @@
                         <tr>
                             <td>Tuition Fees</td>
                             <td class="text-right">{{ number_format($soaData['tuition_fee'], 2) }}</td>
-                            <td class="text-center">{{ $soaData['discount_privilege'] }}</td>
-                            <td class="text-center">{{ $soaData['discount_amount'] > 0 ? number_format($soaData['discount_amount'], 2) : '-' }}</td>
-                            <td class="text-right">{{ number_format($soaData['tuition_fee'] - $soaData['discount_amount'], 2) }}</td>
+                            <td class="text-center">{{ $hasDiscount ? $soaData['discount_privilege'] : '' }}</td>
+                            <td class="text-center">{{ $hasDiscount ? number_format($soaData['discount_amount'], 2) : '' }}</td>
+                            <td class="text-right">{{ number_format($soaData['tuition_fee'] - ($hasDiscount ? $soaData['discount_amount'] : 0), 2) }}</td>
                         </tr>
                         <tr>
                             <td>Miscellaneous</td>
@@ -588,7 +594,7 @@
                             <td>Final Fees</td>
                             <td></td>
                             <td></td>
-                            <td class="text-center">-</td>
+                            <td class="text-center">{{ $hasDiscount ? '-' : '' }}</td>
                             <td class="text-right">{{ number_format($soaData['final_fees'], 2) }}</td>
                         </tr>
                     </tbody>

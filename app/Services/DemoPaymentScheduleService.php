@@ -440,13 +440,12 @@ class DemoPaymentScheduleService
 
     private function installmentAmount(object $child, int $installment, int $installmentCount): float
     {
-        $monthlyTuition = (float) ($child->monthly_tuition ?? 0);
-        if ($monthlyTuition > 0) {
-            return round($monthlyTuition, 2);
-        }
+        $planBalance = round((float) ($child->total_balance ? max(0, (float) $child->total_balance - (float) ($child->enrollment_fee_paid ?? 0)) : ($child->remaining_balance ?? 0)), 2);
+        $regularAmount = round((float) ($child->monthly_tuition ?? ($planBalance / max(1, $installmentCount))), 2);
 
-        $planBalance = round((float) ($child->total_balance ?? ($child->remaining_balance ?? 0)), 2);
-        $regularAmount = round($planBalance / max(1, $installmentCount), 2);
+        if ($planBalance < ($regularAmount * ($installmentCount - 1)) && (float) ($child->monthly_tuition ?? 0) > 0) {
+            $planBalance = round($regularAmount * $installmentCount, 2);
+        }
 
         return $installment === $installmentCount
             ? max(0, round($planBalance - ($regularAmount * ($installmentCount - 1)), 2))

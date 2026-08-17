@@ -386,15 +386,15 @@
                     <tr>
                         <td class="desc">Tuition Fees</td>
                         <td class="num">{{ number_format($tuition, 2) }}</td>
-                        <td class="num">{{ $discPct > 0 ? number_format($discPct, 0).'%' : '-' }}</td>
-                        <td class="num">{{ $discAmt > 0 ? number_format($discAmt, 2) : '-' }}</td>
+                        <td class="num">{{ $discPct > 0 ? number_format($discPct, 0).'%' : '' }}</td>
+                        <td class="num">{{ $discAmt > 0 ? number_format($discAmt, 2) : '' }}</td>
                         <td class="num">{{ number_format($netTuition, 2) }}</td>
                     </tr>
                     <tr>
                         <td class="desc">Miscellaneous</td>
                         <td class="num">{{ number_format($misc, 2) }}</td>
-                        <td class="num">-</td>
-                        <td class="num">-</td>
+                        <td class="num"></td>
+                        <td class="num"></td>
                         <td class="num">{{ number_format($misc, 2) }}</td>
                     </tr>
                     <tr class="total-row">
@@ -406,7 +406,7 @@
                     <tr class="final-row">
                         <td class="desc">Final Fees</td>
                         <td></td><td></td>
-                        <td class="num">-</td>
+                        <td class="num">{{ $discPct > 0 ? '-' : '' }}</td>
                         <td class="num">{{ number_format($netTuition + $misc, 2) }}</td>
                     </tr>
                 </tbody>
