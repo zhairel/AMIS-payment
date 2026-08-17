@@ -227,9 +227,9 @@
                                     : 'background: linear-gradient(135deg, #ecfdf5 0%, #ccfbf1 50%, #d1fae5 100%);';
                             @endphp
 
-                            <div class="group relative w-full max-w-[480px] rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-5 sm:gap-6">
-                                <!-- LEFT SIDE: 2x2 STUDENT PICTURE (120–140px) -->
-                                <div class="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 rounded-2xl overflow-hidden shadow-inner ring-1 ring-slate-200/80 flex items-center justify-center" style="{{ $studentPlaceholderBg }}">
+                            <div class="group relative w-full max-w-[540px] rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-5 sm:gap-6">
+                                <!-- LEFT SIDE: 2x2 STUDENT PICTURE (120–130px) -->
+                                <div class="relative w-28 h-28 sm:w-[130px] sm:h-[130px] shrink-0 rounded-2xl overflow-hidden shadow-inner ring-1 ring-slate-200/80 flex items-center justify-center" style="{{ $studentPlaceholderBg }}">
                                     @if($studentPhoto)
                                         <img src="{{ $studentPhoto }}" 
                                              alt="{{ $studentName }}" 
@@ -245,17 +245,17 @@
                                 <div class="flex flex-col justify-between flex-1 min-w-0 py-0.5 space-y-3">
                                     <!-- 1. STUDENT NAME & GRADE/ID -->
                                     <div class="min-w-0">
-                                        <h3 class="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-snug truncate group-hover:text-emerald-950 transition-colors" title="{{ $studentName }}">
+                                        <h3 class="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-snug break-words group-hover:text-emerald-950 transition-colors" title="{{ $studentName }}">
                                             {{ $studentName }}
                                         </h3>
-                                        <p class="mt-0.5 text-xs font-semibold text-slate-500 truncate">
+                                        <p class="mt-0.5 text-xs font-semibold text-slate-500 leading-normal">
                                             {{ $studentGrade }} • ID {{ $student->student_number }}
                                         </p>
                                     </div>
 
                                     <!-- 2. REMAINING BALANCE -->
                                     <div>
-                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Remaining Balance</span>
+                                        <span class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Remaining Balance</span>
                                         <span class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight whitespace-nowrap block mt-0.5">
                                             ₱{{ number_format($remainingBalance, 2) }}
                                         </span>
@@ -293,9 +293,9 @@
                                     : 'background: linear-gradient(135deg, #ecfdf5 0%, #ccfbf1 50%, #d1fae5 100%);';
                             @endphp
 
-                            <div class="group relative w-full max-w-[480px] rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-5 sm:gap-6">
-                                <!-- LEFT SIDE: 2x2 STUDENT PICTURE (120–140px) -->
-                                <div class="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 rounded-2xl overflow-hidden shadow-inner ring-1 ring-slate-200/80 flex items-center justify-center" style="{{ $demoPlaceholderBg }}">
+                            <div class="group relative w-full max-w-[540px] rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-5 sm:gap-6">
+                                <!-- LEFT SIDE: 2x2 STUDENT PICTURE (120–130px) -->
+                                <div class="relative w-28 h-28 sm:w-[130px] sm:h-[130px] shrink-0 rounded-2xl overflow-hidden shadow-inner ring-1 ring-slate-200/80 flex items-center justify-center" style="{{ $demoPlaceholderBg }}">
                                     <img src="{{ $avatarPlaceholder }}" 
                                          alt="{{ $demoName }}" 
                                          class="w-full h-full object-contain p-1.5 group-hover:scale-105 transition-transform duration-500">
@@ -305,17 +305,17 @@
                                 <div class="flex flex-col justify-between flex-1 min-w-0 py-0.5 space-y-3">
                                     <!-- 1. STUDENT NAME & GRADE/ID -->
                                     <div class="min-w-0">
-                                        <h3 class="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-snug truncate group-hover:text-emerald-950 transition-colors" title="{{ $demoName }}">
+                                        <h3 class="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-snug break-words group-hover:text-emerald-950 transition-colors" title="{{ $demoName }}">
                                             {{ $demoName }}
                                         </h3>
-                                        <p class="mt-0.5 text-xs font-semibold text-slate-500 truncate">
+                                        <p class="mt-0.5 text-xs font-semibold text-slate-500 leading-normal">
                                             {{ $demoGrade }} • ID {{ $demoId }}
                                         </p>
                                     </div>
 
                                     <!-- 2. REMAINING BALANCE -->
                                     <div>
-                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Remaining Balance</span>
+                                        <span class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Remaining Balance</span>
                                         <span class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight whitespace-nowrap block mt-0.5">
                                             ₱{{ number_format($demoRemainingBalance, 2) }}
                                         </span>
