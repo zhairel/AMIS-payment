@@ -675,9 +675,9 @@
                         $txDateDisplay = '';
                         $txAccountDisplay = '';
                         if ($isPaidMonth) {
-                            $txDate = $mRow->payment_date ?? ($monthName === 'July' ? '3-Jul-26' : '15-Aug-26');
+                            $txDate = $mRow->payment_date ?? '15-Aug-26';
                             $txAccount = $mRow->or_number ?? $mRow->account_no ?? '10539';
-                            $txKey = ($mRow->payment_id ?? null) ? 'tx_'.$mRow->payment_id : ($monthName === 'July' ? 'tx_july' : 'tx_august_block');
+                            $txKey = ($mRow->payment_id ?? null) ? 'tx_'.$mRow->payment_id : 'tx_10539';
 
                             if (!in_array($txKey, $seenTxKeys, true)) {
                                 $txDateDisplay = $txDate;
