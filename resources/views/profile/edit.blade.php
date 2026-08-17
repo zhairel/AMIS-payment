@@ -277,26 +277,24 @@
                                     : 'bg-gradient-to-br from-emerald-50 via-teal-50/60 to-emerald-100/70';
                             @endphp
 
-                            <div class="group relative aspect-square w-full rounded-3xl border border-slate-200/90 bg-white shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between" style="aspect-ratio: 1 / 1;">
+                            <div class="group relative aspect-square w-full max-w-sm rounded-3xl border border-slate-200/90 bg-white shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between" style="aspect-ratio: 1 / 1;">
                                 <!-- TOP SECTION: LARGE STUDENT PICTURE AREA (~54% OF SQUARE) -->
-                                <div class="relative w-full h-[54%] overflow-hidden bg-slate-100 flex items-center justify-center shrink-0">
+                                <div class="relative w-full h-[54%] overflow-hidden {{ $childPlaceholderBg }} flex items-center justify-center shrink-0">
                                     @if($childPhoto)
                                         <img src="{{ $childPhoto }}" 
                                              alt="{{ $cFullName }}" 
                                              class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500">
                                     @else
-                                        <div class="w-full h-full flex flex-col items-center justify-center {{ $childPlaceholderBg }} relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
-                                            <img src="{{ $avatarPlaceholder }}" 
-                                                 alt="{{ $cFullName }}" 
-                                                 class="w-28 h-28 sm:w-32 sm:h-32 object-contain drop-shadow-sm opacity-95">
-                                        </div>
+                                        <img src="{{ $avatarPlaceholder }}" 
+                                             alt="{{ $cFullName }}" 
+                                             class="w-full h-full max-h-full object-contain p-3 group-hover:scale-105 transition-transform duration-500">
                                     @endif
 
                                     <!-- Subtle Gradient Overlay -->
-                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/20 via-transparent to-transparent pointer-events-none"></div>
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/10 via-transparent to-transparent pointer-events-none"></div>
 
                                     <!-- TOP-LEFT: STATUS BADGE -->
-                                    <div class="absolute top-2.5 left-2.5 z-10">
+                                    <div class="absolute top-3 left-3 z-10">
                                         <span class="inline-flex items-center gap-1 rounded-full bg-white/95 backdrop-blur-md border border-white/80 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800 shadow-xs">
                                             <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                             Active
@@ -304,13 +302,13 @@
                                     </div>
 
                                     <!-- TOP-RIGHT: DOWNLOAD STATEMENT OF ACCOUNT (PDF) ICON BUTTON -->
-                                    <div class="absolute top-2.5 right-2.5 z-10">
+                                    <div class="absolute top-3 right-3 z-10">
                                         <a href="{{ route('payment.students.official-soa', ['studentIdentifier' => $cId]) }}" 
                                            target="_blank" 
                                            title="Download Official Statement of Account (PDF)"
                                            aria-label="Download Official Statement of Account (PDF)"
-                                           class="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-white/95 backdrop-blur-md border border-white/80 text-slate-700 hover:text-white hover:bg-emerald-700 hover:border-emerald-700 shadow-sm hover:shadow-md transition-all duration-200 group/btn">
-                                            <svg class="h-4 w-4 sm:h-4.5 sm:w-4.5 transition-transform group-hover/btn:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                           class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/95 backdrop-blur-md border border-white/80 text-slate-700 hover:text-white hover:bg-emerald-700 hover:border-emerald-700 shadow-sm hover:shadow-md transition-all duration-200 group/btn">
+                                            <svg class="h-4.5 w-4.5 transition-transform group-hover/btn:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
                                             </svg>
                                         </a>
@@ -326,7 +324,7 @@
                                         </h3>
 
                                         <!-- 2. GRADE • AMIS ID -->
-                                        <p class="mt-0.5 text-[11px] sm:text-xs font-semibold text-slate-500 truncate flex items-center gap-1.5">
+                                        <p class="mt-1 text-[11px] sm:text-xs font-semibold text-slate-500 truncate flex items-center gap-1.5">
                                             <span>{{ $cGrade }}</span>
                                             <span class="text-slate-300 font-bold">•</span>
                                             <span class="font-mono text-slate-400">ID {{ $cId }}</span>
@@ -334,7 +332,7 @@
                                     </div>
 
                                     <!-- 3. REMAINING BALANCE -->
-                                    <div class="border-t border-slate-100 pt-2 flex items-baseline justify-between gap-2">
+                                    <div class="border-t border-slate-100 pt-2.5 flex items-baseline justify-between gap-2">
                                         <span class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Remaining Balance</span>
                                         <span class="text-sm sm:text-base font-black text-slate-900 tracking-tight whitespace-nowrap">₱{{ number_format($cRemainingBalance, 2) }}</span>
                                     </div>
