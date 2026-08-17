@@ -206,7 +206,7 @@
                         @endif
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                         @foreach($students as $student)
                             @php
                                 $account = $student->account;
@@ -227,9 +227,9 @@
                                     : 'background: linear-gradient(135deg, #ecfdf5 0%, #ccfbf1 50%, #d1fae5 100%);';
                             @endphp
 
-                            <div class="group relative w-full rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col sm:flex-row items-center sm:items-stretch gap-6 sm:gap-7">
-                                <!-- LEFT SIDE: LARGE 2x2 STUDENT PICTURE (approx 170-190px) -->
-                                <div class="relative w-36 h-36 sm:w-44 sm:h-44 shrink-0 rounded-2xl overflow-hidden shadow-inner ring-1 ring-slate-200/80 flex items-center justify-center" style="{{ $studentPlaceholderBg }}">
+                            <div class="group relative w-full max-w-[480px] rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-5 sm:gap-6">
+                                <!-- LEFT SIDE: 2x2 STUDENT PICTURE (120–140px) -->
+                                <div class="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 rounded-2xl overflow-hidden shadow-inner ring-1 ring-slate-200/80 flex items-center justify-center" style="{{ $studentPlaceholderBg }}">
                                     @if($studentPhoto)
                                         <img src="{{ $studentPhoto }}" 
                                              alt="{{ $studentName }}" 
@@ -237,39 +237,37 @@
                                     @else
                                         <img src="{{ $avatarPlaceholder }}" 
                                              alt="{{ $studentName }}" 
-                                             class="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500">
+                                             class="w-full h-full object-contain p-1.5 group-hover:scale-105 transition-transform duration-500">
                                     @endif
                                 </div>
 
                                 <!-- RIGHT SIDE: STUDENT INFORMATION -->
-                                <div class="flex flex-col justify-between flex-1 min-w-0 text-center sm:text-left py-0.5 space-y-4 sm:space-y-0">
+                                <div class="flex flex-col justify-between flex-1 min-w-0 py-0.5 space-y-3">
                                     <!-- 1. STUDENT NAME & GRADE/ID -->
-                                    <div>
-                                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug group-hover:text-emerald-950 transition-colors" title="{{ $studentName }}">
+                                    <div class="min-w-0">
+                                        <h3 class="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-snug truncate group-hover:text-emerald-950 transition-colors" title="{{ $studentName }}">
                                             {{ $studentName }}
                                         </h3>
-                                        <p class="mt-1 text-xs sm:text-sm font-semibold text-slate-500 flex items-center justify-center sm:justify-start gap-2">
-                                            <span>{{ $studentGrade }}</span>
-                                            <span class="text-slate-300 font-bold">•</span>
-                                            <span class="font-mono text-slate-400">ID {{ $student->student_number }}</span>
+                                        <p class="mt-0.5 text-xs font-semibold text-slate-500 truncate">
+                                            {{ $studentGrade }} • ID {{ $student->student_number }}
                                         </p>
                                     </div>
 
                                     <!-- 2. REMAINING BALANCE -->
-                                    <div class="my-auto pt-2 sm:pt-0">
-                                        <span class="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block">Remaining Balance</span>
-                                        <span class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight whitespace-nowrap block mt-0.5">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Remaining Balance</span>
+                                        <span class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight whitespace-nowrap block mt-0.5">
                                             ₱{{ number_format($remainingBalance, 2) }}
                                         </span>
                                     </div>
 
                                     <!-- 3. VIEW SOA ACTION -->
-                                    <div class="pt-2 sm:pt-0">
+                                    <div>
                                         <a href="{{ route('payment.students.official-soa', ['studentIdentifier' => $sId]) }}" 
                                            target="_blank" 
-                                           class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-extrabold text-emerald-700 hover:text-emerald-800 transition group/link">
+                                           class="inline-flex items-center gap-1.5 text-xs font-extrabold text-emerald-700 hover:text-emerald-800 transition group/link">
                                             <span>View SOA</span>
-                                            <svg class="h-4 w-4 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="h-3.5 w-3.5 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                                             </svg>
                                         </a>
@@ -295,43 +293,41 @@
                                     : 'background: linear-gradient(135deg, #ecfdf5 0%, #ccfbf1 50%, #d1fae5 100%);';
                             @endphp
 
-                            <div class="group relative w-full rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col sm:flex-row items-center sm:items-stretch gap-6 sm:gap-7">
-                                <!-- LEFT SIDE: LARGE 2x2 STUDENT PICTURE (approx 170-190px) -->
-                                <div class="relative w-36 h-36 sm:w-44 sm:h-44 shrink-0 rounded-2xl overflow-hidden shadow-inner ring-1 ring-slate-200/80 flex items-center justify-center" style="{{ $demoPlaceholderBg }}">
+                            <div class="group relative w-full max-w-[480px] rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-5 sm:gap-6">
+                                <!-- LEFT SIDE: 2x2 STUDENT PICTURE (120–140px) -->
+                                <div class="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 rounded-2xl overflow-hidden shadow-inner ring-1 ring-slate-200/80 flex items-center justify-center" style="{{ $demoPlaceholderBg }}">
                                     <img src="{{ $avatarPlaceholder }}" 
                                          alt="{{ $demoName }}" 
-                                         class="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500">
+                                         class="w-full h-full object-contain p-1.5 group-hover:scale-105 transition-transform duration-500">
                                 </div>
 
                                 <!-- RIGHT SIDE: STUDENT INFORMATION -->
-                                <div class="flex flex-col justify-between flex-1 min-w-0 text-center sm:text-left py-0.5 space-y-4 sm:space-y-0">
+                                <div class="flex flex-col justify-between flex-1 min-w-0 py-0.5 space-y-3">
                                     <!-- 1. STUDENT NAME & GRADE/ID -->
-                                    <div>
-                                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug group-hover:text-emerald-950 transition-colors" title="{{ $demoName }}">
+                                    <div class="min-w-0">
+                                        <h3 class="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-snug truncate group-hover:text-emerald-950 transition-colors" title="{{ $demoName }}">
                                             {{ $demoName }}
                                         </h3>
-                                        <p class="mt-1 text-xs sm:text-sm font-semibold text-slate-500 flex items-center justify-center sm:justify-start gap-2">
-                                            <span>{{ $demoGrade }}</span>
-                                            <span class="text-slate-300 font-bold">•</span>
-                                            <span class="font-mono text-slate-400">ID {{ $demoId }}</span>
+                                        <p class="mt-0.5 text-xs font-semibold text-slate-500 truncate">
+                                            {{ $demoGrade }} • ID {{ $demoId }}
                                         </p>
                                     </div>
 
                                     <!-- 2. REMAINING BALANCE -->
-                                    <div class="my-auto pt-2 sm:pt-0">
-                                        <span class="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block">Remaining Balance</span>
-                                        <span class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight whitespace-nowrap block mt-0.5">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Remaining Balance</span>
+                                        <span class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight whitespace-nowrap block mt-0.5">
                                             ₱{{ number_format($demoRemainingBalance, 2) }}
                                         </span>
                                     </div>
 
                                     <!-- 3. VIEW SOA ACTION -->
-                                    <div class="pt-2 sm:pt-0">
+                                    <div>
                                         <a href="{{ route('payment.students.official-soa', ['studentIdentifier' => $demoId]) }}" 
                                            target="_blank" 
-                                           class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-extrabold text-emerald-700 hover:text-emerald-800 transition group/link">
+                                           class="inline-flex items-center gap-1.5 text-xs font-extrabold text-emerald-700 hover:text-emerald-800 transition group/link">
                                             <span>View SOA</span>
-                                            <svg class="h-4 w-4 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="h-3.5 w-3.5 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                                             </svg>
                                         </a>
