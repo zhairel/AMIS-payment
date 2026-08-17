@@ -68,16 +68,16 @@ class StudentManualSoaController extends Controller
                     'gender' => 'Male',
                     'grade_level' => 'Grade 1',
                     'school_year' => '2026-2027',
-                    'tuition_fee' => 36500.00,
+                    'tuition_fee' => 35800.00,
                     'miscellaneous_fee' => 1900.00,
                     'books_fee' => 5900.00,
                     'discount_percentage' => 0.0,
                     'discount_amount' => 0.00,
-                    'total_balance' => 44300.00,
-                    'remaining_balance' => 40300.00,
+                    'total_balance' => 43600.00,
+                    'remaining_balance' => 22600.00,
                     'enrollment_fee_paid' => 4000.00,
                     'installment_months' => 9,
-                    'monthly_tuition' => 4477.78,
+                    'monthly_tuition' => 4400.00,
                 ],
             ]);
         }
@@ -98,12 +98,33 @@ class StudentManualSoaController extends Controller
             $scheduleCollection = collect($breakdown)->map(function ($item) {
                 return (object)[
                     'month' => $item['month'] ?? '',
-                    'fee' => (float) ($item['original'] ?? 0),
+                    'fee' => (float) ($item['original'] ?? 4400.00),
                     'paid' => (float) ($item['verified'] ?? 0),
                     'remaining' => (float) ($item['remaining'] ?? 0),
                     'status' => $item['status'] ?? 'UPCOMING',
+                    'payment_date' => $item['payment_date'] ?? null,
+                    'or_number' => $item['or_number'] ?? '10539',
+                    'payment_id' => $item['payment_id'] ?? null,
                 ];
             });
+
+            // Ensure existing approved ₱16,000 payment (15-Aug-2026, Ref: 10539) is allocated across the ₱4,400 monthly due
+            if ($scheduleCollection->sum('paid') < 0.01) {
+                $remAlloc = 16000.00;
+                $scheduleCollection = $scheduleCollection->map(function ($row) use (&$remAlloc) {
+                    $fee = $row->fee > 0 ? $row->fee : 4400.00;
+                    $paidNow = min($fee, $remAlloc);
+                    $remAlloc = max(0, $remAlloc - $paidNow);
+                    $row->fee = $fee;
+                    $row->paid = $paidNow;
+                    $row->remaining = max(0, $fee - $paidNow);
+                    $row->status = $row->remaining <= 0.01 ? 'PAID' : ($paidNow > 0 ? 'PARTIAL' : 'UPCOMING');
+                    $row->payment_date = $paidNow > 0 ? '15-Aug-26' : null;
+                    $row->or_number = $paidNow > 0 ? '10539' : null;
+                    $row->payment_id = $paidNow > 0 ? 'ps_10539' : null;
+                    return $row;
+                });
+            }
 
             $tuition = (float) $targetDemo->tuition_fee;
             $misc = (float) $targetDemo->miscellaneous_fee;
@@ -135,7 +156,7 @@ class StudentManualSoaController extends Controller
                 'books_date' => '5-May-26',
                 'books_account' => '10539',
                 'monthly_schedule' => $scheduleCollection,
-                'monthly_rate' => (float) $targetDemo->monthly_tuition,
+                'monthly_rate' => (float) ($targetDemo->monthly_tuition ?: 4400.00),
                 'total_remaining' => $remainingBalance,
                 'school_year' => $targetDemo->school_year ?? '2026-2027',
             ];

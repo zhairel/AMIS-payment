@@ -53,12 +53,28 @@ class ResetDemoPaymentCommand extends Command
             } catch (\Throwable $e) {}
         }
 
+        // 2. Restore approved payment submission of ₱16,000 (15-Aug-2026, Ref: 10539)
         if (Schema::hasTable('payment_submissions')) {
             try {
                 DB::table('payment_submissions')->where('user_id', $userId)->delete();
-                $this->line("  ✓ Cleared demo payment submissions for user #{$userId}");
+                \App\Models\PaymentSubmission::query()->create([
+                    'submission_number' => 'PS-2026-0815-10539-'.$userId,
+                    'user_id' => $userId,
+                    'method' => 'bank_transfer',
+                    'payment_mode' => 'online',
+                    'account_received' => '10539',
+                    'reference_no' => '10539',
+                    'reference_normalized' => '10539',
+                    'transaction_date' => '2026-08-15',
+                    'transaction_at' => '2026-08-15 10:00:00',
+                    'total_amount' => 16000.00,
+                    'status' => 'approved',
+                    'remarks' => 'Official Approved Payment Transaction (₱16,000 on 15-Aug-2026)',
+                    'submitted_at' => '2026-08-15 10:00:00',
+                ]);
+                $this->line("  ✓ Restored approved ₱16,000 payment submission for user #{$userId}");
             } catch (\Throwable $e) {
-                $this->warn("  ⚠ Submissions cleanup notice: ".$e->getMessage());
+                $this->warn("  ⚠ Submissions notice: ".$e->getMessage());
             }
         }
 
@@ -74,9 +90,10 @@ class ResetDemoPaymentCommand extends Command
 
         $this->newLine();
         $this->info("✓ AFPS demo reset complete for {$email}!");
-        $this->line("  Ahmad Z. Lingasa is restored to his initial unpaid July 2026 tuition:");
-        $this->line("  • AHMAD Z. LINGASA (Grade 1): ₱4,477.78");
-        $this->line("  • July Total: ₱4,477.78");
+        $this->line("  Ahmad Z. Lingasa is restored with approved ₱16,000 payment (15-Aug-2026):");
+        $this->line("  • Monthly Due: ₱4,400.00 / month");
+        $this->line("  • Allocated: July (₱4,400), August (₱4,400), September (₱4,400), October (₱2,800) = ₱16,000.00");
+        $this->line("  • Remaining Balance: ₱22,600.00");
 
         return Command::SUCCESS;
     }
