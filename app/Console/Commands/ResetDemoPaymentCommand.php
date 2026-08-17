@@ -59,13 +59,15 @@ class ResetDemoPaymentCommand extends Command
                 DB::table('payment_submissions')->where('user_id', $userId)->delete();
                 \App\Models\PaymentSubmission::query()->create([
                     'submission_number' => 'PS-2026-0815-10539-'.$userId,
-                    'client_token' => 'tok_demo_'.\Illuminate\Support\Str::random(16),
+                    'client_token' => (string) \Illuminate\Support\Str::uuid(),
                     'user_id' => $userId,
                     'method' => 'bank_transfer',
                     'payment_mode' => 'online',
                     'account_received' => '10539',
                     'reference_no' => '10539',
                     'reference_normalized' => '10539',
+                    'receipt_hash' => hash('sha256', 'demo_receipt_10539_'.$userId),
+                    'receipt_url' => '/images/demo_receipt_10539.jpg',
                     'transaction_date' => '2026-08-15',
                     'transaction_at' => '2026-08-15 10:00:00',
                     'total_amount' => 16000.00,
