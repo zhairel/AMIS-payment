@@ -206,7 +206,7 @@
                         @endif
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         @foreach($students as $student)
                             @php
                                 $account = $student->account;
@@ -227,9 +227,9 @@
                                     : 'background: linear-gradient(135deg, #ecfdf5 0%, #ccfbf1 50%, #d1fae5 100%);';
                             @endphp
 
-                            <div class="group relative w-full max-w-sm rounded-3xl border border-slate-200/90 bg-white shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden" style="aspect-ratio: 1 / 1; display: grid; grid-template-rows: 54% 46%;">
-                                <!-- TOP SECTION: LARGE STUDENT PICTURE AREA (54% LOCKED) -->
-                                <div class="relative w-full h-full min-h-0 overflow-hidden flex items-center justify-center" style="{{ $studentPlaceholderBg }}">
+                            <div class="group relative w-full rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col sm:flex-row items-center sm:items-stretch gap-6 sm:gap-7">
+                                <!-- LEFT SIDE: LARGE 2x2 STUDENT PICTURE (approx 170-190px) -->
+                                <div class="relative w-36 h-36 sm:w-44 sm:h-44 shrink-0 rounded-2xl overflow-hidden shadow-inner ring-1 ring-slate-200/80 flex items-center justify-center" style="{{ $studentPlaceholderBg }}">
                                     @if($studentPhoto)
                                         <img src="{{ $studentPhoto }}" 
                                              alt="{{ $studentName }}" 
@@ -237,54 +237,42 @@
                                     @else
                                         <img src="{{ $avatarPlaceholder }}" 
                                              alt="{{ $studentName }}" 
-                                             class="w-full h-full object-contain p-2.5 group-hover:scale-105 transition-transform duration-500">
+                                             class="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500">
                                     @endif
-
-                                    <!-- Subtle Gradient Overlay -->
-                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/10 via-transparent to-transparent pointer-events-none"></div>
-
-                                    <!-- TOP-LEFT: STATUS BADGE -->
-                                    <div class="absolute top-3 left-3 z-20">
-                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-md border border-white/80 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800 shadow-xs">
-                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                            Active
-                                        </span>
-                                    </div>
-
-                                    <!-- TOP-RIGHT: DOWNLOAD STATEMENT OF ACCOUNT (PDF) ICON BUTTON -->
-                                    <div class="absolute top-3 right-3 z-20">
-                                        <a href="{{ route('payment.students.official-soa', ['studentIdentifier' => $sId]) }}" 
-                                           target="_blank" 
-                                           title="Download Official Statement of Account (PDF)"
-                                           aria-label="Download Official Statement of Account (PDF)"
-                                           class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/95 backdrop-blur-md border border-white/80 text-slate-700 hover:text-white hover:bg-emerald-700 hover:border-emerald-700 shadow-sm hover:shadow-md transition-all duration-200 group/btn">
-                                            <svg class="h-4.5 w-4.5 transition-transform group-hover/btn:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                                            </svg>
-                                        </a>
-                                    </div>
                                 </div>
 
-                                <!-- BOTTOM INFORMATION AREA (46% LOCKED) -->
-                                <div class="w-full h-full min-h-0 p-4 sm:p-5 flex flex-col justify-between overflow-hidden bg-white">
-                                    <div class="min-w-0">
-                                        <!-- 1. STUDENT NAME -->
-                                        <h3 class="text-sm sm:text-base font-black text-slate-900 tracking-tight leading-snug truncate group-hover:text-emerald-950 transition-colors" title="{{ $studentName }}">
+                                <!-- RIGHT SIDE: STUDENT INFORMATION -->
+                                <div class="flex flex-col justify-between flex-1 min-w-0 text-center sm:text-left py-0.5 space-y-4 sm:space-y-0">
+                                    <!-- 1. STUDENT NAME & GRADE/ID -->
+                                    <div>
+                                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug group-hover:text-emerald-950 transition-colors" title="{{ $studentName }}">
                                             {{ $studentName }}
                                         </h3>
-
-                                        <!-- 2. GRADE • AMIS ID -->
-                                        <p class="mt-0.5 text-[11px] sm:text-xs font-semibold text-slate-500 truncate flex items-center gap-1.5">
+                                        <p class="mt-1 text-xs sm:text-sm font-semibold text-slate-500 flex items-center justify-center sm:justify-start gap-2">
                                             <span>{{ $studentGrade }}</span>
                                             <span class="text-slate-300 font-bold">•</span>
                                             <span class="font-mono text-slate-400">ID {{ $student->student_number }}</span>
                                         </p>
                                     </div>
 
-                                    <!-- 3. REMAINING BALANCE -->
-                                    <div class="border-t border-slate-100 pt-2 flex items-baseline justify-between gap-2">
-                                        <span class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Remaining Balance</span>
-                                        <span class="text-sm sm:text-base font-black text-slate-900 tracking-tight whitespace-nowrap">₱{{ number_format($remainingBalance, 2) }}</span>
+                                    <!-- 2. REMAINING BALANCE -->
+                                    <div class="my-auto pt-2 sm:pt-0">
+                                        <span class="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block">Remaining Balance</span>
+                                        <span class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight whitespace-nowrap block mt-0.5">
+                                            ₱{{ number_format($remainingBalance, 2) }}
+                                        </span>
+                                    </div>
+
+                                    <!-- 3. VIEW SOA ACTION -->
+                                    <div class="pt-2 sm:pt-0">
+                                        <a href="{{ route('payment.students.official-soa', ['studentIdentifier' => $sId]) }}" 
+                                           target="_blank" 
+                                           class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-extrabold text-emerald-700 hover:text-emerald-800 transition group/link">
+                                            <span>View SOA</span>
+                                            <svg class="h-4 w-4 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                            </svg>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -307,58 +295,46 @@
                                     : 'background: linear-gradient(135deg, #ecfdf5 0%, #ccfbf1 50%, #d1fae5 100%);';
                             @endphp
 
-                            <div class="group relative w-full max-w-sm rounded-3xl border border-slate-200/90 bg-white shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden" style="aspect-ratio: 1 / 1; display: grid; grid-template-rows: 54% 46%;">
-                                <!-- TOP SECTION: LARGE STUDENT PICTURE AREA (54% LOCKED) -->
-                                <div class="relative w-full h-full min-h-0 overflow-hidden flex items-center justify-center" style="{{ $demoPlaceholderBg }}">
+                            <div class="group relative w-full rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col sm:flex-row items-center sm:items-stretch gap-6 sm:gap-7">
+                                <!-- LEFT SIDE: LARGE 2x2 STUDENT PICTURE (approx 170-190px) -->
+                                <div class="relative w-36 h-36 sm:w-44 sm:h-44 shrink-0 rounded-2xl overflow-hidden shadow-inner ring-1 ring-slate-200/80 flex items-center justify-center" style="{{ $demoPlaceholderBg }}">
                                     <img src="{{ $avatarPlaceholder }}" 
                                          alt="{{ $demoName }}" 
-                                         class="w-full h-full object-contain p-2.5 group-hover:scale-105 transition-transform duration-500">
-
-                                    <!-- Subtle Gradient Overlay -->
-                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/10 via-transparent to-transparent pointer-events-none"></div>
-
-                                    <!-- TOP-LEFT: STATUS BADGE -->
-                                    <div class="absolute top-3 left-3 z-20">
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-white/95 backdrop-blur-md border border-white/80 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800 shadow-xs">
-                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                            Active
-                                        </span>
-                                    </div>
-
-                                    <!-- TOP-RIGHT: DOWNLOAD STATEMENT OF ACCOUNT (PDF) ICON BUTTON -->
-                                    <div class="absolute top-3 right-3 z-20">
-                                        <a href="{{ route('payment.students.official-soa', ['studentIdentifier' => $demoId]) }}" 
-                                           target="_blank" 
-                                           title="Download Official Statement of Account (PDF)"
-                                           aria-label="Download Official Statement of Account (PDF)"
-                                           class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/95 backdrop-blur-md border border-white/80 text-slate-700 hover:text-white hover:bg-emerald-700 hover:border-emerald-700 shadow-sm hover:shadow-md transition-all duration-200 group/btn">
-                                            <svg class="h-4.5 w-4.5 transition-transform group-hover/btn:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                                            </svg>
-                                        </a>
-                                    </div>
+                                         class="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500">
                                 </div>
 
-                                <!-- BOTTOM INFORMATION AREA (46% LOCKED) -->
-                                <div class="w-full h-full min-h-0 p-4 sm:p-5 flex flex-col justify-between overflow-hidden bg-white">
-                                    <div class="min-w-0">
-                                        <!-- 1. STUDENT NAME -->
-                                        <h3 class="text-sm sm:text-base font-black text-slate-900 tracking-tight leading-snug truncate group-hover:text-emerald-950 transition-colors" title="{{ $demoName }}">
+                                <!-- RIGHT SIDE: STUDENT INFORMATION -->
+                                <div class="flex flex-col justify-between flex-1 min-w-0 text-center sm:text-left py-0.5 space-y-4 sm:space-y-0">
+                                    <!-- 1. STUDENT NAME & GRADE/ID -->
+                                    <div>
+                                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug group-hover:text-emerald-950 transition-colors" title="{{ $demoName }}">
                                             {{ $demoName }}
                                         </h3>
-
-                                        <!-- 2. GRADE • AMIS ID -->
-                                        <p class="mt-0.5 text-[11px] sm:text-xs font-semibold text-slate-500 truncate flex items-center gap-1.5">
+                                        <p class="mt-1 text-xs sm:text-sm font-semibold text-slate-500 flex items-center justify-center sm:justify-start gap-2">
                                             <span>{{ $demoGrade }}</span>
                                             <span class="text-slate-300 font-bold">•</span>
                                             <span class="font-mono text-slate-400">ID {{ $demoId }}</span>
                                         </p>
                                     </div>
 
-                                    <!-- 3. REMAINING BALANCE -->
-                                    <div class="border-t border-slate-100 pt-2 flex items-baseline justify-between gap-2">
-                                        <span class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Remaining Balance</span>
-                                        <span class="text-sm sm:text-base font-black text-slate-900 tracking-tight whitespace-nowrap">₱{{ number_format($demoRemainingBalance, 2) }}</span>
+                                    <!-- 2. REMAINING BALANCE -->
+                                    <div class="my-auto pt-2 sm:pt-0">
+                                        <span class="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block">Remaining Balance</span>
+                                        <span class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight whitespace-nowrap block mt-0.5">
+                                            ₱{{ number_format($demoRemainingBalance, 2) }}
+                                        </span>
+                                    </div>
+
+                                    <!-- 3. VIEW SOA ACTION -->
+                                    <div class="pt-2 sm:pt-0">
+                                        <a href="{{ route('payment.students.official-soa', ['studentIdentifier' => $demoId]) }}" 
+                                           target="_blank" 
+                                           class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-extrabold text-emerald-700 hover:text-emerald-800 transition group/link">
+                                            <span>View SOA</span>
+                                            <svg class="h-4 w-4 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                            </svg>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
