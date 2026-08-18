@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReceiptSubmissionController;
 use App\Http\Controllers\FinanceReceiptController;
+use App\Http\Controllers\PaymentReminderController;
 
 // Root route
 Route::get('/', function () {
@@ -127,7 +128,20 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::post('/admin/ai-receipt-test/process', [\App\Http\Controllers\AdminReceiptTestController::class, 'process'])->name('admin.receipt_test.process');
     Route::post('/admin/ai-receipt-test/compare', [\App\Http\Controllers\AdminReceiptTestController::class, 'compare'])->name('admin.receipt_test.compare');
     Route::get('/admin/ai-receipt-test/preview/{testId}', [\App\Http\Controllers\AdminReceiptTestController::class, 'preview'])->name('admin.receipt_test.preview');
+
+    // ── Payment Reminder System ─────────────────────────────────────────────
+    Route::prefix('admin/payment-reminder')->name('admin.reminder.')->group(function () {
+        Route::get('/',                              [PaymentReminderController::class, 'index'])    ->name('index');
+        Route::post('/prepare',                      [PaymentReminderController::class, 'prepare'])  ->name('prepare')->middleware('throttle:10,1');
+        Route::get('/{campaign}/preview',            [PaymentReminderController::class, 'preview'])  ->name('preview');
+        Route::post('/{campaign}/send-test',         [PaymentReminderController::class, 'sendTest']) ->name('send-test')->middleware('throttle:10,1');
+        Route::post('/{campaign}/start',             [PaymentReminderController::class, 'start'])    ->name('start')->middleware('throttle:5,1');
+        Route::post('/{campaign}/pause',             [PaymentReminderController::class, 'pause'])    ->name('pause');
+        Route::post('/{campaign}/resume',            [PaymentReminderController::class, 'resume'])   ->name('resume')->middleware('throttle:5,1');
+        Route::get('/{campaign}/logs',               [PaymentReminderController::class, 'logs'])     ->name('logs');
+    });
 });
+
 
 if (app()->environment('local')) {
     Route::get('/test-errors/{code}', function ($code) {
