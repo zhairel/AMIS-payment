@@ -86,7 +86,13 @@ class SendPaymentReminderJob implements ShouldQueue
 
         // ── STEP 3: Send the email ────────────────────────────────────────────
         try {
-            Mail::to($recipient->normalized_email)->send(new PaymentReminderMail());
+            $billingMonth = $recipient->campaign?->billing_month ?? now()->format('Y-m');
+            $mailable = new PaymentReminderMail(
+                recipientName: $recipient->parent_name ?: 'Valued Family',
+                billingMonth: $billingMonth
+            );
+
+            Mail::to($recipient->normalized_email)->send($mailable);
 
             // ── SUCCESS ───────────────────────────────────────────────────────
             $recipient->update([

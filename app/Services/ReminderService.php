@@ -117,9 +117,18 @@ class ReminderService
      * Does NOT change any campaign or recipient records.
      * Does NOT add the test address to the real recipient list.
      */
-    public function sendTestEmail(string $testEmail): void
+    public function sendTestEmail(string $testEmail, ?string $recipientName = null, ?string $billingMonth = null): void
     {
-        Mail::to(trim($testEmail))->send(new PaymentReminderMail());
+        $testRef = strtoupper(substr(md5(uniqid('', true)), 0, 4));
+        $name = $recipientName ?: strtoupper(explode('@', $testEmail)[0]);
+
+        $mailable = new PaymentReminderMail(
+            recipientName: $name,
+            billingMonth: $billingMonth ?? now()->format('Y-m'),
+            dispatchRef: "Ref #{$testRef}"
+        );
+
+        Mail::to(trim($testEmail))->send($mailable);
     }
 
     /**

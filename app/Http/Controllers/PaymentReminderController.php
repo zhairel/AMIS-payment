@@ -88,7 +88,10 @@ class PaymentReminderController extends Controller
         ]);
 
         try {
-            $this->reminderService->sendTestEmail($data['test_email']);
+            $this->reminderService->sendTestEmail(
+                testEmail: $data['test_email'],
+                billingMonth: $campaign->billing_month ?? now()->format('Y-m')
+            );
             return back()->with('success',
                 "✓ Test email sent to {$data['test_email']}. Recipient list and campaign stats were NOT affected."
             );
