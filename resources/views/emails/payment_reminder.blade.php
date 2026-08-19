@@ -70,9 +70,15 @@
           <td class="email-body" style="padding:32px 36px; background:#ffffff;">
 
             <!-- Greeting -->
-            <p style="font-size:20px; font-weight:800; color:#1a6b2f; margin:0 0 16px 0;">
-              Assalamu Alaikum!
+            <p style="font-size:20px; font-weight:800; color:#1a6b2f; margin:0 0 6px 0;">
+              Assalamu Alaikum{{ !empty($recipientName) && $recipientName !== 'Valued Family' ? ', ' . $recipientName : '' }}!
             </p>
+
+            @if(!empty($billingMonth))
+              <p style="margin:0 0 14px 0; color:#15803d; font-size:13px; font-weight:700;">
+                Billing Cycle: {{ \Carbon\Carbon::parse(strlen($billingMonth) === 7 ? $billingMonth . '-01' : $billingMonth)->format('F Y') }}
+              </p>
+            @endif
 
             <!-- Message -->
             <p style="font-size:15px; color:#333333; line-height:1.7; margin:0 0 14px 0;">
@@ -81,6 +87,11 @@
             <p style="font-size:15px; color:#333333; line-height:1.7; margin:0 0 18px 0;">
               If you still have an outstanding balance, kindly settle your payment as soon as possible.
             </p>
+
+            <!-- Anti-trimming invisible unique token to prevent Gmail Show Quoted Text truncation -->
+            <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;mso-hide:all;">
+              Reminder UUID: {{ (string) \Illuminate\Support\Str::uuid() }} • Time: {{ microtime(true) }}
+            </div>
 
             <!-- Already Paid Notice -->
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;">
