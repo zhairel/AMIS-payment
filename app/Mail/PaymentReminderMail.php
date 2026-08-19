@@ -67,14 +67,17 @@ class PaymentReminderMail extends Mailable
 
     /**
      * Build the unique recipient-specific subject line to prevent Gmail conversation threading.
-     * Format: AMIS Payment Reminder – Monthly School Fees – [Family/Student Name] – [Month Year]
-     * Example: AMIS Payment Reminder – Monthly School Fees – ABDULRAHEEM BAULO – August 2026
+     * Format: AMIS Payment Reminder – [Month Year] – [Family/Student Name]
+     * Examples:
+     * - AMIS Payment Reminder – August 2026 – ZHAIREL LINGASA
+     * - AMIS Payment Reminder – August 2026 – ABDULRAHEEM BAULO
+     * - AMIS Payment Reminder – August 2026 – ZAKI ALIH
      */
     public function resolveSubject(): string
     {
         $name = trim((string) $this->recipientName);
         if (empty($name)) {
-            $name = 'Valued Family';
+            $name = 'VALUED FAMILY';
         } else {
             $name = mb_strtoupper($name);
         }
@@ -95,7 +98,7 @@ class PaymentReminderMail extends Mailable
 
         $refSuffix = !empty($this->dispatchRef) ? " [{$this->dispatchRef}]" : '';
 
-        return "AMIS Payment Reminder – Monthly School Fees – {$name} – {$monthYear}{$refSuffix}";
+        return "AMIS Payment Reminder – {$monthYear} – {$name}{$refSuffix}";
     }
 
     /**
